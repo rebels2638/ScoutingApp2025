@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // For formatting the date and time
+import 'package:intl/intl.dart'; // date time format
 import 'data.dart';
 import 'settings.dart';
 import 'about.dart';
@@ -48,6 +48,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // State variables for Other Section
   bool breakdown = false;
   String comments = '';
+
+  // Add new state variable for algae pickup
+  bool canPickupAlgae = false;
+
+  // Add new state variable for processor cycles
+  int processorCycles = 0;
 
   @override
   void initState() {
@@ -257,75 +263,26 @@ class _ScoutingPageState extends State<ScoutingPage> {
             },
           ),
         ),
-        Divider(),
-        // Tele-op Section
-        SectionHeader(title: 'Tele-op', icon: Icons.directions_run),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Algae Scored in Net',
-            value: algaeScoredInNet,
-            onIncrement: () => setState(() => algaeScoredInNet++),
-            onDecrement: () => setState(() {
-              if (algaeScoredInNet > 0) algaeScoredInNet--;
-            }),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Coral on Reef, Height 1',
-            value: coralOnReefHeight1,
-            onIncrement: () => setState(() => coralOnReefHeight1++),
-            onDecrement: () => setState(() {
-              if (coralOnReefHeight1 > 0) coralOnReefHeight1--;
-            }),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Coral on Reef, Height 2',
-            value: coralOnReefHeight2,
-            onIncrement: () => setState(() => coralOnReefHeight2++),
-            onDecrement: () => setState(() {
-              if (coralOnReefHeight2 > 0) coralOnReefHeight2--;
-            }),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Coral on Reef, Height 3',
-            value: coralOnReefHeight3,
-            onIncrement: () => setState(() => coralOnReefHeight3++),
-            onDecrement: () => setState(() {
-              if (coralOnReefHeight3 > 0) coralOnReefHeight3--;
-            }),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Coral on Reef, Height 4',
-            value: coralOnReefHeight4,
-            onIncrement: () => setState(() => coralOnReefHeight4++),
-            onDecrement: () => setState(() {
-              if (coralOnReefHeight4 > 0) coralOnReefHeight4--;
-            }),
-          ),
-        ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: ToggleRow(
-            label: 'Coral Ranking Point?',
+            label: 'Can pickup algae from ground?',
             options: ['YES', 'NO'],
-            selectedIndex: coralRankingPoint ? 0 : 1,
+            selectedIndex: canPickupAlgae ? 0 : 1,
             onSelected: (index) {
               setState(() {
-                coralRankingPoint = index == 0;
+                canPickupAlgae = index == 0;
               });
             },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Coral Ranking Point?',
+            value: coralRankingPoint ? 0 : 1,
+            onIncrement: () => setState(() => coralRankingPoint = true),
+            onDecrement: () => setState(() => coralRankingPoint = false),
           ),
         ),
         Padding(
@@ -347,6 +304,17 @@ class _ScoutingPageState extends State<ScoutingPage> {
             onIncrement: () => setState(() => processedAlgaeScored++),
             onDecrement: () => setState(() {
               if (processedAlgaeScored > 0) processedAlgaeScored--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Number of processor cycles',
+            value: processorCycles,
+            onIncrement: () => setState(() => processorCycles++),
+            onDecrement: () => setState(() {
+              if (processorCycles > 0) processorCycles--;
             }),
           ),
         ),
@@ -446,6 +414,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
     );
   }
 
+//needs fix
   @override
   Widget build(BuildContext context) {
     return Scaffold(

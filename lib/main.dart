@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'scouting.dart'; // Ensure this points to your ScoutingPage file
+import 'scouting.dart';
 
 void main() {
   runApp(const MyApp());
