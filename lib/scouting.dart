@@ -1,0 +1,594 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // For formatting the date and time
+import 'data.dart';
+import 'settings.dart';
+import 'about.dart';
+
+class ScoutingPage extends StatefulWidget {
+  @override
+  _ScoutingPageState createState() => _ScoutingPageState();
+}
+
+class _ScoutingPageState extends State<ScoutingPage> {
+  int _currentIndex = 0; // For managing navigation bar
+
+  // State variables for Match Information
+  int matchNumber = 0;
+  String matchType = 'Unset';
+  String currentTime = '';
+
+  // State variables for Team Information
+  int teamNumber = 0;
+  bool isRedAlliance = true;
+
+  // State variables for Autonomous
+  String cageType = 'Shallow';
+  bool coralPreloaded = false;
+  bool taxis = false;
+  int algaeRemoved = 0;
+  String coralPlaced = 'No';
+  bool rankingPoint = false;
+
+  // State variables for Tele-op
+  int algaeScoredInNet = 0;
+  int coralOnReefHeight1 = 0;
+  int coralOnReefHeight2 = 0;
+  int coralOnReefHeight3 = 0;
+  int coralOnReefHeight4 = 0;
+  bool coralRankingPoint = false;
+  int algaeProcessed = 0;
+  int processedAlgaeScored = 0;
+  bool coOpPoint = false;
+
+  // State variables for Endgame
+  bool returnedToBarge = false;
+  String cageHang = 'None';
+  bool bargeRankingPoint = false;
+
+  // State variables for Other Section
+  bool breakdown = false;
+  String comments = '';
+
+  @override
+  void initState() {
+    super.initState();
+    updateTime();
+  }
+
+  void updateTime() {
+    setState(() {
+      currentTime = DateFormat('HH:mm dd/MM/yyyy').format(DateTime.now());
+    });
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  Widget _getPage(int index) {
+    switch (index) {
+      case 0:
+        return _buildScoutingPage();
+      case 1:
+        return DataPage();
+      case 2:
+        return SettingsPage();
+      case 3:
+        return AboutPage();
+      default:
+        return _buildScoutingPage();
+    }
+  }
+
+  Widget _buildScoutingPage() {
+    return ListView(
+      padding: EdgeInsets.all(16),
+      children: [
+        // Match Information Section
+        SectionHeader(title: 'Match Information', icon: Icons.view_module),
+        InfoRow(label: 'Time', value: currentTime),
+        CounterRow(
+          label: 'Number',
+          value: matchNumber,
+          onIncrement: () {
+            setState(() {
+              matchNumber++;
+            });
+          },
+          onDecrement: () {
+            if (matchNumber > 0) {
+              setState(() {
+                matchNumber--;
+              });
+            }
+          },
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: DropdownButtonFormField<String>(
+            decoration: InputDecoration(labelText: 'Type'),
+            value: matchType,
+            items: ['Unset', 'Practice', 'Qualification', 'Playoff']
+                .map((type) => DropdownMenuItem(value: type, child: Text(type)))
+                .toList(),
+            onChanged: (value) {
+              setState(() {
+                matchType = value!;
+              });
+            },
+          ),
+        ),
+        SizedBox(height: 20),
+        SectionHeader(title: 'Team Information', icon: Icons.people),
+        CounterRow(
+          label: 'Number',
+          value: teamNumber,
+          onIncrement: () {
+            setState(() {
+              teamNumber++;
+            });
+          },
+          onDecrement: () {
+            if (teamNumber > 0) {
+              setState(() {
+                teamNumber--;
+              });
+            }
+          },
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Alliance', style: TextStyle(fontSize: 16)),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: ToggleButtons(
+                  borderRadius: BorderRadius.circular(8),
+                  selectedBorderColor: Colors.transparent,
+                  borderWidth: 1,
+                  fillColor: isRedAlliance ? Colors.red.shade300 : Colors.blue.shade300,
+                  color: Colors.black,
+                  selectedColor: Colors.black,
+                  constraints: BoxConstraints(minWidth: 100, minHeight: 40),
+                  isSelected: [isRedAlliance, !isRedAlliance],
+                  children: [
+                    Text('RED', style: TextStyle(fontSize: 16, color: Colors.black)),
+                    Text('BLUE', style: TextStyle(fontSize: 16, color: Colors.black)),
+                  ],
+                  onPressed: (index) {
+                    setState(() {
+                      isRedAlliance = index == 0;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+        Divider(),
+        // Autonomous Section
+        SectionHeader(title: 'Autonomous', icon: Icons.settings),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
+            label: 'Cage Type',
+            options: ['SHALLOW', 'DEEP'],
+            selectedIndex: cageType == 'Shallow' ? 0 : 1,
+            onSelected: (index) {
+              setState(() {
+                cageType = index == 0 ? 'Shallow' : 'Deep';
+              });
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
+            label: 'Coral Preloaded?',
+            options: ['YES', 'NO'],
+            selectedIndex: coralPreloaded ? 0 : 1,
+            onSelected: (index) {
+              setState(() {
+                coralPreloaded = index == 0;
+              });
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
+            label: 'Taxis?',
+            options: ['YES', 'NO'],
+            selectedIndex: taxis ? 0 : 1,
+            onSelected: (index) {
+              setState(() {
+                taxis = index == 0;
+              });
+            },
+          ),
+        ),
+        CounterRow(
+          label: 'Num. of Algae Removed',
+          value: algaeRemoved,
+          onIncrement: () {
+            setState(() {
+              algaeRemoved++;
+            });
+          },
+          onDecrement: () {
+            if (algaeRemoved > 0) {
+              setState(() {
+                algaeRemoved--;
+              });
+            }
+          },
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Coral Placed?', style: TextStyle(fontSize: 16)),
+            DropdownButton<String>(
+              value: coralPlaced,
+              items: ['No', 'Height 1', 'Height 2', 'Height 3', 'Height 4']
+                  .map((option) => DropdownMenuItem(value: option, child: Text(option)))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  coralPlaced = value!;
+                });
+              },
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
+            label: 'Ranking Point?',
+            options: ['YES', 'NO'],
+            selectedIndex: rankingPoint ? 0 : 1,
+            onSelected: (index) {
+              setState(() {
+                rankingPoint = index == 0;
+              });
+            },
+          ),
+        ),
+        Divider(),
+        // Tele-op Section
+        SectionHeader(title: 'Tele-op', icon: Icons.directions_run),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Algae Scored in Net',
+            value: algaeScoredInNet,
+            onIncrement: () => setState(() => algaeScoredInNet++),
+            onDecrement: () => setState(() {
+              if (algaeScoredInNet > 0) algaeScoredInNet--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Coral on Reef, Height 1',
+            value: coralOnReefHeight1,
+            onIncrement: () => setState(() => coralOnReefHeight1++),
+            onDecrement: () => setState(() {
+              if (coralOnReefHeight1 > 0) coralOnReefHeight1--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Coral on Reef, Height 2',
+            value: coralOnReefHeight2,
+            onIncrement: () => setState(() => coralOnReefHeight2++),
+            onDecrement: () => setState(() {
+              if (coralOnReefHeight2 > 0) coralOnReefHeight2--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Coral on Reef, Height 3',
+            value: coralOnReefHeight3,
+            onIncrement: () => setState(() => coralOnReefHeight3++),
+            onDecrement: () => setState(() {
+              if (coralOnReefHeight3 > 0) coralOnReefHeight3--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Coral on Reef, Height 4',
+            value: coralOnReefHeight4,
+            onIncrement: () => setState(() => coralOnReefHeight4++),
+            onDecrement: () => setState(() {
+              if (coralOnReefHeight4 > 0) coralOnReefHeight4--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
+            label: 'Coral Ranking Point?',
+            options: ['YES', 'NO'],
+            selectedIndex: coralRankingPoint ? 0 : 1,
+            onSelected: (index) {
+              setState(() {
+                coralRankingPoint = index == 0;
+              });
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Algae Processed',
+            value: algaeProcessed,
+            onIncrement: () => setState(() => algaeProcessed++),
+            onDecrement: () => setState(() {
+              if (algaeProcessed > 0) algaeProcessed--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Processed Algae Scored',
+            value: processedAlgaeScored,
+            onIncrement: () => setState(() => processedAlgaeScored++),
+            onDecrement: () => setState(() {
+              if (processedAlgaeScored > 0) processedAlgaeScored--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
+            label: 'Co-op Point?',
+            options: ['YES', 'NO'],
+            selectedIndex: coOpPoint ? 0 : 1,
+            onSelected: (index) {
+              setState(() {
+                coOpPoint = index == 0;
+              });
+            },
+          ),
+        ),
+        Divider(),
+        // Endgame Section
+        SectionHeader(title: 'Endgame', icon: Icons.flag),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
+            label: 'Returned to Barge?',
+            options: ['YES', 'NO'],
+            selectedIndex: returnedToBarge ? 0 : 1,
+            onSelected: (index) {
+              setState(() {
+                returnedToBarge = index == 0;
+              });
+            },
+          ),
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Cage Hang', style: TextStyle(fontSize: 16)),
+            DropdownButton<String>(
+              value: cageHang,
+              items: ['None', 'Shallow', 'Deep']
+                  .map((option) => DropdownMenuItem(value: option, child: Text(option)))
+                  .toList(),
+              onChanged: (value) {
+                setState(() {
+                  cageHang = value!;
+                });
+              },
+            ),
+          ],
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
+            label: 'Barge Ranking Point?',
+            options: ['YES', 'NO'],
+            selectedIndex: bargeRankingPoint ? 0 : 1,
+            onSelected: (index) {
+              setState(() {
+                bargeRankingPoint = index == 0;
+              });
+            },
+          ),
+        ),
+        Divider(),
+        // Other Section
+        SectionHeader(title: 'Other', icon: Icons.miscellaneous_services),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
+            label: 'Breakdown?',
+            options: ['YES', 'NO'],
+            selectedIndex: breakdown ? 0 : 1,
+            onSelected: (index) {
+              setState(() {
+                breakdown = index == 0;
+              });
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: TextField(
+            maxLength: 150,
+            maxLines: 3,
+            decoration: InputDecoration(
+              labelText: 'Comments',
+              border: OutlineInputBorder(),
+              counterText: '${comments.length}/150',
+            ),
+            onChanged: (value) {
+              setState(() {
+                comments = value;
+              });
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: _getPage(_currentIndex),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Scouting'),
+          BottomNavigationBarItem(icon: Icon(Icons.data_usage), label: 'Data'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
+          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'About'),
+        ],
+        currentIndex: _currentIndex,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+      ),
+    );
+  }
+}
+
+class SectionHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const SectionHeader({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 24, color: Colors.black),
+        SizedBox(width: 8),
+        Text(
+          title,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+      ],
+    );
+  }
+}
+
+class InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const InfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(fontSize: 16)),
+          Text(value, style: TextStyle(fontSize: 16)),
+        ],
+      ),
+    );
+  }
+}
+
+class ToggleRow extends StatelessWidget {
+  final String label;
+  final List<String> options;
+  final int selectedIndex;
+  final Function(int) onSelected;
+
+  const ToggleRow({
+    required this.label,
+    required this.options,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 16)),
+        ToggleButtons(
+          borderRadius: BorderRadius.circular(8),
+          selectedBorderColor: Colors.transparent,
+          borderWidth: 1,
+          fillColor: selectedIndex == 0 ? Colors.green.shade300 : Colors.red.shade300,
+          color: Colors.black,
+          selectedColor: Colors.black,
+          textStyle: TextStyle(fontSize: 16, color: Colors.black),
+          constraints: BoxConstraints(minWidth: 100, minHeight: 40),
+          isSelected: List.generate(
+            options.length,
+            (index) => index == selectedIndex,
+          ),
+          children: options.map((option) => Text(option)).toList(),
+          onPressed: onSelected,
+        ),
+      ],
+    );
+  }
+}
+
+class CounterRow extends StatelessWidget {
+  final String label;
+  final int value;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
+
+  const CounterRow({
+    required this.label,
+    required this.value,
+    required this.onIncrement,
+    required this.onDecrement,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 16)),
+        Row(
+          children: [
+            FloatingActionButton(
+              mini: true,
+              elevation: 0.0,
+              onPressed: onDecrement,
+              child: Icon(Icons.remove),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Text(value.toString(), style: TextStyle(fontSize: 16)),
+            ),
+            FloatingActionButton(
+              mini: true,
+              elevation: 0.0,
+              onPressed: onIncrement,
+              child: Icon(Icons.add),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
