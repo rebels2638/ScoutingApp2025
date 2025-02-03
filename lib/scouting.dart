@@ -128,20 +128,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
         ),
         SizedBox(height: 20),
         SectionHeader(title: 'Team Information', icon: Icons.people),
-        CounterRow(
-          label: 'Number',
-          value: teamNumber,
-          onIncrement: () {
+        TeamNumberSelector(
+          initialValue: teamNumber,
+          onChanged: (value) {
             setState(() {
-              teamNumber++;
+              teamNumber = value;
             });
-          },
-          onDecrement: () {
-            if (teamNumber > 0) {
-              setState(() {
-                teamNumber--;
-              });
-            }
           },
         ),
         Padding(
@@ -431,6 +423,167 @@ class _ScoutingPageState extends State<ScoutingPage> {
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
+      ),
+    );
+  }
+}
+
+class TeamNumberSelector extends StatefulWidget {
+  final int initialValue;
+  final ValueChanged<int> onChanged;
+
+  const TeamNumberSelector({
+    Key? key,
+    required this.initialValue,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  _TeamNumberSelectorState createState() => _TeamNumberSelectorState();
+}
+
+class _TeamNumberSelectorState extends State<TeamNumberSelector> {
+  late List<int> selectedDigits;
+  bool isOpen = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    selectedDigits = _numberToDigits(widget.initialValue);
+  }
+
+  List<int> _numberToDigits(int number) {
+    String numStr = number.toString().padLeft(4, '0');
+    return numStr.split('').map(int.parse).toList();
+  }
+
+  void _updateTeamNumber() {
+    int number = selectedDigits.fold(0, (prev, digit) => prev * 10 + digit);
+    widget.onChanged(number);
+  }
+
+  void _toggleSelector() {
+    setState(() {
+      isOpen = !isOpen;
+    });
+    if (isOpen) {
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        isDismissible: true,
+        enableDrag: true,
+        backgroundColor: Colors.transparent,
+        builder: (context) => DraggableScrollableSheet(
+          initialChildSize: 0.4,
+          minChildSize: 0.2,
+          maxChildSize: 0.8,
+          builder: (context, scrollController) => Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  width: 40,
+                  height: 5,
+                  margin: EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2.5),
+                  ),
+                ),
+                Text(
+                  'Select Team Number',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Expanded(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(4, (columnIndex) {
+                      return SizedBox(
+                        width: 60,
+                        child: ListWheelScrollView(
+                          controller: FixedExtentScrollController(
+                            initialItem: selectedDigits[columnIndex],
+                          ),
+                          itemExtent: 40,
+                          physics: FixedExtentScrollPhysics(),
+                          onSelectedItemChanged: (index) {
+                            setState(() {
+                              selectedDigits[columnIndex] = index;
+                              _updateTeamNumber();
+                            });
+                          },
+                          children: List.generate(
+                            10,
+                            (index) => Container(
+                              alignment: Alignment.center,
+                              child: Text(
+                                index.toString(),
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.all(16),
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Done'),
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: Size(double.infinity, 50),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ).then((_) => setState(() => isOpen = false));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('Number', style: TextStyle(fontSize: 16)),
+          InkWell(
+            onTap: _toggleSelector,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    selectedDigits.fold('', (prev, digit) => prev + digit.toString()),
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_drop_down),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
