@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // date time format
 import 'data.dart';
+import 'dart:developer' as developer;
 import 'settings.dart';
 import 'about.dart';
 
@@ -407,9 +408,94 @@ class _ScoutingPageState extends State<ScoutingPage> {
   }
 
 //needs fix
+  Future<void> _saveRecord() async {
+    try {
+      final record = ScoutingRecord(
+        timestamp: currentTime,
+        matchNumber: matchNumber,
+        matchType: matchType,
+        teamNumber: teamNumber,
+        isRedAlliance: isRedAlliance,
+        cageType: cageType,
+        coralPreloaded: coralPreloaded,
+        taxis: taxis,
+        algaeRemoved: algaeRemoved,
+        coralPlaced: coralPlaced,
+        rankingPoint: rankingPoint,
+        canPickupAlgae: canPickupAlgae,
+        algaeScoredInNet: algaeScoredInNet,
+        coralRankingPoint: coralRankingPoint,
+        algaeProcessed: algaeProcessed,
+        processedAlgaeScored: processedAlgaeScored,
+        processorCycles: processorCycles,
+        coOpPoint: coOpPoint,
+        returnedToBarge: returnedToBarge,
+        cageHang: cageHang,
+        bargeRankingPoint: bargeRankingPoint,
+        breakdown: breakdown,
+        comments: comments,
+      );
+
+      await DataManager.saveRecord(record);
+      
+      // Show success message
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Match data saved successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      // Reset form
+      setState(() {
+        matchNumber = matchNumber + 1; // Increment match number
+        algaeRemoved = 0;
+        algaeScoredInNet = 0;
+        coralOnReefHeight1 = 0;
+        coralOnReefHeight2 = 0;
+        coralOnReefHeight3 = 0;
+        coralOnReefHeight4 = 0;
+        algaeProcessed = 0;
+        processedAlgaeScored = 0;
+        processorCycles = 0;
+        coralPlaced = 'No';
+        cageHang = 'None';
+        comments = '';
+        taxis = false;
+        rankingPoint = false;
+        coralRankingPoint = false;
+        coOpPoint = false;
+        returnedToBarge = false;
+        bargeRankingPoint = false;
+        breakdown = false;
+        updateTime();
+      });
+
+    } catch (e) {
+      developer.log('Error saving record: $e');
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving match data'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: _currentIndex == 0 ? AppBar(
+        title: Text('Scouting'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.save),
+            onPressed: _saveRecord,
+          ),
+        ],
+      ) : null,
       body: _getPage(_currentIndex),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
