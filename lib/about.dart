@@ -23,12 +23,27 @@ class AboutPage extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'Version 0.0.1\n01/04/2025',
+              'Version 0.2.2-beta\n02/03/2025',
               style: TextStyle(
                 fontSize: 16,
                 fontStyle: FontStyle.italic,
               ),
               textAlign: TextAlign.center,
+            ),
+            SizedBox(height: 16),
+            Divider(),
+            SizedBox(height: 16),
+            Text(
+              'About',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'This is a scouting app made by Rebel Robotics (Team 2638) for the 2025 FRC game REEFSCAPE.\n\nThis app allows scouters to easily collect match data, analyze team performance, and make better decisions during competitions.',
+              style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 16),
             Divider(),
