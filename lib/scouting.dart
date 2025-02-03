@@ -8,6 +8,7 @@ import 'main.dart';  // for ThemeProvider
 import 'widgets/navbar.dart';
 import 'widgets/topbar.dart';
 import 'services/telemetry_service.dart';
+import 'dart:async';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -63,19 +64,38 @@ class _ScoutingPageState extends State<ScoutingPage> {
   bool _isVisible = false;
   bool _isDevMode = false;
 
+  StreamSubscription? _devModeSubscription;
+
   @override
   void initState() {
     super.initState();
     updateTime();
     _loadDevMode();
     TelemetryService().logInfo('ScoutingPage initialized');
+    
+    // listen to dev mode changes
+    _devModeSubscription = TelemetryService().devModeStream.listen((enabled) {
+      if (mounted && enabled != _isDevMode) {
+        setState(() {
+          _isDevMode = enabled;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _devModeSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadDevMode() async {
     final isEnabled = await TelemetryService.isDevModeEnabled();
-    setState(() {
-      _isDevMode = isEnabled;
-    });
+    if (mounted && isEnabled != _isDevMode) {
+      setState(() {
+        _isDevMode = isEnabled;
+      });
+    }
   }
 
   void updateTime() {
@@ -85,6 +105,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
   }
 
   void _onItemTapped(int index) {
+    TelemetryService().logAction('navigation_changed', 'to index $index');
     setState(() {
       _currentIndex = index;
     });
@@ -139,6 +160,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 .toList(),
             onChanged: (value) {
               final oldValue = matchType;
+              TelemetryService().logAction('match_type_changed', 'from $oldValue to ${value!}');
               setState(() {
                 matchType = value!;
               });
@@ -151,6 +173,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         TeamNumberSelector(
           initialValue: teamNumber,
           onChanged: (value) {
+            TelemetryService().logAction('team_number_changed', 'to $value');
             setState(() {
               teamNumber = value;
             });
@@ -198,6 +221,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                     ),
                   ],
                   onPressed: (index) {
+                    TelemetryService().logAction('alliance_selection_changed', 'from ${isRedAlliance ? "red" : "blue"} to ${index == 0 ? "red" : "blue"}');
                     setState(() {
                       isRedAlliance = index == 0;
                     });
@@ -217,6 +241,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['SHALLOW', 'DEEP'],
             selectedIndex: cageType == 'Shallow' ? 0 : 1,
             onSelected: (index) {
+              TelemetryService().logAction('toggle_changed', 'cageType');
               final oldValue = cageType;
               setState(() {
                 cageType = index == 0 ? 'Shallow' : 'Deep';
@@ -312,12 +337,14 @@ class _ScoutingPageState extends State<ScoutingPage> {
             label: 'Algae Scored in Net',
             value: algaeScoredInNet,
             onIncrement: () {
+              TelemetryService().logAction('counter_increment', 'algaeScoredInNet');
               final oldValue = algaeScoredInNet;
               setState(() => algaeScoredInNet++);
               _logStateChange('algaeScoredInNet', oldValue, algaeScoredInNet);
             },
             onDecrement: () {
               if (algaeScoredInNet > 0) {
+                TelemetryService().logAction('counter_decrement', 'algaeScoredInNet');
                 final oldValue = algaeScoredInNet;
                 setState(() => algaeScoredInNet--);
                 _logStateChange('algaeScoredInNet', oldValue, algaeScoredInNet);
@@ -526,6 +553,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
   }
 
   Future<void> _saveRecord() async {
+    TelemetryService().logAction('save_button_pressed');
     try {
       final record = ScoutingRecord(
         timestamp: currentTime,
@@ -589,7 +617,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
         updateTime();
       });
 
+      TelemetryService().logInfo('record_saved_successfully', 'Match $matchNumber');
     } catch (e) {
+      TelemetryService().logError('save_record_failed', e.toString());
       developer.log('Error saving record: $e');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
