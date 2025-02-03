@@ -2,7 +2,7 @@
 
 Still under development.
 
-## Implemented features:
+## Current features:
 
 #### Basic Features
 - Full scouting page with options to input most needed data points.
