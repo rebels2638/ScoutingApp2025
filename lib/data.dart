@@ -12,7 +12,7 @@ class ScoutingRecord {
   final int teamNumber;
   final bool isRedAlliance;
   
-  // Autonomous
+  // auto
   final String cageType;
   final bool coralPreloaded;
   final bool taxis;
@@ -21,7 +21,7 @@ class ScoutingRecord {
   final bool rankingPoint;
   final bool canPickupAlgae;
   
-  // Teleop
+  // teleop
   final int algaeScoredInNet;
   final bool coralRankingPoint;
   final int algaeProcessed;
@@ -29,12 +29,12 @@ class ScoutingRecord {
   final int processorCycles;
   final bool coOpPoint;
   
-  // Endgame
+  // endgame
   final bool returnedToBarge;
   final String cageHang;
   final bool bargeRankingPoint;
   
-  // Other
+  // other
   final bool breakdown;
   final String comments;
 
@@ -163,7 +163,7 @@ class DataManager {
         throw Exception('Export cancelled');
       }
 
-      // Ensure the file ends with .json
+      // ensure file ends with .json
       if (!outputFile.toLowerCase().endsWith('.json')) {
         outputFile += '.json';
       }

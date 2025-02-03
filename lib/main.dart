@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'scouting.dart';
+import 'widgets/telemetry_overlay.dart';
+import '../services/telemetry_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await TelemetryService().init();
   runApp(const MyApp());
 }
 
@@ -13,7 +17,11 @@ class ThemeProvider extends InheritedNotifier<ThemeNotifier> {
   }) : super(key: key, notifier: notifier, child: child);
 
   static ThemeNotifier of(BuildContext context) {
-    return context.dependOnInheritedWidgetOfExactType<ThemeProvider>()!.notifier!;
+    final provider = context.dependOnInheritedWidgetOfExactType<ThemeProvider>();
+    if (provider == null) {
+      throw FlutterError('ThemeProvider not found in context');
+    }
+    return provider.notifier!;
   }
 }
 
@@ -31,22 +39,23 @@ class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<MyApp> createState() => MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
-  late final ThemeNotifier _themeNotifier;
+class MyAppState extends State<MyApp> {
+  late final ThemeNotifier themeNotifier;
+  bool telemetryVisible = false;
 
   @override
   void initState() {
     super.initState();
-    _themeNotifier = ThemeNotifier();
-    _themeNotifier.addListener(_handleThemeChange);
+    themeNotifier = ThemeNotifier();
+    themeNotifier.addListener(_handleThemeChange);
   }
 
   @override
   void dispose() {
-    _themeNotifier.dispose();
+    themeNotifier.dispose();
     super.dispose();
   }
 
@@ -54,56 +63,66 @@ class _MyAppState extends State<MyApp> {
     setState(() {});
   }
 
+  void toggleTelemetry(bool value) {
+    setState(() {
+      telemetryVisible = value;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ThemeProvider(
-      notifier: _themeNotifier,
-      child: Builder(
-        builder: (context) {
-          final isDarkMode = ThemeProvider.of(context).isDarkMode;
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            title: 'Scouting App 2025',
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-              brightness: Brightness.light,
-            ),
-            darkTheme: ThemeData(
-              brightness: Brightness.dark,
-              scaffoldBackgroundColor: Colors.black,
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Colors.black,
-                elevation: 0,
+    return TelemetryOverlay(
+      isVisible: telemetryVisible,
+      onVisibilityChanged: toggleTelemetry,
+      child: ThemeProvider(
+        notifier: themeNotifier,
+        child: Builder(
+          builder: (context) {
+            final isDarkMode = ThemeProvider.of(context).isDarkMode;
+            return MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'Scouting App 2025',
+              theme: ThemeData(
+                primarySwatch: Colors.blue,
+                brightness: Brightness.light,
               ),
-              bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-                backgroundColor: Colors.black,
-                selectedItemColor: Colors.blue,
-                unselectedItemColor: Colors.grey,
+              darkTheme: ThemeData(
+                brightness: Brightness.dark,
+                scaffoldBackgroundColor: Colors.black,
+                appBarTheme: const AppBarTheme(
+                  backgroundColor: Colors.black,
+                  elevation: 0,
+                ),
+                bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                  backgroundColor: Colors.black,
+                  selectedItemColor: Colors.blue,
+                  unselectedItemColor: Colors.grey,
+                ),
+                toggleButtonsTheme: ToggleButtonsThemeData(
+                  fillColor: Colors.blue.withOpacity(0.3),
+                  selectedColor: Colors.blue,
+                  color: Colors.grey,
+                ),
+                inputDecorationTheme: const InputDecorationTheme(
+                  border: OutlineInputBorder(),
+                  fillColor: Colors.black,
+                  filled: true,
+                ),
+                dividerColor: Colors.grey[850],
+                cardColor: Colors.black,
+                dialogBackgroundColor: Colors.black,
+                colorScheme: const ColorScheme.dark(
+                  background: Colors.black,
+                  surface: Colors.black,
+                  primary: Colors.blue,
+                  secondary: Colors.blueAccent,
+                ),
               ),
-              toggleButtonsTheme: ToggleButtonsThemeData(
-                fillColor: Colors.blue.withOpacity(0.3),
-                selectedColor: Colors.blue,
-                color: Colors.grey,
-              ),
-              inputDecorationTheme: const InputDecorationTheme(
-                border: OutlineInputBorder(),
-                fillColor: Colors.black,
-                filled: true,
-              ),
-              dividerColor: Colors.grey[850],
-              cardColor: Colors.black,
-              dialogBackgroundColor: Colors.black,
-              colorScheme: const ColorScheme.dark(
-                background: Colors.black,
-                surface: Colors.black,
-                primary: Colors.blue,
-                secondary: Colors.blueAccent,
-              ),
-            ),
-            themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            home: ScoutingPage(),
-          );
-        },
+              themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+              home: ScoutingPage(),
+            );
+          },
+        ),
       ),
     );
   }
@@ -116,7 +135,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Scouting App 2025'), // Updated AppBar title
+        title: const Text('Scouting App 2025'),
       ),
       body: ScoutingPage(),
     );
