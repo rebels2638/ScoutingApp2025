@@ -65,7 +65,16 @@ class ScoutingRecord {
     required this.bargeRankingPoint,
     required this.breakdown,
     required this.comments,
-  });
+  }) : assert(coralPreloaded != null),
+       assert(taxis != null),
+       assert(rankingPoint != null),
+       assert(canPickupCoral != null),
+       assert(canPickupAlgae != null),
+       assert(coralRankingPoint != null),
+       assert(coOpPoint != null),
+       assert(returnedToBarge != null),
+       assert(bargeRankingPoint != null),
+       assert(breakdown != null);
 
   Map<String, dynamic> toJson() => {
     'timestamp': timestamp,
@@ -95,30 +104,30 @@ class ScoutingRecord {
   };
 
   factory ScoutingRecord.fromJson(Map<String, dynamic> json) => ScoutingRecord(
-    timestamp: json['timestamp'],
-    matchNumber: json['matchNumber'],
-    matchType: json['matchType'],
-    teamNumber: json['teamNumber'],
-    isRedAlliance: json['isRedAlliance'],
-    cageType: json['cageType'],
-    coralPreloaded: json['coralPreloaded'],
-    taxis: json['taxis'],
-    algaeRemoved: json['algaeRemoved'],
-    coralPlaced: json['coralPlaced'],
-    rankingPoint: json['rankingPoint'],
-    canPickupCoral: json['canPickupCoral'],
-    canPickupAlgae: json['canPickupAlgae'],
-    algaeScoredInNet: json['algaeScoredInNet'],
-    coralRankingPoint: json['coralRankingPoint'],
-    algaeProcessed: json['algaeProcessed'],
-    processedAlgaeScored: json['processedAlgaeScored'],
-    processorCycles: json['processorCycles'],
-    coOpPoint: json['coOpPoint'],
-    returnedToBarge: json['returnedToBarge'],
-    cageHang: json['cageHang'],
-    bargeRankingPoint: json['bargeRankingPoint'],
-    breakdown: json['breakdown'],
-    comments: json['comments'],
+    timestamp: json['timestamp'] ?? '',
+    matchNumber: json['matchNumber'] ?? 0,
+    matchType: json['matchType'] ?? 'Unset',
+    teamNumber: json['teamNumber'] ?? 0,
+    isRedAlliance: json['isRedAlliance'] ?? false,
+    cageType: json['cageType'] ?? 'Shallow',
+    coralPreloaded: json['coralPreloaded'] ?? false,
+    taxis: json['taxis'] ?? false,
+    algaeRemoved: json['algaeRemoved'] ?? 0,
+    coralPlaced: json['coralPlaced'] ?? 'No',
+    rankingPoint: json['rankingPoint'] ?? false,
+    canPickupCoral: json['canPickupCoral'] ?? false,
+    canPickupAlgae: json['canPickupAlgae'] ?? false,
+    algaeScoredInNet: json['algaeScoredInNet'] ?? 0,
+    coralRankingPoint: json['coralRankingPoint'] ?? false,
+    algaeProcessed: json['algaeProcessed'] ?? 0,
+    processedAlgaeScored: json['processedAlgaeScored'] ?? 0,
+    processorCycles: json['processorCycles'] ?? 0,
+    coOpPoint: json['coOpPoint'] ?? false,
+    returnedToBarge: json['returnedToBarge'] ?? false,
+    cageHang: json['cageHang'] ?? 'None',
+    bargeRankingPoint: json['bargeRankingPoint'] ?? false,
+    breakdown: json['breakdown'] ?? false,
+    comments: json['comments'] ?? '',
   );
 }
 
@@ -386,7 +395,7 @@ class _DataPageState extends State<DataPage> {
                 : ListView.builder(
                     itemCount: _records.length,
                     itemBuilder: (context, index) {
-                      final record = _records[index];
+                      final record = _records[_records.length - 1 - index];
                       final isSelected = _selectedRecords.contains(record);
                       return Card(
                         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -410,7 +419,7 @@ class _DataPageState extends State<DataPage> {
                               IconButton(
                                 icon: Icon(Icons.delete),
                                 onPressed: () async {
-                                  await DataManager.deleteRecord(index);
+                                  await DataManager.deleteRecord(_records.length - 1 - index);
                                   _loadRecords();
                                 },
                               ),

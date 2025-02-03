@@ -20,6 +20,10 @@ class TelemetryOverlay extends StatefulWidget {
 class _TelemetryOverlayState extends State<TelemetryOverlay> {
   final List<TelemetryEvent> _events = [];
   final ScrollController _scrollController = ScrollController();
+  
+  // Add these offset variables to track position
+  double _xOffset = 20;
+  double _yOffset = 100;
 
   void _clearLogs() {
     setState(() {
@@ -49,65 +53,77 @@ class _TelemetryOverlayState extends State<TelemetryOverlay> {
           widget.child,
           if (widget.isVisible)
             Positioned(
-              top: 100,
-              left: 20,
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  width: 300,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Telemetry',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.close, color: Colors.white),
-                              onPressed: () {
-                                _clearLogs();
-                                widget.onVisibilityChanged?.call(false);
-                              },
-                              padding: EdgeInsets.zero,
-                              constraints: BoxConstraints(),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Expanded(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          reverse: true,
-                          itemCount: _events.length,
-                          itemBuilder: (context, index) {
-                            final event = _events[index];
-                            return Padding(
-                              padding: EdgeInsets.all(4),
-                              child: Text(
-                                event.toString(),
-                                style: TextStyle(
-                                  color: _getEventColor(event.type),
-                                  fontSize: 12,
-                                ),
+              left: _xOffset,
+              top: _yOffset,
+              child: GestureDetector(  // Wrap Material with GestureDetector
+                onPanUpdate: (details) {
+                  setState(() {
+                    _xOffset += details.delta.dx;
+                    _yOffset += details.delta.dy;
+                    
+                    // Keep window within screen bounds
+                    _xOffset = _xOffset.clamp(0.0, MediaQuery.of(context).size.width - 300);
+                    _yOffset = _yOffset.clamp(0.0, MediaQuery.of(context).size.height - 200);
+                  });
+                },
+                child: Material(
+                  color: Colors.transparent,
+                  child: Container(
+                    width: 300,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue,
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Telemetry',
+                                style: TextStyle(color: Colors.white),
                               ),
-                            );
-                          },
+                              IconButton(
+                                icon: Icon(Icons.close, color: Colors.white),
+                                onPressed: () {
+                                  _clearLogs();
+                                  widget.onVisibilityChanged?.call(false);
+                                },
+                                padding: EdgeInsets.zero,
+                                constraints: BoxConstraints(),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                        Expanded(
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            reverse: true,
+                            itemCount: _events.length,
+                            itemBuilder: (context, index) {
+                              final event = _events[index];
+                              return Padding(
+                                padding: EdgeInsets.all(4),
+                                child: Text(
+                                  event.toString(),
+                                  style: TextStyle(
+                                    color: _getEventColor(event.type),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

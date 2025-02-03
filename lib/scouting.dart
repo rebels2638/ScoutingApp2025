@@ -55,15 +55,14 @@ class _ScoutingPageState extends State<ScoutingPage> {
   bool breakdown = false;
   String comments = '';
 
-  // state var for algae pickup
+  // state vars for pickup capabilities
   bool canPickupAlgae = false;
+  bool canPickupCoral = false;
 
   // state var for processor cycles
   int processorCycles = 0;
 
-  // need to add this state variable at top of _ScoutingPageState
-  bool canPickupCoral = false;
-
+  // dev mode state
   bool _isVisible = false;
   bool _isDevMode = false;
 
@@ -163,11 +162,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 .toList(),
             onChanged: (value) {
               final oldValue = matchType;
-              TelemetryService().logAction('match_type_changed', 'from $oldValue to ${value!}');
               setState(() {
                 matchType = value!;
               });
-              _logStateChange('matchType', oldValue, matchType);
+              _logStateChange('matchType', oldValue, value);
+              TelemetryService().logAction('dropdown_changed', 'matchType: $oldValue -> $value');
             },
           ),
         ),
@@ -305,13 +304,16 @@ class _ScoutingPageState extends State<ScoutingPage> {
             Text('Coral Placed?', style: TextStyle(fontSize: 16)),
             DropdownButton<String>(
               value: coralPlaced,
-              items: ['No', 'Height 1', 'Height 2', 'Height 3', 'Height 4']
+              items: ['No', 'Yes - Shallow', 'Yes - Deep']
                   .map((option) => DropdownMenuItem(value: option, child: Text(option)))
                   .toList(),
               onChanged: (value) {
+                final oldValue = coralPlaced;
                 setState(() {
                   coralPlaced = value!;
                 });
+                _logStateChange('coralPlaced', oldValue, value);
+                TelemetryService().logAction('dropdown_changed', 'coralPlaced: $oldValue -> $value');
               },
             ),
           ],
@@ -429,9 +431,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['YES', 'NO'],
             selectedIndex: canPickupCoral ? 0 : 1,
             onSelected: (index) {
+              final oldValue = canPickupCoral;
               setState(() {
                 canPickupCoral = index == 0;
               });
+              _logStateChange('canPickupCoral', oldValue, canPickupCoral);
+              TelemetryService().logAction('toggle_changed', 'canPickupCoral');
             },
           ),
         ),
@@ -442,9 +447,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['YES', 'NO'],
             selectedIndex: canPickupAlgae ? 0 : 1,
             onSelected: (index) {
+              final oldValue = canPickupAlgae;
               setState(() {
                 canPickupAlgae = index == 0;
               });
+              _logStateChange('canPickupAlgae', oldValue, canPickupAlgae);
+              TelemetryService().logAction('toggle_changed', 'canPickupAlgae');
             },
           ),
         ),
@@ -509,9 +517,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
                   .map((option) => DropdownMenuItem(value: option, child: Text(option)))
                   .toList(),
               onChanged: (value) {
+                final oldValue = cageHang;
                 setState(() {
                   cageHang = value!;
                 });
+                _logStateChange('cageHang', oldValue, value);
+                TelemetryService().logAction('dropdown_changed', 'cageHang: $oldValue -> $value');
               },
             ),
           ],
@@ -571,6 +582,28 @@ class _ScoutingPageState extends State<ScoutingPage> {
   Future<void> _saveRecord() async {
     TelemetryService().logAction('save_button_pressed');
     try {
+      // Log all boolean values before creating record
+      final debugValues = {
+        'coralPreloaded': coralPreloaded,
+        'taxis': taxis,
+        'rankingPoint': rankingPoint,
+        'canPickupCoral': canPickupCoral,
+        'canPickupAlgae': canPickupAlgae,
+        'coralRankingPoint': coralRankingPoint,
+        'coOpPoint': coOpPoint,
+        'returnedToBarge': returnedToBarge,
+        'bargeRankingPoint': bargeRankingPoint,
+        'breakdown': breakdown,
+      };
+      TelemetryService().logInfo('save_record_debug', debugValues.toString());
+
+      // Check for null values
+      for (var entry in debugValues.entries) {
+        if (entry.value == null) {
+          throw Exception('Null boolean value found: ${entry.key}');
+        }
+      }
+
       final record = ScoutingRecord(
         timestamp: currentTime,
         matchNumber: matchNumber,
@@ -635,8 +668,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
       });
 
       TelemetryService().logInfo('record_saved_successfully', 'Match $matchNumber');
-    } catch (e) {
-      TelemetryService().logError('save_record_failed', e.toString());
+    } catch (e, stackTrace) {
+      TelemetryService().logError('save_record_failed', '${e.toString()}\n${stackTrace.toString()}');
       developer.log('Error saving record: $e');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
