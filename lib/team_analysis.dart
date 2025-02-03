@@ -176,8 +176,20 @@ class TeamAnalysisPage extends StatelessWidget {
                       Wrap(
                         spacing: 8,
                         children: stats.getStrengths().map((s) => Chip(
-                          label: Text(s),
+                          label: Text(
+                            s,
+                            style: TextStyle(
+                              color: Theme.of(context).brightness == Brightness.dark 
+                                  ? Colors.black 
+                                  : null,
+                            ),
+                          ),
                           backgroundColor: Colors.green.shade100,
+                          side: BorderSide(
+                            color: Theme.of(context).brightness == Brightness.dark 
+                                ? Colors.black 
+                                : Colors.transparent,
+                          ),
                         )).toList(),
                       ),
                       SizedBox(height: 16),
@@ -188,8 +200,20 @@ class TeamAnalysisPage extends StatelessWidget {
                       Wrap(
                         spacing: 8,
                         children: stats.getWeaknesses().map((w) => Chip(
-                          label: Text(w),
+                          label: Text(
+                            w,
+                            style: TextStyle(
+                              color: Theme.of(context).brightness == Brightness.dark 
+                                  ? Colors.black 
+                                  : null,
+                            ),
+                          ),
                           backgroundColor: Colors.red.shade100,
+                          side: BorderSide(
+                            color: Theme.of(context).brightness == Brightness.dark 
+                                ? Colors.black 
+                                : Colors.transparent,
+                          ),
                         )).toList(),
                       ),
                     ],
