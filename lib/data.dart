@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:file_picker/file_picker.dart';
+import 'comparison.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -139,6 +142,79 @@ class DataManager {
     records.removeAt(index);
     await prefs.setString(_storageKey, jsonEncode(records.map((r) => r.toJson()).toList()));
   }
+
+  static Future<void> exportToJson() async {
+    try {
+      final records = await getRecords();
+      if (records.isEmpty) {
+        throw Exception('No records to export');
+      }
+
+      final jsonStr = jsonEncode(records.map((r) => r.toJson()).toList());
+      
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Export Scouting Records',
+        fileName: 'scouting_records.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+      
+      if (outputFile == null) {
+        throw Exception('Export cancelled');
+      }
+
+      // Ensure the file ends with .json
+      if (!outputFile.toLowerCase().endsWith('.json')) {
+        outputFile += '.json';
+      }
+
+      await File(outputFile).writeAsString(jsonStr, flush: true);
+    } catch (e) {
+      throw Exception('Failed to export: ${e.toString()}');
+    }
+  }
+
+  static Future<void> importFromJson() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+      
+      if (result == null || result.files.isEmpty) {
+        throw Exception('No file selected');
+      }
+
+      if (result.files.single.path == null) {
+        throw Exception('Invalid file path');
+      }
+
+      final file = File(result.files.single.path!);
+      if (!await file.exists()) {
+        throw Exception('File does not exist');
+      }
+
+      final jsonStr = await file.readAsString();
+      if (jsonStr.isEmpty) {
+        throw Exception('File is empty');
+      }
+      
+      final List<dynamic> decoded = jsonDecode(jsonStr);
+      if (decoded.isEmpty) {
+        throw Exception('No records found in file');
+      }
+
+      final records = decoded.map((json) => ScoutingRecord.fromJson(json)).toList();
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_storageKey, jsonStr);
+    } catch (e) {
+      if (e is FormatException) {
+        throw Exception('Invalid JSON format');
+      }
+      throw Exception('Failed to import: ${e.toString()}');
+    }
+  }
 }
 
 class DataPage extends StatefulWidget {
@@ -148,6 +224,7 @@ class DataPage extends StatefulWidget {
 
 class _DataPageState extends State<DataPage> {
   List<ScoutingRecord> _records = [];
+  List<ScoutingRecord> _selectedRecords = [];
 
   @override
   void initState() {
@@ -159,43 +236,214 @@ class _DataPageState extends State<DataPage> {
     final records = await DataManager.getRecords();
     setState(() {
       _records = records;
+      _selectedRecords.clear();
+    });
+  }
+
+  void _toggleRecordSelection(ScoutingRecord record) {
+    setState(() {
+      if (_selectedRecords.contains(record)) {
+        _selectedRecords.remove(record);
+      } else {
+        _selectedRecords.add(record);
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _records.isEmpty
-          ? Center(child: Text('No scouting records available'))
-          : ListView.builder(
-              itemCount: _records.length,
-              itemBuilder: (context, index) {
-                final record = _records[index];
-                return Card(
-                  margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: ListTile(
-                    title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('${record.matchType} - ${record.timestamp}'),
-                        Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
-                      ],
-                    ),
-                    trailing: IconButton(
-                      icon: Icon(Icons.delete),
-                      onPressed: () async {
-                        await DataManager.deleteRecord(index);
-                        _loadRecords();
-                      },
-                    ),
-                    onTap: () {
-                      _showRecordDetails(record);
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await DataManager.exportToJson();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Records exported successfully')),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to export records')),
+                      );
+                    }
+                  },
+                  icon: Icon(Icons.upload),
+                  label: Text('Export'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    try {
+                      await DataManager.importFromJson();
+                      await _loadRecords();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Records imported successfully')),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to import records: ${e.toString()}')),
+                      );
+                    }
+                  },
+                  icon: Icon(Icons.download),
+                  label: Text('Import'),
+                ),
+                if (_selectedRecords.isNotEmpty)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ComparisonPage(records: _selectedRecords),
+                        ),
+                      );
+                    },
+                    icon: Icon(Icons.compare_arrows),
+                    label: Text('Compare (${_selectedRecords.length})'),
+                  ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _records.isEmpty
+                ? Center(child: Text('No scouting records available'))
+                : ListView.builder(
+                    itemCount: _records.length,
+                    itemBuilder: (context, index) {
+                      final record = _records[index];
+                      final isSelected = _selectedRecords.contains(record);
+                      return Card(
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        color: isSelected ? Colors.blue.withOpacity(0.1) : null,
+                        child: ListTile(
+                          title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${record.matchType} - ${record.timestamp}'),
+                              Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Checkbox(
+                                value: isSelected,
+                                onChanged: (_) => _toggleRecordSelection(record),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.delete),
+                                onPressed: () async {
+                                  await DataManager.deleteRecord(index);
+                                  _loadRecords();
+                                },
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            _showRecordDetails(record);
+                          },
+                        ),
+                      );
                     },
                   ),
-                );
-              },
-            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showComparisonDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Compare Records',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _selectedRecords.clear();
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var record in _selectedRecords)
+                        Expanded(
+                          child: Card(
+                            margin: EdgeInsets.all(8),
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Match ${record.matchNumber}',
+                                    style: Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                  SizedBox(height: 8),
+                                  Text('Team ${record.teamNumber}'),
+                                  Text(record.isRedAlliance ? 'Red Alliance' : 'Blue Alliance'),
+                                  Divider(),
+                                  SizedBox(height: 8),
+                                  Text('Auto Mode:'),
+                                  Text('  • Cage Type: ${record.cageType}'),
+                                  Text('  • Coral Preloaded: ${record.coralPreloaded ? "Yes" : "No"}'),
+                                  Text('  • Taxis: ${record.taxis ? "Yes" : "No"}'),
+                                  Text('  • Algae Removed: ${record.algaeRemoved}'),
+                                  Text('  • Coral Placed: ${record.coralPlaced}'),
+                                  Text('  • Auto RP: ${record.rankingPoint ? "Yes" : "No"}'),
+                                  Text('  • Can Pickup: ${record.canPickupAlgae ? "Yes" : "No"}'),
+                                  SizedBox(height: 8),
+                                  Text('Teleop:'),
+                                  Text('  • Net Algae: ${record.algaeScoredInNet}'),
+                                  Text('  • Coral RP: ${record.coralRankingPoint ? "Yes" : "No"}'),
+                                  Text('  • Algae Processed: ${record.algaeProcessed}'),
+                                  Text('  • Processed Scored: ${record.processedAlgaeScored}'),
+                                  Text('  • Processor Cycles: ${record.processorCycles}'),
+                                  Text('  • Co-Op Point: ${record.coOpPoint ? "Yes" : "No"}'),
+                                  SizedBox(height: 8),
+                                  Text('Endgame:'),
+                                  Text('  • Returned: ${record.returnedToBarge ? "Yes" : "No"}'),
+                                  Text('  • Cage Hang: ${record.cageHang}'),
+                                  Text('  • Barge RP: ${record.bargeRankingPoint ? "Yes" : "No"}'),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
