@@ -5,6 +5,8 @@ import 'dart:developer' as developer;
 import 'settings.dart';
 import 'about.dart';
 import 'main.dart';  // Add this import for ThemeProvider
+import 'widgets/navbar.dart';
+import 'widgets/topbar.dart';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -508,31 +510,21 @@ class _ScoutingPageState extends State<ScoutingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _currentIndex == 0 ? AppBar(
-        title: Text('Scouting'),
-        actions: [
+      appBar: TopBar(
+        title: _currentIndex == 0 ? 'Scouting' :
+               _currentIndex == 1 ? 'Data' :
+               _currentIndex == 2 ? 'Settings' :
+               'About',
+        actions: _currentIndex == 0 ? [
           IconButton(
             icon: Icon(Icons.save),
             onPressed: _saveRecord,
           ),
-        ],
-      ) : AppBar(
-        title: Text(_currentIndex == 1 ? 'Data' :
-                    _currentIndex == 2 ? 'Settings' :
-                    'About'),
+        ] : null,
       ),
       body: _getPage(_currentIndex),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Scouting'),
-          BottomNavigationBarItem(icon: Icon(Icons.data_usage), label: 'Data'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
-          BottomNavigationBarItem(icon: Icon(Icons.info), label: 'About'),
-        ],
+      bottomNavigationBar: NavBar(
         currentIndex: _currentIndex,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
         onTap: _onItemTapped,
       ),
     );
