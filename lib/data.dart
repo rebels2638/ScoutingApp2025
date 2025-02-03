@@ -259,8 +259,16 @@ class _DataPageState extends State<DataPage> {
           Container(
             padding: const EdgeInsets.all(16.0),
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey.shade900
+                  : Colors.blue.shade50,
+              border: Border(
+                bottom: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey.shade800
+                      : Colors.blue.shade100,
+                ),
+              ),
             ),
             child: Column(
               children: [
@@ -272,32 +280,52 @@ class _DataPageState extends State<DataPage> {
                         try {
                           await DataManager.exportToJson();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Records exported successfully')),
+                            SnackBar(content: Text('Export successful')),
                           );
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to export records')),
+                            SnackBar(content: Text(e.toString())),
                           );
                         }
                       },
-                      icon: Icon(Icons.upload),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.grey.shade200,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black,
+                      ),
+                      icon: Icon(Icons.upload, color: Theme.of(context).brightness == Brightness.dark 
+                          ? null 
+                          : Colors.black),
                       label: Text('Export Data'),
                     ),
                     ElevatedButton.icon(
                       onPressed: () async {
                         try {
                           await DataManager.importFromJson();
-                          await _loadRecords();
+                          _loadRecords();
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Records imported successfully')),
+                            SnackBar(content: Text('Import successful')),
                           );
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Failed to import records: ${e.toString()}')),
+                            SnackBar(content: Text(e.toString())),
                           );
                         }
                       },
-                      icon: Icon(Icons.download),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.grey.shade200,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black,
+                      ),
+                      icon: Icon(Icons.download, color: Theme.of(context).brightness == Brightness.dark 
+                          ? null 
+                          : Colors.black),
                       label: Text('Import Data'),
                     ),
                   ],
@@ -319,21 +347,18 @@ class _DataPageState extends State<DataPage> {
                         backgroundColor: Colors.blue.shade700,
                         foregroundColor: Colors.white,
                       ),
-                      icon: Icon(Icons.analytics),
+                      icon: Icon(Icons.analytics, color: Colors.white),
                       label: Text('Team Analysis'),
                     ),
                     if (_selectedRecords.isNotEmpty)
                       ElevatedButton.icon(
                         onPressed: () {
-                          // Group records by team for comparison
                           Map<int, List<ScoutingRecord>> teamRecords = {};
                           for (var record in _selectedRecords) {
                             teamRecords.putIfAbsent(record.teamNumber, () => []).add(record);
                           }
                           
-                          // Flatten to a list of records ordered by team's best performance
                           List<ScoutingRecord> orderedRecords = teamRecords.values.map((records) {
-                            // Sort by total score and take the best match
                             return records..sort((a, b) =>
                               (b.algaeScoredInNet + b.processedAlgaeScored)
                               .compareTo(a.algaeScoredInNet + a.processedAlgaeScored));
@@ -355,8 +380,6 @@ class _DataPageState extends State<DataPage> {
                       ),
                   ],
                 ),
-              ],
-            ),
               ],
             ),
           ),

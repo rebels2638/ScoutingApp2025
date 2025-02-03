@@ -18,11 +18,14 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Future<void> _loadDevMode() async {
     final isEnabled = await TelemetryService.isDevModeEnabled();
-    setState(() {
-      _isDevMode = isEnabled;
-    });
-    if (isEnabled) {
+    if (mounted) {
+      setState(() {
+        _isDevMode = isEnabled;
+      });
+      /*
+      if (isEnabled) {
       await TelemetryService().setEnabled(true);
+      */
     }
   }
 
@@ -65,11 +68,33 @@ class _SettingsPageState extends State<SettingsPage> {
               Switch(
                 value: _isDevMode,
                 onChanged: (value) async {
+                  // update dev mode setting
                   await TelemetryService.setDevModeEnabled(value);
                   await TelemetryService().setEnabled(value);
+                  
+                  // update local state
                   setState(() {
                     _isDevMode = value;
                   });
+
+                  // get MyAppState, update telemetry if needed
+                  final myAppState = context.findAncestorStateOfType<MyAppState>();
+                  if (myAppState != null) {
+                    if (!value && myAppState.telemetryVisible) {
+                      myAppState.toggleTelemetry(false);
+                    }
+                  }
+
+                  // show feedback
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).clearSnackBars();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Developer mode ${value ? 'enabled' : 'disabled'}'),
+                        duration: Duration(seconds: 1),
+                      ),
+                    );
+                  }
                 },
               ),
             ],

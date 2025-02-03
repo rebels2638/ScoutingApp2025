@@ -21,6 +21,12 @@ class _TelemetryOverlayState extends State<TelemetryOverlay> {
   final List<TelemetryEvent> _events = [];
   final ScrollController _scrollController = ScrollController();
 
+  void _clearLogs() {
+    setState(() {
+      _events.clear();
+    });
+  }
+
   @override
   void initState() {
     super.initState();
@@ -72,6 +78,7 @@ class _TelemetryOverlayState extends State<TelemetryOverlay> {
                             IconButton(
                               icon: Icon(Icons.close, color: Colors.white),
                               onPressed: () {
+                                _clearLogs();
                                 widget.onVisibilityChanged?.call(false);
                               },
                               padding: EdgeInsets.zero,

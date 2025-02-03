@@ -33,7 +33,11 @@ class TelemetryService {
   TelemetryService._internal();
 
   final _eventController = StreamController<TelemetryEvent>.broadcast();
+  final _devModeController = StreamController<bool>.broadcast();
+  
   Stream<TelemetryEvent> get eventStream => _eventController.stream;
+  Stream<bool> get devModeStream => _devModeController.stream;
+  
   bool _isEnabled = false;
   bool get isEnabled => _isEnabled;
 
@@ -43,6 +47,8 @@ class TelemetryService {
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     _isEnabled = prefs.getBool(_telemetryKey) ?? false;
+    final devMode = prefs.getBool(_devModeKey) ?? false;
+    _devModeController.add(devMode);
   }
 
   void logError(String message, [dynamic error]) {
@@ -95,9 +101,11 @@ class TelemetryService {
   static Future<void> setDevModeEnabled(bool enabled) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_devModeKey, enabled);
+    TelemetryService()._devModeController.add(enabled);
   }
 
   void dispose() {
     _eventController.close();
+    _devModeController.close();
   }
 } 

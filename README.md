@@ -4,3 +4,4 @@ Still under development.
 
 ### Planned features:
 - Bluetooth LE data transfers.
+- Improved data analytics features (team comparisons, improved statistics, and more)
