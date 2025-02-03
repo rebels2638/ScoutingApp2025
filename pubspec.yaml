@@ -1,4 +1,3 @@
-
 name: ScoutingApp2025
 description: "2638 Scouting App for FRC 2025: REEFSCAPE"
 # The following line prevents the package from being accidentally published to
@@ -40,6 +39,7 @@ dependencies:
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
+  flutter_launcher_icons: ^0.13.1
   flutter_test:
     sdk: flutter
 
@@ -91,3 +91,6 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+  assets:
+    - assets/appicon.png
