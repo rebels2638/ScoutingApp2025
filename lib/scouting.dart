@@ -4,6 +4,7 @@ import 'data.dart';
 import 'dart:developer' as developer;
 import 'settings.dart';
 import 'about.dart';
+import 'main.dart';  // Add this import for ThemeProvider
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -74,6 +75,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
     });
   }
 
+  // navbar redirects
   Widget _getPage(int index) {
     switch (index) {
       case 0:
@@ -149,14 +151,34 @@ class _ScoutingPageState extends State<ScoutingPage> {
                   borderRadius: BorderRadius.circular(8),
                   selectedBorderColor: Colors.transparent,
                   borderWidth: 1,
-                  fillColor: isRedAlliance ? Colors.red.shade300 : Colors.blue.shade300,
-                  color: Colors.black,
-                  selectedColor: Colors.black,
+                  fillColor: Theme.of(context).brightness == Brightness.dark
+                      ? (isRedAlliance ? Colors.red.shade900 : Colors.blue.shade900)
+                      : (isRedAlliance ? Colors.red.shade300 : Colors.blue.shade300),
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  selectedColor: Theme.of(context).textTheme.bodyLarge?.color,
                   constraints: BoxConstraints(minWidth: 100, minHeight: 40),
                   isSelected: [isRedAlliance, !isRedAlliance],
                   children: [
-                    Text('RED', style: TextStyle(fontSize: 16, color: Colors.black)),
-                    Text('BLUE', style: TextStyle(fontSize: 16, color: Colors.black)),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text(
+                        'RED',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text(
+                        'BLUE',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                    ),
                   ],
                   onPressed: (index) {
                     setState(() {
@@ -259,7 +281,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: ToggleRow(
-            label: 'Can pickup algae from ground?',
+            label: 'Algae ground pickup?',
             options: ['YES', 'NO'],
             selectedIndex: canPickupAlgae ? 0 : 1,
             onSelected: (index) {
@@ -407,7 +429,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
     );
   }
 
-//needs fix
   Future<void> _saveRecord() async {
     try {
       final record = ScoutingRecord(
@@ -495,7 +516,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
             onPressed: _saveRecord,
           ),
         ],
-      ) : null,
+      ) : AppBar(
+        title: Text(_currentIndex == 1 ? 'Data' :
+                    _currentIndex == 2 ? 'Settings' :
+                    'About'),
+      ),
       body: _getPage(_currentIndex),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -726,30 +751,43 @@ class ToggleRow extends StatelessWidget {
   const ToggleRow({
     required this.label,
     required this.options,
-    required this.selectedIndex,
     required this.onSelected,
+    required this.selectedIndex,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontSize: 16)),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
+        ),
         ToggleButtons(
           borderRadius: BorderRadius.circular(8),
           selectedBorderColor: Colors.transparent,
           borderWidth: 1,
-          fillColor: selectedIndex == 0 ? Colors.green.shade300 : Colors.red.shade300,
-          color: Colors.black,
-          selectedColor: Colors.black,
-          textStyle: TextStyle(fontSize: 16, color: Colors.black),
+          fillColor: selectedIndex == 0 
+              ? (isDark ? Colors.blue.shade900 : Colors.green.shade300)
+              : (isDark ? Colors.red.shade900 : Colors.red.shade300),
+          color: Theme.of(context).textTheme.bodyLarge?.color,
+          selectedColor: Theme.of(context).textTheme.bodyLarge?.color,
           constraints: BoxConstraints(minWidth: 100, minHeight: 40),
           isSelected: List.generate(
             options.length,
             (index) => index == selectedIndex,
           ),
-          children: options.map((option) => Text(option)).toList(),
+          children: options.map((option) => Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: Text(option),
+          )).toList(),
           onPressed: onSelected,
         ),
       ],
@@ -775,24 +813,48 @@ class CounterRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontSize: 16)),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 16,
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+          ),
+        ),
         Row(
           children: [
             FloatingActionButton(
               mini: true,
               elevation: 0.0,
+              backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                  ? Colors.blue.shade900 
+                  : null,
               onPressed: onDecrement,
-              child: Icon(Icons.remove),
+              child: Icon(
+                Icons.remove,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
-              child: Text(value.toString(), style: TextStyle(fontSize: 16)),
+              child: Text(
+                value.toString(),
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
             ),
             FloatingActionButton(
               mini: true,
               elevation: 0.0,
+              backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                  ? Colors.blue.shade900 
+                  : null,
               onPressed: onIncrement,
-              child: Icon(Icons.add),
+              child: Icon(
+                Icons.add,
+                color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
             ),
           ],
         ),
