@@ -262,13 +262,6 @@ class _DataPageState extends State<DataPage> {
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.grey.shade900
                   : Colors.blue.shade50,
-              border: Border(
-                bottom: BorderSide(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.grey.shade800
-                      : Colors.blue.shade100,
-                ),
-              ),
             ),
             child: Column(
               children: [
