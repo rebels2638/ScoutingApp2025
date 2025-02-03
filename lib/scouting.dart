@@ -1,3 +1,6 @@
+// notes for telemetry: team number log updates too often. coral ground pickup logs too much (test this). algae ground pickup logs too much, just like coral.
+// comments updates after every interaction. too much
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // date time format
 import 'data.dart';
@@ -140,15 +143,21 @@ class _ScoutingPageState extends State<ScoutingPage> {
           label: 'Number',
           value: matchNumber,
           onIncrement: () {
+            final oldValue = matchNumber;
             setState(() {
               matchNumber++;
             });
+            _logStateChange('matchNumber', oldValue, matchNumber);
+            //TelemetryService().logAction('counter_increment', 'matchNumber');
           },
           onDecrement: () {
             if (matchNumber > 0) {
+              final oldValue = matchNumber;
               setState(() {
                 matchNumber--;
               });
+              _logStateChange('matchNumber', oldValue, matchNumber);
+              //TelemetryService().logAction('counter_decrement', 'matchNumber');
             }
           },
         ),
@@ -166,7 +175,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 matchType = value!;
               });
               _logStateChange('matchType', oldValue, value);
-              TelemetryService().logAction('dropdown_changed', 'matchType: $oldValue -> $value');
+              //TelemetryService().logAction('dropdown_changed', 'matchType: $oldValue -> $value');
             },
           ),
         ),
@@ -286,15 +295,21 @@ class _ScoutingPageState extends State<ScoutingPage> {
           label: 'Num. of Algae Removed',
           value: algaeRemoved,
           onIncrement: () {
+            final oldValue = algaeRemoved;
             setState(() {
               algaeRemoved++;
             });
+            _logStateChange('algaeRemoved', oldValue, algaeRemoved);
+            //TelemetryService().logAction('counter_increment', 'algaeRemoved');
           },
           onDecrement: () {
             if (algaeRemoved > 0) {
+              final oldValue = algaeRemoved;
               setState(() {
                 algaeRemoved--;
               });
+              _logStateChange('algaeRemoved', oldValue, algaeRemoved);
+              //TelemetryService().logAction('counter_decrement', 'algaeRemoved');
             }
           },
         ),
@@ -313,7 +328,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                   coralPlaced = value!;
                 });
                 _logStateChange('coralPlaced', oldValue, value);
-                TelemetryService().logAction('dropdown_changed', 'coralPlaced: $oldValue -> $value');
+                //TelemetryService().logAction('dropdown_changed', 'coralPlaced: $oldValue -> $value');
               },
             ),
           ],
@@ -381,10 +396,20 @@ class _ScoutingPageState extends State<ScoutingPage> {
           child: CounterRow(
             label: 'Coral on Reef, Height 2',
             value: coralOnReefHeight2,
-            onIncrement: () => setState(() => coralOnReefHeight2++),
-            onDecrement: () => setState(() {
-              if (coralOnReefHeight2 > 0) coralOnReefHeight2--;
-            }),
+            onIncrement: () {
+              final oldValue = coralOnReefHeight2;
+              setState(() => coralOnReefHeight2++);
+              _logStateChange('coralOnReefHeight2', oldValue, coralOnReefHeight2);
+              //TelemetryService().logAction('counter_increment', 'coralOnReefHeight2');
+            },
+            onDecrement: () {
+              if (coralOnReefHeight2 > 0) {
+                final oldValue = coralOnReefHeight2;
+                setState(() => coralOnReefHeight2--);
+                _logStateChange('coralOnReefHeight2', oldValue, coralOnReefHeight2);
+                //TelemetryService().logAction('counter_decrement', 'coralOnReefHeight2');
+              }
+            },
           ),
         ),
         Padding(
@@ -392,10 +417,20 @@ class _ScoutingPageState extends State<ScoutingPage> {
           child: CounterRow(
             label: 'Coral on Reef, Height 3',
             value: coralOnReefHeight3,
-            onIncrement: () => setState(() => coralOnReefHeight3++),
-            onDecrement: () => setState(() {
-              if (coralOnReefHeight3 > 0) coralOnReefHeight3--;
-            }),
+            onIncrement: () {
+              final oldValue = coralOnReefHeight3;
+              setState(() => coralOnReefHeight3++);
+              _logStateChange('coralOnReefHeight3', oldValue, coralOnReefHeight3);
+              //TelemetryService().logAction('counter_increment', 'coralOnReefHeight3');
+            },
+            onDecrement: () {
+              if (coralOnReefHeight3 > 0) {
+                final oldValue = coralOnReefHeight3;
+                setState(() => coralOnReefHeight3--);
+                _logStateChange('coralOnReefHeight3', oldValue, coralOnReefHeight3);
+                //TelemetryService().logAction('counter_decrement', 'coralOnReefHeight3');
+              }
+            },
           ),
         ),
         Padding(
@@ -403,10 +438,20 @@ class _ScoutingPageState extends State<ScoutingPage> {
           child: CounterRow(
             label: 'Coral on Reef, Height 4',
             value: coralOnReefHeight4,
-            onIncrement: () => setState(() => coralOnReefHeight4++),
-            onDecrement: () => setState(() {
-              if (coralOnReefHeight4 > 0) coralOnReefHeight4--;
-            }),
+            onIncrement: () {
+              final oldValue = coralOnReefHeight4;
+              setState(() => coralOnReefHeight4++);
+              _logStateChange('coralOnReefHeight4', oldValue, coralOnReefHeight4);
+              //TelemetryService().logAction('counter_increment', 'coralOnReefHeight4');
+            },
+            onDecrement: () {
+              if (coralOnReefHeight4 > 0) {
+                final oldValue = coralOnReefHeight4;
+                setState(() => coralOnReefHeight4--);
+                _logStateChange('coralOnReefHeight4', oldValue, coralOnReefHeight4);
+                //TelemetryService().logAction('counter_decrement', 'coralOnReefHeight4');
+              }
+            },
           ),
         ),
         Padding(
@@ -436,7 +481,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 canPickupCoral = index == 0;
               });
               _logStateChange('canPickupCoral', oldValue, canPickupCoral);
-              TelemetryService().logAction('toggle_changed', 'canPickupCoral');
+              //TelemetryService().logAction('toggle_changed', 'canPickupCoral');
             },
           ),
         ),
@@ -452,7 +497,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 canPickupAlgae = index == 0;
               });
               _logStateChange('canPickupAlgae', oldValue, canPickupAlgae);
-              TelemetryService().logAction('toggle_changed', 'canPickupAlgae');
+              //TelemetryService().logAction('toggle_changed', 'canPickupAlgae');
             },
           ),
         ),
@@ -461,10 +506,20 @@ class _ScoutingPageState extends State<ScoutingPage> {
           child: CounterRow(
             label: 'Algae Processed',
             value: algaeProcessed,
-            onIncrement: () => setState(() => algaeProcessed++),
-            onDecrement: () => setState(() {
-              if (algaeProcessed > 0) algaeProcessed--;
-            }),
+            onIncrement: () {
+              final oldValue = algaeProcessed;
+              setState(() => algaeProcessed++);
+              _logStateChange('algaeProcessed', oldValue, algaeProcessed);
+              //TelemetryService().logAction('counter_increment', 'algaeProcessed');
+            },
+            onDecrement: () {
+              if (algaeProcessed > 0) {
+                final oldValue = algaeProcessed;
+                setState(() => algaeProcessed--);
+                _logStateChange('algaeProcessed', oldValue, algaeProcessed);
+                //TelemetryService().logAction('counter_decrement', 'algaeProcessed');
+              }
+            },
           ),
         ),
         Padding(
@@ -472,10 +527,20 @@ class _ScoutingPageState extends State<ScoutingPage> {
           child: CounterRow(
             label: 'Processed Algae Scored',
             value: processedAlgaeScored,
-            onIncrement: () => setState(() => processedAlgaeScored++),
-            onDecrement: () => setState(() {
-              if (processedAlgaeScored > 0) processedAlgaeScored--;
-            }),
+            onIncrement: () {
+              final oldValue = processedAlgaeScored;
+              setState(() => processedAlgaeScored++);
+              _logStateChange('processedAlgaeScored', oldValue, processedAlgaeScored);
+              //TelemetryService().logAction('counter_increment', 'processedAlgaeScored');
+            },
+            onDecrement: () {
+              if (processedAlgaeScored > 0) {
+                final oldValue = processedAlgaeScored;
+                setState(() => processedAlgaeScored--);
+                _logStateChange('processedAlgaeScored', oldValue, processedAlgaeScored);
+                //TelemetryService().logAction('counter_decrement', 'processedAlgaeScored');
+              }
+            },
           ),
         ),
         Padding(
@@ -485,9 +550,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['YES', 'NO'],
             selectedIndex: coOpPoint ? 0 : 1,
             onSelected: (index) {
+              final oldValue = coOpPoint;
               setState(() {
                 coOpPoint = index == 0;
               });
+              _logStateChange('coOpPoint', oldValue, coOpPoint);
+              //TelemetryService().logAction('toggle_changed', 'coOpPoint');
             },
           ),
         ),
@@ -501,9 +569,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['YES', 'NO'],
             selectedIndex: returnedToBarge ? 0 : 1,
             onSelected: (index) {
+              final oldValue = returnedToBarge;
               setState(() {
                 returnedToBarge = index == 0;
               });
+              _logStateChange('returnedToBarge', oldValue, returnedToBarge);
+              //TelemetryService().logAction('toggle_changed', 'returnedToBarge');
             },
           ),
         ),
@@ -522,7 +593,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                   cageHang = value!;
                 });
                 _logStateChange('cageHang', oldValue, value);
-                TelemetryService().logAction('dropdown_changed', 'cageHang: $oldValue -> $value');
+                //TelemetryService().logAction('dropdown_changed', 'cageHang: $oldValue -> $value');
               },
             ),
           ],
@@ -534,9 +605,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['YES', 'NO'],
             selectedIndex: bargeRankingPoint ? 0 : 1,
             onSelected: (index) {
+              final oldValue = bargeRankingPoint;
               setState(() {
                 bargeRankingPoint = index == 0;
               });
+              _logStateChange('bargeRankingPoint', oldValue, bargeRankingPoint);
+              //TelemetryService().logAction('toggle_changed', 'bargeRankingPoint');
             },
           ),
         ),
@@ -550,9 +624,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['YES', 'NO'],
             selectedIndex: breakdown ? 0 : 1,
             onSelected: (index) {
+              final oldValue = breakdown;
               setState(() {
                 breakdown = index == 0;
               });
+              _logStateChange('breakdown', oldValue, breakdown);
+              //TelemetryService().logAction('toggle_changed', 'breakdown');
             },
           ),
         ),
