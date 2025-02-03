@@ -32,7 +32,7 @@ class AboutPage extends StatelessWidget {
             Divider(),
             SizedBox(height: 16),
             Text(
-              'App Development Team (Flutter/Dart)',
+              'App Development Team',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -40,7 +40,7 @@ class AboutPage extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'Chiming Wang',
+              'Chiming Wang\nEthan Kang',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 16),
