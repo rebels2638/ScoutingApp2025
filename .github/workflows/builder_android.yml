@@ -18,7 +18,7 @@ jobs:
       - run: |
           echo "Worker Comments: $BUILD_CMTS"
         env:
-          BUILD_CMTS: ${{ inputs.comments }}
+          BUILD_CMTS: ${{ github.event.inputs.comments }}  # Fixed input reference
   build_android:
     runs-on: ubuntu-latest
     steps:
@@ -36,7 +36,9 @@ jobs:
       - run: flutter pub get
       - run: flutter build apk --release --no-tree-shake-icons
       - run: flutter build appbundle --release --no-tree-shake-icons
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4  # Updated to v4
         with:
           name: Android_Build
-          path: ./build/app/outputs/flutter-apk
+          path: |  # Added both output paths
+            build/app/outputs/flutter-apk/*.apk
+            build/app/outputs/bundle/release/*.aab
