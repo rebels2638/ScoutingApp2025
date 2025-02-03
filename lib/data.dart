@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'comparison.dart';
+import 'team_analysis.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -255,57 +256,107 @@ class _DataPageState extends State<DataPage> {
     return Scaffold(
       body: Column(
         children: [
-          Padding(
+          Container(
             padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+            ),
+            child: Column(
               children: [
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    try {
-                      await DataManager.exportToJson();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Records exported successfully')),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to export records')),
-                      );
-                    }
-                  },
-                  icon: Icon(Icons.upload),
-                  label: Text('Export'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await DataManager.exportToJson();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Records exported successfully')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to export records')),
+                          );
+                        }
+                      },
+                      icon: Icon(Icons.upload),
+                      label: Text('Export Data'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await DataManager.importFromJson();
+                          await _loadRecords();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Records imported successfully')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Failed to import records: ${e.toString()}')),
+                          );
+                        }
+                      },
+                      icon: Icon(Icons.download),
+                      label: Text('Import Data'),
+                    ),
+                  ],
                 ),
-                ElevatedButton.icon(
-                  onPressed: () async {
-                    try {
-                      await DataManager.importFromJson();
-                      await _loadRecords();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Records imported successfully')),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to import records: ${e.toString()}')),
-                      );
-                    }
-                  },
-                  icon: Icon(Icons.download),
-                  label: Text('Import'),
-                ),
-                if (_selectedRecords.isNotEmpty)
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ComparisonPage(records: _selectedRecords),
+                SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TeamAnalysisPage(allRecords: _records),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: Icon(Icons.analytics),
+                      label: Text('Team Analysis'),
+                    ),
+                    if (_selectedRecords.isNotEmpty)
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          // Group records by team for comparison
+                          Map<int, List<ScoutingRecord>> teamRecords = {};
+                          for (var record in _selectedRecords) {
+                            teamRecords.putIfAbsent(record.teamNumber, () => []).add(record);
+                          }
+                          
+                          // Flatten to a list of records ordered by team's best performance
+                          List<ScoutingRecord> orderedRecords = teamRecords.values.map((records) {
+                            // Sort by total score and take the best match
+                            return records..sort((a, b) =>
+                              (b.algaeScoredInNet + b.processedAlgaeScored)
+                              .compareTo(a.algaeScoredInNet + a.processedAlgaeScored));
+                          }).map((records) => records.first).toList();
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ComparisonPage(records: orderedRecords),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade700,
+                          foregroundColor: Colors.white,
                         ),
-                      );
-                    },
-                    icon: Icon(Icons.compare_arrows),
-                    label: Text('Compare (${_selectedRecords.length})'),
-                  ),
+                        icon: Icon(Icons.compare_arrows),
+                        label: Text('Compare Teams (${_selectedRecords.length})'),
+                      ),
+                  ],
+                ),
+              ],
+            ),
               ],
             ),
           ),
