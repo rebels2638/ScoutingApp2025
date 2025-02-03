@@ -86,9 +86,19 @@ class _TelemetryOverlayState extends State<TelemetryOverlay> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Telemetry',
-                                style: TextStyle(color: Colors.white),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.drag_indicator,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    'Telemetry',
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ],
                               ),
                               IconButton(
                                 icon: Icon(Icons.close, color: Colors.white),
