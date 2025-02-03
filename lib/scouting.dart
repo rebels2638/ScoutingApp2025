@@ -61,6 +61,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // state var for processor cycles
   int processorCycles = 0;
 
+  // need to add this state variable at top of _ScoutingPageState
+  bool canPickupCoral = false;
+
   bool _isVisible = false;
   bool _isDevMode = false;
 
@@ -422,6 +425,19 @@ class _ScoutingPageState extends State<ScoutingPage> {
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: ToggleRow(
+            label: 'Coral ground pickup?',
+            options: ['YES', 'NO'],
+            selectedIndex: canPickupCoral ? 0 : 1,
+            onSelected: (index) {
+              setState(() {
+                canPickupCoral = index == 0;
+              });
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
             label: 'Algae ground pickup?',
             options: ['YES', 'NO'],
             selectedIndex: canPickupAlgae ? 0 : 1,
@@ -567,6 +583,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         algaeRemoved: algaeRemoved,
         coralPlaced: coralPlaced,
         rankingPoint: rankingPoint,
+        canPickupCoral: canPickupCoral,
         canPickupAlgae: canPickupAlgae,
         algaeScoredInNet: algaeScoredInNet,
         coralRankingPoint: coralRankingPoint,

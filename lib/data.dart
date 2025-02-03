@@ -20,6 +20,7 @@ class ScoutingRecord {
   final int algaeRemoved;
   final String coralPlaced;
   final bool rankingPoint;
+  final bool canPickupCoral;
   final bool canPickupAlgae;
   
   // teleop
@@ -51,6 +52,7 @@ class ScoutingRecord {
     required this.algaeRemoved,
     required this.coralPlaced,
     required this.rankingPoint,
+    required this.canPickupCoral,
     required this.canPickupAlgae,
     required this.algaeScoredInNet,
     required this.coralRankingPoint,
@@ -77,6 +79,7 @@ class ScoutingRecord {
     'algaeRemoved': algaeRemoved,
     'coralPlaced': coralPlaced,
     'rankingPoint': rankingPoint,
+    'canPickupCoral': canPickupCoral,
     'canPickupAlgae': canPickupAlgae,
     'algaeScoredInNet': algaeScoredInNet,
     'coralRankingPoint': coralRankingPoint,
@@ -103,6 +106,7 @@ class ScoutingRecord {
     algaeRemoved: json['algaeRemoved'],
     coralPlaced: json['coralPlaced'],
     rankingPoint: json['rankingPoint'],
+    canPickupCoral: json['canPickupCoral'],
     canPickupAlgae: json['canPickupAlgae'],
     algaeScoredInNet: json['algaeScoredInNet'],
     coralRankingPoint: json['coralRankingPoint'],
@@ -536,7 +540,7 @@ class _DataPageState extends State<DataPage> {
                 'Algae Removed: ${record.algaeRemoved}',
                 'Coral Placed: ${record.coralPlaced}',
                 'Ranking Point: ${record.rankingPoint ? "Yes" : "No"}',
-                'Can Pickup Algae: ${record.canPickupAlgae ? "Yes" : "No"}',
+                'Can Pickup: ${record.canPickupAlgae ? "Yes" : "No"}',
               ]),
               _buildDetailSection('Teleop', [
                 'Algae Scored in Net: ${record.algaeScoredInNet}',
