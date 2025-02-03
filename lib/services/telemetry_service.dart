@@ -44,6 +44,7 @@ class TelemetryService {
   static const String _devModeKey = 'dev_mode_enabled';
   static const String _telemetryKey = 'telemetry_enabled';
 
+
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     _isEnabled = prefs.getBool(_telemetryKey) ?? false;

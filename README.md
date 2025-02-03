@@ -23,8 +23,8 @@ Still under development.
 - CSV file storage (replacing JSON).
 - QR Code data transfers.
 - Bluetooth LE data transfers.
-- Drawing support for Auto Stage
+- Drawing auto paths (maybe)
 
 #### Data Analysis
 - Improved data analytics features: team vs. team comparisons, improved statistics, and more.
-- Blue Alliance Scrapping (Post-Game)
+- Blue Alliance API Scraping (Post-Game)

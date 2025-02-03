@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'scouting.dart';
 import 'widgets/telemetry_overlay.dart';
 import '../services/telemetry_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -26,11 +27,24 @@ class ThemeProvider extends InheritedNotifier<ThemeNotifier> {
 }
 
 class ThemeNotifier extends ChangeNotifier {
+  static const String _darkModeKey = 'dark_mode_enabled';
   bool _isDarkMode = false;
   bool get isDarkMode => _isDarkMode;
 
-  void toggleTheme() {
+  ThemeNotifier() {
+    _loadThemePreference();
+  }
+
+  Future<void> _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isDarkMode = prefs.getBool(_darkModeKey) ?? false;
+    notifyListeners();
+  }
+
+  Future<void> toggleTheme() async {
     _isDarkMode = !_isDarkMode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_darkModeKey, _isDarkMode);
     notifyListeners();
   }
 }
@@ -45,12 +59,21 @@ class MyApp extends StatefulWidget {
 class MyAppState extends State<MyApp> {
   late final ThemeNotifier themeNotifier;
   bool telemetryVisible = false;
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
     themeNotifier = ThemeNotifier();
     themeNotifier.addListener(_handleThemeChange);
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    await themeNotifier._loadThemePreference();
+    setState(() {
+      _isInitialized = true;
+    });
   }
 
   @override
@@ -71,6 +94,16 @@ class MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_isInitialized) {
+      return MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
     return TelemetryOverlay(
       isVisible: telemetryVisible,
       onVisibilityChanged: toggleTelemetry,
