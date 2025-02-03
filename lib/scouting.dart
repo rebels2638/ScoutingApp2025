@@ -4,9 +4,10 @@ import 'data.dart';
 import 'dart:developer' as developer;
 import 'settings.dart';
 import 'about.dart';
-import 'main.dart';  // Add this import for ThemeProvider
+import 'main.dart';  // for ThemeProvider
 import 'widgets/navbar.dart';
 import 'widgets/topbar.dart';
+import 'services/telemetry_service.dart';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -14,18 +15,18 @@ class ScoutingPage extends StatefulWidget {
 }
 
 class _ScoutingPageState extends State<ScoutingPage> {
-  int _currentIndex = 0; // For managing navigation bar
+  int _currentIndex = 0; // for managing navbar
 
-  // State variables for Match Information
+  // state variables for match info
   int matchNumber = 0;
   String matchType = 'Unset';
   String currentTime = '';
 
-  // State variables for Team Information
+  // state vars for team info
   int teamNumber = 0;
   bool isRedAlliance = true;
 
-  // State variables for Autonomous
+  // state vars for autonomous
   String cageType = 'Shallow';
   bool coralPreloaded = false;
   bool taxis = false;
@@ -33,7 +34,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
   String coralPlaced = 'No';
   bool rankingPoint = false;
 
-  // State variables for Tele-op
+  // state vars for tele-op
   int algaeScoredInNet = 0;
   int coralOnReefHeight1 = 0;
   int coralOnReefHeight2 = 0;
@@ -44,25 +45,37 @@ class _ScoutingPageState extends State<ScoutingPage> {
   int processedAlgaeScored = 0;
   bool coOpPoint = false;
 
-  // State variables for Endgame
+  // state vars for endgame
   bool returnedToBarge = false;
   String cageHang = 'None';
   bool bargeRankingPoint = false;
 
-  // State variables for Other Section
+  // state vars for other section
   bool breakdown = false;
   String comments = '';
 
-  // Add new state variable for algae pickup
+  // state var for algae pickup
   bool canPickupAlgae = false;
 
-  // Add new state variable for processor cycles
+  // state var for processor cycles
   int processorCycles = 0;
+
+  bool _isVisible = false;
+  bool _isDevMode = false;
 
   @override
   void initState() {
     super.initState();
     updateTime();
+    _loadDevMode();
+    TelemetryService().logInfo('ScoutingPage initialized');
+  }
+
+  Future<void> _loadDevMode() async {
+    final isEnabled = await TelemetryService.isDevModeEnabled();
+    setState(() {
+      _isDevMode = isEnabled;
+    });
   }
 
   void updateTime() {
@@ -97,7 +110,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
     return ListView(
       padding: EdgeInsets.all(16),
       children: [
-        // Match Information Section
+        // match info section
         SectionHeader(title: 'Match Information', icon: Icons.view_module),
         InfoRow(label: 'Time', value: currentTime),
         CounterRow(
@@ -125,9 +138,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 .map((type) => DropdownMenuItem(value: type, child: Text(type)))
                 .toList(),
             onChanged: (value) {
+              final oldValue = matchType;
               setState(() {
                 matchType = value!;
               });
+              _logStateChange('matchType', oldValue, matchType);
             },
           ),
         ),
@@ -193,7 +208,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
           ),
         ),
         Divider(),
-        // Autonomous Section
+        // auto section
         SectionHeader(title: 'Autonomous', icon: Icons.settings),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -202,9 +217,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['SHALLOW', 'DEEP'],
             selectedIndex: cageType == 'Shallow' ? 0 : 1,
             onSelected: (index) {
+              final oldValue = cageType;
               setState(() {
                 cageType = index == 0 ? 'Shallow' : 'Deep';
               });
+              _logStateChange('cageType', oldValue, cageType);
             },
           ),
         ),
@@ -215,9 +232,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['YES', 'NO'],
             selectedIndex: coralPreloaded ? 0 : 1,
             onSelected: (index) {
+              final oldValue = coralPreloaded;
               setState(() {
                 coralPreloaded = index == 0;
               });
+              _logStateChange('coralPreloaded', oldValue, coralPreloaded);
             },
           ),
         ),
@@ -228,9 +247,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['YES', 'NO'],
             selectedIndex: taxis ? 0 : 1,
             onSelected: (index) {
+              final oldValue = taxis;
               setState(() {
                 taxis = index == 0;
               });
+              _logStateChange('taxis', oldValue, taxis);
             },
           ),
         ),
@@ -274,9 +295,100 @@ class _ScoutingPageState extends State<ScoutingPage> {
             options: ['YES', 'NO'],
             selectedIndex: rankingPoint ? 0 : 1,
             onSelected: (index) {
+              final oldValue = rankingPoint;
               setState(() {
                 rankingPoint = index == 0;
               });
+              _logStateChange('rankingPoint', oldValue, rankingPoint);
+            },
+          ),
+        ),
+        Divider(),
+        // tele-op section
+        SectionHeader(title: 'Tele-op', icon: Icons.directions_run),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Algae Scored in Net',
+            value: algaeScoredInNet,
+            onIncrement: () {
+              final oldValue = algaeScoredInNet;
+              setState(() => algaeScoredInNet++);
+              _logStateChange('algaeScoredInNet', oldValue, algaeScoredInNet);
+            },
+            onDecrement: () {
+              if (algaeScoredInNet > 0) {
+                final oldValue = algaeScoredInNet;
+                setState(() => algaeScoredInNet--);
+                _logStateChange('algaeScoredInNet', oldValue, algaeScoredInNet);
+              }
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Coral on Reef, Height 1',
+            value: coralOnReefHeight1,
+            onIncrement: () {
+              final oldValue = coralOnReefHeight1;
+              setState(() => coralOnReefHeight1++);
+              _logStateChange('coralOnReefHeight1', oldValue, coralOnReefHeight1);
+            },
+            onDecrement: () {
+              if (coralOnReefHeight1 > 0) {
+                final oldValue = coralOnReefHeight1;
+                setState(() => coralOnReefHeight1--);
+                _logStateChange('coralOnReefHeight1', oldValue, coralOnReefHeight1);
+              }
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Coral on Reef, Height 2',
+            value: coralOnReefHeight2,
+            onIncrement: () => setState(() => coralOnReefHeight2++),
+            onDecrement: () => setState(() {
+              if (coralOnReefHeight2 > 0) coralOnReefHeight2--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Coral on Reef, Height 3',
+            value: coralOnReefHeight3,
+            onIncrement: () => setState(() => coralOnReefHeight3++),
+            onDecrement: () => setState(() {
+              if (coralOnReefHeight3 > 0) coralOnReefHeight3--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Coral on Reef, Height 4',
+            value: coralOnReefHeight4,
+            onIncrement: () => setState(() => coralOnReefHeight4++),
+            onDecrement: () => setState(() {
+              if (coralOnReefHeight4 > 0) coralOnReefHeight4--;
+            }),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: ToggleRow(
+            label: 'Coral Ranking Point?',
+            options: ['YES', 'NO'],
+            selectedIndex: coralRankingPoint ? 0 : 1,
+            onSelected: (index) {
+              final oldValue = coralRankingPoint;
+              setState(() {
+                coralRankingPoint = index == 0;
+              });
+              _logStateChange('coralRankingPoint', oldValue, coralRankingPoint);
             },
           ),
         ),
@@ -291,15 +403,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 canPickupAlgae = index == 0;
               });
             },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Coral Ranking Point?',
-            value: coralRankingPoint ? 0 : 1,
-            onIncrement: () => setState(() => coralRankingPoint = true),
-            onDecrement: () => setState(() => coralRankingPoint = false),
           ),
         ),
         Padding(
@@ -326,17 +429,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Number of processor cycles',
-            value: processorCycles,
-            onIncrement: () => setState(() => processorCycles++),
-            onDecrement: () => setState(() {
-              if (processorCycles > 0) processorCycles--;
-            }),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: ToggleRow(
             label: 'Co-op Point?',
             options: ['YES', 'NO'],
@@ -349,7 +441,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
           ),
         ),
         Divider(),
-        // Endgame Section
+        // endgame section
         SectionHeader(title: 'Endgame', icon: Icons.flag),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -395,7 +487,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
           ),
         ),
         Divider(),
-        // Other Section
+        // other section
         SectionHeader(title: 'Other', icon: Icons.miscellaneous_services),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -421,9 +513,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
               counterText: '${comments.length}/150',
             ),
             onChanged: (value) {
+              final oldValue = comments;
               setState(() {
                 comments = value;
               });
+              _logStateChange('comments', oldValue, value);
             },
           ),
         ),
@@ -461,7 +555,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
       await DataManager.saveRecord(record);
       
-      // Show success message
+      // show success message
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -470,9 +564,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
         ),
       );
       
-      // Reset form
+      // reset form
       setState(() {
-        matchNumber = matchNumber + 1; // Increment match number
+        matchNumber = matchNumber + 1; // increment match number
         algaeRemoved = 0;
         algaeScoredInNet = 0;
         coralOnReefHeight1 = 0;
@@ -516,6 +610,16 @@ class _ScoutingPageState extends State<ScoutingPage> {
                _currentIndex == 2 ? 'Settings' :
                'About',
         actions: _currentIndex == 0 ? [
+          if (_isDevMode)
+            IconButton(
+              icon: Icon(Icons.analytics),
+              onPressed: () {
+                final myAppState = context.findAncestorStateOfType<MyAppState>();
+                if (myAppState != null) {
+                  myAppState.toggleTelemetry(!myAppState.telemetryVisible);
+                }
+              },
+            ),
           IconButton(
             icon: Icon(Icons.save),
             onPressed: _saveRecord,
@@ -527,6 +631,13 @@ class _ScoutingPageState extends State<ScoutingPage> {
         currentIndex: _currentIndex,
         onTap: _onItemTapped,
       ),
+    );
+  }
+
+  void _logStateChange(String field, dynamic oldValue, dynamic newValue) {
+    TelemetryService().logStateChange(
+      field,
+      '$oldValue → $newValue',
     );
   }
 }

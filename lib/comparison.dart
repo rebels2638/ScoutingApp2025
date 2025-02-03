@@ -56,7 +56,7 @@ class _ComparisonPageState extends State<ComparisonPage> {
   List<DataRow> _buildRows() {
     List<DataRow> rows = [];
 
-    // Match Information
+    // match info
     rows.addAll([
       DataRow(cells: [
         DataCell(_buildHeaderCell('Match')),
@@ -76,7 +76,7 @@ class _ComparisonPageState extends State<ComparisonPage> {
       ]),
     ]);
 
-    // Autonomous Section
+    // auto section
     rows.add(DataRow(cells: [
       DataCell(_buildHeaderCell('Autonomous')),
       ...widget.records.map((r) => DataCell(_buildDataCell(''))),
@@ -113,7 +113,7 @@ class _ComparisonPageState extends State<ComparisonPage> {
       ]),
     ]);
 
-    // Teleop Section
+    // teleop section
     rows.add(DataRow(cells: [
       DataCell(_buildHeaderCell('Teleop')),
       ...widget.records.map((r) => DataCell(_buildDataCell(''))),
@@ -146,7 +146,7 @@ class _ComparisonPageState extends State<ComparisonPage> {
       ]),
     ]);
 
-    // Endgame Section
+    // endgame section
     rows.add(DataRow(cells: [
       DataCell(_buildHeaderCell('Endgame')),
       ...widget.records.map((r) => DataCell(_buildDataCell(''))),
@@ -167,7 +167,7 @@ class _ComparisonPageState extends State<ComparisonPage> {
       ]),
     ]);
 
-    // Other Section
+    // other section
     rows.add(DataRow(cells: [
       DataCell(_buildHeaderCell('Other')),
       ...widget.records.map((r) => DataCell(_buildDataCell(''))),
