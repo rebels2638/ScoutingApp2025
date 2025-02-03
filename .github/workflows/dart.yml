@@ -1,4 +1,5 @@
-name: build ipadOS (ios)
+name: Build iPadOS (iOS)
+
 on:
   workflow_dispatch:
     inputs:
@@ -7,10 +8,12 @@ on:
         required: false
         default: "Nothing"
         type: string
+
 permissions:
   contents: read
   pages: write
   id-token: write
+
 jobs:
   build_info:
     runs-on: ubuntu-latest
@@ -19,20 +22,25 @@ jobs:
           echo "Worker Comments: $BUILD_CMTS"
         env:
           BUILD_CMTS: ${{ inputs.comments }}
+
   build_ios:
     runs-on: macos-latest
     steps:
-      - name: "setup flutter"
+      - name: "Setup Flutter"
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.x"
           channel: "stable"
+          
       - uses: actions/checkout@v3
+      
       - run: flutter --version
       - run: flutter pub get
       - run: flutter build ios --release --no-codesign --no-tree-shake-icons
       - run: flutter build ipa --release --no-codesign --no-tree-shake-icons
-      - uses: actions/upload-artifact@v3
+      
+      - name: Upload iOS Build Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: iOS_Build
           path: ./build/ios
