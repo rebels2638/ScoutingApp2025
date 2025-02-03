@@ -1,4 +1,5 @@
-# Rebel Robotics Scouting App for FRC 2025: REEFSCAPE.
+# Rebel Robotics Scouting App for FRC 2025: REEFSCAPE
+Version 0.2.3-beta
 
 Still under development.
 
