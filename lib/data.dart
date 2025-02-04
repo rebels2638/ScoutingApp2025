@@ -525,10 +525,19 @@ class _DataPageState extends State<DataPage> {
                                       String matchNumber = fields[1].trim(); 
                                       return Column(
                                         children: [
-                                          QrImageView(
-                                            data: recordsCsv[index],
-                                            version: QrVersions.auto,
-                                            size: 200.0,
+                                          Container(
+                                            width: 200,
+                                            height: 200,
+                                            child: QrImageView(
+                                              data: recordsCsv[index],
+                                              version: QrVersions.auto,
+                                              foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                                                  ? Colors.white 
+                                                  : Colors.black,
+                                              backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                                                  ? Colors.black 
+                                                  : Colors.white,
+                                            ),
                                           ),
                                           SizedBox(height: 10),
                                           Text('Match #$matchNumber'),
