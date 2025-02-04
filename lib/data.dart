@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:file_picker/file_picker.dart';
 import 'comparison.dart';
 import 'team_analysis.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:csv/csv.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -485,6 +487,121 @@ class _DataPageState extends State<DataPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final records = await DataManager.getRecords();
+                          if (records.isEmpty) {
+                            throw Exception('No records to export');
+                          }
+                          List<ScoutingRecord> selected = [];
+                          for (int i = 0; i < records.length; i++) {
+                            if (selectedRecords[i]) {
+                              selected.add(records[i]);
+                            }
+                          }
+
+                          if (selected.isEmpty) {
+                            throw Exception('No records selected');
+                          }
+
+                          List<List<dynamic>> csvData = [];
+                          selected.forEach((record) {
+                            csvData.add(record.toJson().values.toList());
+                          });
+                          String csv = const ListToCsvConverter().convert(csvData);
+                          List<String> recordsCsv = csv.split('\n');
+
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Text('Match QR Codes'),
+                                content: Container(
+                                  width: double.maxFinite,
+                                  child: ListView.builder(
+                                    itemCount: recordsCsv.length,
+                                    itemBuilder: (context, index) {
+                                      List<String> fields = recordsCsv[index].split(',');
+                                      String matchNumber = fields[1].trim(); 
+                                      return Column(
+                                        children: [
+                                          QrImageView(
+                                            data: recordsCsv[index],
+                                            version: QrVersions.auto,
+                                            size: 200.0,
+                                          ),
+                                          SizedBox(height: 10),
+                                          Text('Match #$matchNumber'),
+                                          Divider(),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text('Close'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString())),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.grey.shade200,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black,
+                      ),
+                      icon: Icon(Icons.qr_code, color: Theme.of(context).brightness == Brightness.dark 
+                          ? null 
+                          : Colors.black),
+                      label: Text('Show QR Code'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await DataManager.importFromJson();
+                          _loadRecords();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Import successful')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString())),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.grey.shade200,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black,
+                      ),
+                      icon: Icon(Icons.barcode_reader, color: Theme.of(context).brightness == Brightness.dark 
+                          ? null 
+                          : Colors.black),
+                      label: Text('Scan Qr Code'),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -546,26 +663,56 @@ class _DataPageState extends State<DataPage> {
                       return Card(
                         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         color: isSelected ? Colors.blue.withOpacity(0.1) : null,
-                        child: ListTile(
-                          leading: Checkbox(
-                            value: isSelected,
-                            onChanged: (bool? value) {
-                              setState(() {
-                                selectedRecords[index] = value ?? false;
-                              });
-                            },
-                          ),
-                          title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('${record.matchType} - ${record.timestamp}'),
-                              Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
-                            ],
-                          ),
-                          onTap: () {
-                            _showRecordDetails(record);
-                          },
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: Checkbox(
+                                value: isSelected,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    selectedRecords[index] = value ?? false;
+                                  });
+                                },
+                              ),
+                              title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${record.matchType} - ${record.timestamp}'),
+                                  Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
+                                ],
+                              ),
+                              onTap: () {
+                                _showRecordDetails(record);
+                              },
+                            ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      'Transfer',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      _showQrCodeForRecord(record);
+                                    },
+                                    icon: Icon(Icons.qr_code, size: 18),
+                                    label: Text('Show QR Code'),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       );
                     },
@@ -575,6 +722,47 @@ class _DataPageState extends State<DataPage> {
       ),
     );
   }
+
+void _showQrCodeForRecord(ScoutingRecord record) {
+  final csvData = [
+    record.toJson().values.toList(),
+  ];
+  final csvStr = const ListToCsvConverter().convert(csvData);
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 200,
+                height: 200,
+                child: QrImageView(
+                  data: csvStr,
+                  version: QrVersions.auto,
+                ),
+              ),
+              SizedBox(height: 16),
+              Text('Scan to transfer data'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   void _showComparisonDialog() {
     showDialog(
