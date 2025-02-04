@@ -242,6 +242,23 @@ class DataManager {
       throw Exception('Failed to import: ${e.toString()}');
     }
   }
+
+  static Future<void> deleteAllRecords() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_storageKey, jsonEncode([]));
+  }
+
+  static Future<void> deleteMultipleRecords(List<int> indices) async {
+    final prefs = await SharedPreferences.getInstance();
+    final records = await getRecords();
+    indices.sort((a, b) => b.compareTo(a)); // Sort in descending order
+    for (int index in indices) {
+      if (index >= 0 && index < records.length) {
+        records.removeAt(index);
+      }
+    }
+    await prefs.setString(_storageKey, jsonEncode(records.map((r) => r.toJson()).toList()));
+  }
 }
 
 class DataPage extends StatefulWidget {
@@ -251,7 +268,7 @@ class DataPage extends StatefulWidget {
 
 class _DataPageState extends State<DataPage> {
   List<ScoutingRecord> _records = [];
-  List<ScoutingRecord> _selectedRecords = [];
+  List<bool> selectedRecords = [];
 
   @override
   void initState() {
@@ -261,20 +278,65 @@ class _DataPageState extends State<DataPage> {
 
   Future<void> _loadRecords() async {
     final records = await DataManager.getRecords();
-    setState(() {
-      _records = records;
-      _selectedRecords.clear();
-    });
+    if (mounted) {
+      setState(() {
+        _records = records;
+        selectedRecords = List.generate(records.length, (index) => false);
+      });
+    }
   }
 
-  void _toggleRecordSelection(ScoutingRecord record) {
-    setState(() {
-      if (_selectedRecords.contains(record)) {
-        _selectedRecords.remove(record);
-      } else {
-        _selectedRecords.add(record);
-      }
-    });
+  void _toggleRecordSelection(int index) {
+    if (index >= 0 && index < selectedRecords.length) {
+      setState(() {
+        selectedRecords[index] = !selectedRecords[index];
+      });
+    }
+  }
+
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete Data'),
+          content: Text('Are you sure?'),
+          actions: [
+            TextButton(
+              onPressed: () async {
+                await DataManager.deleteAllRecords();
+                Navigator.pop(context);
+                _loadRecords();
+              },
+              child: Text('Delete ALL data'),
+            ),
+            TextButton(
+              onPressed: () async {
+                List<int> toDelete = [];
+                for (int i = selectedRecords.length - 1; i >= 0; i--) {
+                  if (selectedRecords[i]) {
+                    toDelete.add(i);
+                  }
+                }
+                await DataManager.deleteMultipleRecords(toDelete);
+                Navigator.pop(context);
+                _loadRecords();
+              },
+              child: Text('Delete selected data'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('No'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -318,7 +380,7 @@ class _DataPageState extends State<DataPage> {
                       icon: Icon(Icons.upload, color: Theme.of(context).brightness == Brightness.dark 
                           ? null 
                           : Colors.black),
-                      label: Text('Export Data'),
+                      label: Text('Export'),
                     ),
                     ElevatedButton.icon(
                       onPressed: () async {
@@ -345,7 +407,28 @@ class _DataPageState extends State<DataPage> {
                       icon: Icon(Icons.download, color: Theme.of(context).brightness == Brightness.dark 
                           ? null 
                           : Colors.black),
-                      label: Text('Import Data'),
+                      label: Text('Import'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _showDeleteConfirmation();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.grey.shade200,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black,
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      icon: Icon(
+                        Icons.delete,
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black
+                      ),
+                      label: Text('Delete'),
                     ),
                   ],
                 ),
@@ -369,12 +452,14 @@ class _DataPageState extends State<DataPage> {
                       icon: Icon(Icons.analytics, color: Colors.white),
                       label: Text('Team Analysis'),
                     ),
-                    if (_selectedRecords.isNotEmpty)
+                    if (selectedRecords.any((e) => e))
                       ElevatedButton.icon(
                         onPressed: () {
                           Map<int, List<ScoutingRecord>> teamRecords = {};
-                          for (var record in _selectedRecords) {
-                            teamRecords.putIfAbsent(record.teamNumber, () => []).add(record);
+                          for (int i = 0; i < _records.length; i++) {
+                            if (selectedRecords[i]) {
+                              teamRecords.putIfAbsent(_records[i].teamNumber, () => []).add(_records[i]);
+                            }
                           }
                           
                           List<ScoutingRecord> orderedRecords = teamRecords.values.map((records) {
@@ -395,7 +480,7 @@ class _DataPageState extends State<DataPage> {
                           foregroundColor: Colors.white,
                         ),
                         icon: Icon(Icons.compare_arrows),
-                        label: Text('Compare Teams (${_selectedRecords.length})'),
+                        label: Text('Compare Teams (${selectedRecords.where((e) => e).length})'),
                       ),
                   ],
                 ),
@@ -408,34 +493,26 @@ class _DataPageState extends State<DataPage> {
                 : ListView.builder(
                     itemCount: _records.length,
                     itemBuilder: (context, index) {
-                      final record = _records[_records.length - 1 - index];
-                      final isSelected = _selectedRecords.contains(record);
+                      final record = _records[index];
+                      final isSelected = selectedRecords[index];
                       return Card(
                         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         color: isSelected ? Colors.blue.withOpacity(0.1) : null,
                         child: ListTile(
+                          leading: Checkbox(
+                            value: isSelected,
+                            onChanged: (bool? value) {
+                              setState(() {
+                                selectedRecords[index] = value ?? false;
+                              });
+                            },
+                          ),
                           title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('${record.matchType} - ${record.timestamp}'),
                               Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
-                            ],
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Checkbox(
-                                value: isSelected,
-                                onChanged: (_) => _toggleRecordSelection(record),
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.delete),
-                                onPressed: () async {
-                                  await DataManager.deleteRecord(_records.length - 1 - index);
-                                  _loadRecords();
-                                },
-                              ),
                             ],
                           ),
                           onTap: () {
@@ -473,7 +550,7 @@ class _DataPageState extends State<DataPage> {
                     icon: Icon(Icons.close),
                     onPressed: () {
                       setState(() {
-                        _selectedRecords.clear();
+                        selectedRecords = List.generate(_records.length, (index) => false);
                       });
                       Navigator.pop(context);
                     },
@@ -485,50 +562,51 @@ class _DataPageState extends State<DataPage> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      for (var record in _selectedRecords)
-                        Expanded(
-                          child: Card(
-                            margin: EdgeInsets.all(8),
-                            child: Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Match ${record.matchNumber}',
-                                    style: Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text('Team ${record.teamNumber}'),
-                                  Text(record.isRedAlliance ? 'Red Alliance' : 'Blue Alliance'),
-                                  Divider(),
-                                  SizedBox(height: 8),
-                                  Text('Auto Mode:'),
-                                  Text('  • Cage Type: ${record.cageType}'),
-                                  Text('  • Coral Preloaded: ${record.coralPreloaded ? "Yes" : "No"}'),
-                                  Text('  • Taxis: ${record.taxis ? "Yes" : "No"}'),
-                                  Text('  • Algae Removed: ${record.algaeRemoved}'),
-                                  Text('  • Coral Placed: ${record.coralPlaced}'),
-                                  Text('  • Auto RP: ${record.rankingPoint ? "Yes" : "No"}'),
-                                  Text('  • Can Pickup: ${record.canPickupAlgae ? "Yes" : "No"}'),
-                                  SizedBox(height: 8),
-                                  Text('Teleop:'),
-                                  Text('  • Net Algae: ${record.algaeScoredInNet}'),
-                                  Text('  • Coral RP: ${record.coralRankingPoint ? "Yes" : "No"}'),
-                                  Text('  • Algae Processed: ${record.algaeProcessed}'),
-                                  Text('  • Processed Scored: ${record.processedAlgaeScored}'),
-                                  Text('  • Processor Cycles: ${record.processorCycles}'),
-                                  Text('  • Co-Op Point: ${record.coOpPoint ? "Yes" : "No"}'),
-                                  SizedBox(height: 8),
-                                  Text('Endgame:'),
-                                  Text('  • Returned: ${record.returnedToBarge ? "Yes" : "No"}'),
-                                  Text('  • Cage Hang: ${record.cageHang}'),
-                                  Text('  • Barge RP: ${record.bargeRankingPoint ? "Yes" : "No"}'),
-                                ],
+                      for (int i = 0; i < _records.length; i++)
+                        if (selectedRecords[i])
+                          Expanded(
+                            child: Card(
+                              margin: EdgeInsets.all(8),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Match ${_records[i].matchNumber}',
+                                      style: Theme.of(context).textTheme.titleMedium,
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text('Team ${_records[i].teamNumber}'),
+                                    Text(_records[i].isRedAlliance ? 'Red Alliance' : 'Blue Alliance'),
+                                    Divider(),
+                                    SizedBox(height: 8),
+                                    Text('Auto Mode:'),
+                                    Text('  • Cage Type: ${_records[i].cageType}'),
+                                    Text('  • Coral Preloaded: ${_records[i].coralPreloaded ? "Yes" : "No"}'),
+                                    Text('  • Taxis: ${_records[i].taxis ? "Yes" : "No"}'),
+                                    Text('  • Algae Removed: ${_records[i].algaeRemoved}'),
+                                    Text('  • Coral Placed: ${_records[i].coralPlaced}'),
+                                    Text('  • Auto RP: ${_records[i].rankingPoint ? "Yes" : "No"}'),
+                                    Text('  • Can Pickup: ${_records[i].canPickupAlgae ? "Yes" : "No"}'),
+                                    SizedBox(height: 8),
+                                    Text('Teleop:'),
+                                    Text('  • Net Algae: ${_records[i].algaeScoredInNet}'),
+                                    Text('  • Coral RP: ${_records[i].coralRankingPoint ? "Yes" : "No"}'),
+                                    Text('  • Algae Processed: ${_records[i].algaeProcessed}'),
+                                    Text('  • Processed Scored: ${_records[i].processedAlgaeScored}'),
+                                    Text('  • Processor Cycles: ${_records[i].processorCycles}'),
+                                    Text('  • Co-Op Point: ${_records[i].coOpPoint ? "Yes" : "No"}'),
+                                    SizedBox(height: 8),
+                                    Text('Endgame:'),
+                                    Text('  • Returned: ${_records[i].returnedToBarge ? "Yes" : "No"}'),
+                                    Text('  • Cage Hang: ${_records[i].cageHang}'),
+                                    Text('  • Barge RP: ${_records[i].bargeRankingPoint ? "Yes" : "No"}'),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
                     ],
                   ),
                 ),
