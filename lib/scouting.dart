@@ -71,6 +71,10 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
   StreamSubscription? _devModeSubscription;
 
+  // Add these state variables at the top of _ScoutingPageState
+  int autoAlgaeInNet = 0;
+  int autoAlgaeInProcessor = 0;
+
   @override
   void initState() {
     super.initState();
@@ -247,6 +251,81 @@ class _ScoutingPageState extends State<ScoutingPage> {
         SectionHeader(title: 'Autonomous', icon: Icons.settings),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Num. of Algae Removed',
+            value: algaeRemoved,
+            onIncrement: () {
+              final oldValue = algaeRemoved;
+              setState(() {
+                algaeRemoved++;
+              });
+              _logStateChange('algaeRemoved', oldValue, algaeRemoved);
+              //TelemetryService().logAction('counter_increment', 'algaeRemoved');
+            },
+            onDecrement: () {
+              if (algaeRemoved > 0) {
+                final oldValue = algaeRemoved;
+                setState(() {
+                  algaeRemoved--;
+                });
+                _logStateChange('algaeRemoved', oldValue, algaeRemoved);
+                //TelemetryService().logAction('counter_decrement', 'algaeRemoved');
+              }
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Algae Scored in Net',
+            value: autoAlgaeInNet,
+            onIncrement: () {
+              final oldValue = autoAlgaeInNet;
+              setState(() {
+                autoAlgaeInNet++;
+              });
+              _logStateChange('autoAlgaeInNet', oldValue, autoAlgaeInNet);
+              //TelemetryService().logAction('counter_increment', 'autoAlgaeInNet');
+            },
+            onDecrement: () {
+              if (autoAlgaeInNet > 0) {
+                final oldValue = autoAlgaeInNet;
+                setState(() {
+                  autoAlgaeInNet--;
+                });
+                _logStateChange('autoAlgaeInNet', oldValue, autoAlgaeInNet);
+                //TelemetryService().logAction('counter_decrement', 'autoAlgaeInNet');
+              }
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: CounterRow(
+            label: 'Algae Scored in Processor',
+            value: autoAlgaeInProcessor,
+            onIncrement: () {
+              final oldValue = autoAlgaeInProcessor;
+              setState(() {
+                autoAlgaeInProcessor++;
+              });
+              _logStateChange('autoAlgaeInProcessor', oldValue, autoAlgaeInProcessor);
+              //TelemetryService().logAction('counter_increment', 'autoAlgaeInProcessor');
+            },
+            onDecrement: () {
+              if (autoAlgaeInProcessor > 0) {
+                final oldValue = autoAlgaeInProcessor;
+                setState(() {
+                  autoAlgaeInProcessor--;
+                });
+                _logStateChange('autoAlgaeInProcessor', oldValue, autoAlgaeInProcessor);
+                //TelemetryService().logAction('counter_decrement', 'autoAlgaeInProcessor');
+              }
+            },
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: ToggleRow(
             label: 'Cage Type',
             options: ['SHALLOW', 'DEEP'],
@@ -291,28 +370,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
             },
           ),
         ),
-        CounterRow(
-          label: 'Num. of Algae Removed',
-          value: algaeRemoved,
-          onIncrement: () {
-            final oldValue = algaeRemoved;
-            setState(() {
-              algaeRemoved++;
-            });
-            _logStateChange('algaeRemoved', oldValue, algaeRemoved);
-            //TelemetryService().logAction('counter_increment', 'algaeRemoved');
-          },
-          onDecrement: () {
-            if (algaeRemoved > 0) {
-              final oldValue = algaeRemoved;
-              setState(() {
-                algaeRemoved--;
-              });
-              _logStateChange('algaeRemoved', oldValue, algaeRemoved);
-              //TelemetryService().logAction('counter_decrement', 'algaeRemoved');
-            }
-          },
-        ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -351,27 +408,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
         Divider(),
         // tele-op section
         SectionHeader(title: 'Tele-op', icon: Icons.directions_run),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Algae Scored in Net',
-            value: algaeScoredInNet,
-            onIncrement: () {
-              TelemetryService().logAction('counter_increment', 'algaeScoredInNet');
-              final oldValue = algaeScoredInNet;
-              setState(() => algaeScoredInNet++);
-              _logStateChange('algaeScoredInNet', oldValue, algaeScoredInNet);
-            },
-            onDecrement: () {
-              if (algaeScoredInNet > 0) {
-                TelemetryService().logAction('counter_decrement', 'algaeScoredInNet');
-                final oldValue = algaeScoredInNet;
-                setState(() => algaeScoredInNet--);
-                _logStateChange('algaeScoredInNet', oldValue, algaeScoredInNet);
-              }
-            },
-          ),
-        ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: CounterRow(
@@ -659,8 +695,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
   Future<void> _saveRecord() async {
     TelemetryService().logAction('save_button_pressed');
     try {
-      // Log all boolean values before creating record
-      final debugValues = {
+      // Log all values before saving
+      TelemetryService().logInfo('save_record_debug', {
         'coralPreloaded': coralPreloaded,
         'taxis': taxis,
         'rankingPoint': rankingPoint,
@@ -671,15 +707,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
         'returnedToBarge': returnedToBarge,
         'bargeRankingPoint': bargeRankingPoint,
         'breakdown': breakdown,
-      };
-      TelemetryService().logInfo('save_record_debug', debugValues.toString());
-
-      // Check for null values
-      for (var entry in debugValues.entries) {
-        if (entry.value == null) {
-          throw Exception('Null boolean value found: ${entry.key}');
-        }
-      }
+        'autoAlgaeInNet': autoAlgaeInNet,
+        'autoAlgaeInProcessor': autoAlgaeInProcessor,
+      }.toString());
 
       final record = ScoutingRecord(
         timestamp: currentTime,
@@ -706,6 +736,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
         bargeRankingPoint: bargeRankingPoint,
         breakdown: breakdown,
         comments: comments,
+        autoAlgaeInNet: autoAlgaeInNet,
+        autoAlgaeInProcessor: autoAlgaeInProcessor,
       );
 
       await DataManager.saveRecord(record);
@@ -741,6 +773,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
         returnedToBarge = false;
         bargeRankingPoint = false;
         breakdown = false;
+        autoAlgaeInNet = 0;
+        autoAlgaeInProcessor = 0;
         updateTime();
       });
 

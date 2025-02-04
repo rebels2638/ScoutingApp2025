@@ -40,6 +40,9 @@ class ScoutingRecord {
   final bool breakdown;
   final String comments;
 
+  final int autoAlgaeInNet;
+  final int autoAlgaeInProcessor;
+  
   ScoutingRecord({
     required this.timestamp,
     required this.matchNumber,
@@ -65,6 +68,8 @@ class ScoutingRecord {
     required this.bargeRankingPoint,
     required this.breakdown,
     required this.comments,
+    required this.autoAlgaeInNet,
+    required this.autoAlgaeInProcessor,
   }) : assert(coralPreloaded != null),
        assert(taxis != null),
        assert(rankingPoint != null),
@@ -101,6 +106,8 @@ class ScoutingRecord {
     'bargeRankingPoint': bargeRankingPoint,
     'breakdown': breakdown,
     'comments': comments,
+    'autoAlgaeInNet': autoAlgaeInNet,
+    'autoAlgaeInProcessor': autoAlgaeInProcessor,
   };
 
   factory ScoutingRecord.fromJson(Map<String, dynamic> json) => ScoutingRecord(
@@ -128,6 +135,8 @@ class ScoutingRecord {
     bargeRankingPoint: json['bargeRankingPoint'] ?? false,
     breakdown: json['breakdown'] ?? false,
     comments: json['comments'] ?? '',
+    autoAlgaeInNet: json['autoAlgaeInNet'] ?? 0,
+    autoAlgaeInProcessor: json['autoAlgaeInProcessor'] ?? 0,
   );
 }
 
@@ -550,6 +559,8 @@ class _DataPageState extends State<DataPage> {
                 'Coral Placed: ${record.coralPlaced}',
                 'Ranking Point: ${record.rankingPoint ? "Yes" : "No"}',
                 'Can Pickup: ${record.canPickupAlgae ? "Yes" : "No"}',
+                'Auto Algae in Net: ${record.autoAlgaeInNet}',
+                'Auto Algae in Processor: ${record.autoAlgaeInProcessor}',
               ]),
               _buildDetailSection('Teleop', [
                 'Algae Scored in Net: ${record.algaeScoredInNet}',

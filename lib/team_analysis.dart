@@ -13,6 +13,8 @@ class TeamStats {
   final double rankingPointRate;
   final List<bool> breakdownHistory;
   final List<int> scoringTrend;
+  final double avgAutoAlgaeNet;
+  final double avgAutoAlgaeProcessor;
 
   TeamStats({
     required this.teamNumber,
@@ -21,6 +23,8 @@ class TeamStats {
         avgAlgaeScored = matches.map((m) => m.algaeScoredInNet).reduce((a, b) => a + b) / matches.length,
         avgProcessedAlgae = matches.map((m) => m.processedAlgaeScored).reduce((a, b) => a + b) / matches.length,
         avgProcessorCycles = matches.map((m) => m.processorCycles).reduce((a, b) => a + b) / matches.length,
+        avgAutoAlgaeNet = matches.map((m) => m.autoAlgaeInNet).reduce((a, b) => a + b) / matches.length,
+        avgAutoAlgaeProcessor = matches.map((m) => m.autoAlgaeInProcessor).reduce((a, b) => a + b) / matches.length,
         autoSuccessRate = matches.where((m) => m.rankingPoint).length / matches.length * 100,
         teleopSuccessRate = matches.where((m) => m.coralRankingPoint).length / matches.length * 100,
         rankingPointRate = matches.where((m) => m.bargeRankingPoint).length / matches.length * 100,
@@ -38,6 +42,8 @@ class TeamStats {
     if (autoSuccessRate > 75) strengths.add('Strong Auto');
     if (teleopSuccessRate > 75) strengths.add('Strong Teleop');
     if (rankingPointRate > 50) strengths.add('Consistent Endgame');
+    if (avgAutoAlgaeNet > 2) strengths.add('Strong Auto Scoring');
+    if (avgAutoAlgaeProcessor > 1) strengths.add('Good Auto Processing');
     if (breakdownHistory.where((b) => !b).length / breakdownHistory.length > 0.9) {
       strengths.add('High Reliability');
     }
@@ -52,6 +58,8 @@ class TeamStats {
     if (autoSuccessRate < 25) weaknesses.add('Weak Auto');
     if (teleopSuccessRate < 25) weaknesses.add('Weak Teleop');
     if (rankingPointRate < 25) weaknesses.add('Inconsistent Endgame');
+    if (avgAutoAlgaeNet < 1) weaknesses.add('Weak Auto Scoring');
+    if (avgAutoAlgaeProcessor < 1) weaknesses.add('Poor Auto Processing');
     if (breakdownHistory.where((b) => b).length / breakdownHistory.length > 0.2) {
       weaknesses.add('Frequent Breakdowns');
     }
@@ -154,6 +162,14 @@ class TeamAnalysisPage extends StatelessWidget {
                         TableRow(children: [
                           Text('Avg Processor Cycles'),
                           Text('${stats.avgProcessorCycles.toStringAsFixed(1)}'),
+                        ]),
+                        TableRow(children: [
+                          Text('Avg Auto Algae in Net'),
+                          Text('${stats.avgAutoAlgaeNet.toStringAsFixed(1)}'),
+                        ]),
+                        TableRow(children: [
+                          Text('Avg Auto Algae in Processor'),
+                          Text('${stats.avgAutoAlgaeProcessor.toStringAsFixed(1)}'),
                         ]),
                         TableRow(children: [
                           Text('Auto Success Rate'),
