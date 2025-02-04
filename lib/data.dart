@@ -578,18 +578,13 @@ class _DataPageState extends State<DataPage> {
                       label: Text('Show QR Code'),
                     ),
                     ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          await DataManager.importFromJson();
-                          _loadRecords();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Import successful')),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString())),
-                          );
-                        }
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Feature not implemented yet'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Theme.of(context).brightness == Brightness.dark 
@@ -602,7 +597,7 @@ class _DataPageState extends State<DataPage> {
                       icon: Icon(Icons.barcode_reader, color: Theme.of(context).brightness == Brightness.dark 
                           ? null 
                           : Colors.black),
-                      label: Text('Scan Qr Code'),
+                      label: Text('Scan QR Code'),
                     ),
                   ],
                 ),
