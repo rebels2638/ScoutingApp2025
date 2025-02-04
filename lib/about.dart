@@ -1,14 +1,61 @@
 import 'package:flutter/material.dart';
 
-class AboutPage extends StatelessWidget {
+class AboutPage extends StatefulWidget {
+  @override
+  _AboutPageState createState() => _AboutPageState();
+}
+
+class _AboutPageState extends State<AboutPage> {
+  final TextEditingController teamNumberController = TextEditingController();
+  final TextEditingController matchNumberController = TextEditingController();
+  
+  @override
+  void dispose() {
+    teamNumberController.dispose();
+    matchNumberController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      /*
       appBar: AppBar(
-        title: Text('About'),
+        title: const Text('About'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Reset Form'),
+                    content: const Text('Are you sure you want to reset the current form? All unsaved data will be lost.'),
+                    actions: [
+                      TextButton(
+                        child: const Text('Cancel'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      TextButton(
+                        child: const Text('Reset'),
+                        onPressed: () {
+                          setState(() {
+                            teamNumberController.text = '';
+                            matchNumberController.text = '';
+                          });
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
-      */
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(

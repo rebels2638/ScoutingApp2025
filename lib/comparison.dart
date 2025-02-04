@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'data.dart';
+import 'database_helper.dart';
 
 class ComparisonPage extends StatefulWidget {
   final List<ScoutingRecord> records;
@@ -13,12 +14,21 @@ class ComparisonPage extends StatefulWidget {
 class _ComparisonPageState extends State<ComparisonPage> {
   late ScrollController _horizontalController;
   late ScrollController _verticalController;
+  List<ScoutingRecord> records = [];
 
   @override
   void initState() {
     super.initState();
     _horizontalController = ScrollController();
     _verticalController = ScrollController();
+    _loadRecords();
+  }
+
+  Future<void> _loadRecords() async {
+    final loadedRecords = await DatabaseHelper.instance.getAllRecords();
+    setState(() {
+      records = loadedRecords;
+    });
   }
 
   @override
@@ -227,11 +237,48 @@ class _ComparisonPageState extends State<ComparisonPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Compare ${widget.records.length} Records'),
+        title: const Text('Saved Data'),
         actions: [
           IconButton(
-            icon: Icon(Icons.close),
-            onPressed: () => Navigator.pop(context),
+            icon: const Icon(Icons.delete_forever),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text('Reset All Data'),
+                    content: const Text(
+                      'Are you sure you want to delete all saved scouting data? This action cannot be undone.',
+                    ),
+                    actions: [
+                      TextButton(
+                        child: const Text('Cancel'),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                        },
+                      ),
+                      TextButton(
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.red,
+                        ),
+                        child: const Text('Delete All'),
+                        onPressed: () async {
+                          await DatabaseHelper.instance.deleteAllRecords();
+                          await _loadRecords(); // Reload the empty records
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('All data has been deleted'),
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
           ),
         ],
       ),
