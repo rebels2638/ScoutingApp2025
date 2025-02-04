@@ -32,12 +32,21 @@ class _ComparisonPageState extends State<ComparisonPage> {
     return Container(
       padding: EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        color: Colors.blue.shade100,
-        border: Border.all(color: Colors.grey.shade300),
+        color: Theme.of(context).brightness == Brightness.dark 
+            ? Colors.blue.shade100  // Light background for dark mode
+            : Colors.blue.shade100,
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? Colors.black 
+              : Colors.grey.shade300,
+        ),
       ),
       child: Text(
         text,
-        style: TextStyle(fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: Colors.black,  // Always black text for headers
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }
@@ -46,10 +55,25 @@ class _ComparisonPageState extends State<ComparisonPage> {
     return Container(
       padding: EdgeInsets.all(8.0),
       decoration: BoxDecoration(
-        color: highlight ? Colors.blue.shade50 : null,
-        border: Border.all(color: Colors.grey.shade300),
+        color: highlight 
+            ? Colors.blue.shade50 
+            : Theme.of(context).brightness == Brightness.dark
+                ? Colors.grey.shade900  // Dark background for data cells in dark mode
+                : null,
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.grey.shade700  // Darker border for dark mode
+              : Colors.grey.shade300,
+        ),
       ),
-      child: Text(text),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? Colors.white  // White text for dark mode
+              : Colors.black,
+        ),
+      ),
     );
   }
 
