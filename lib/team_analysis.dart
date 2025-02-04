@@ -34,6 +34,16 @@ class TeamStats {
   String get reliability => 
       (breakdownHistory.where((b) => !b).length / breakdownHistory.length * 100).toStringAsFixed(1) + '%';
 
+  String getMostUsedPickupMethod() {
+    Map<String, int> methodCounts = {};
+    for (var match in matches) {
+      methodCounts[match.coralPickupMethod] = (methodCounts[match.coralPickupMethod] ?? 0) + 1;
+    }
+    return methodCounts.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
+  }
+
   List<String> getStrengths() {
     List<String> strengths = [];
     if (avgAlgaeScored > 5) strengths.add('High Algae Scoring');
@@ -46,6 +56,9 @@ class TeamStats {
     if (avgAutoAlgaeProcessor > 1) strengths.add('Good Auto Processing');
     if (breakdownHistory.where((b) => !b).length / breakdownHistory.length > 0.9) {
       strengths.add('High Reliability');
+    }
+    if (getMostUsedPickupMethod() != 'None') {
+      strengths.add('Consistent ${getMostUsedPickupMethod()} Pickup');
     }
     return strengths;
   }

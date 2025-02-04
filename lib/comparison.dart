@@ -128,6 +128,10 @@ class _ComparisonPageState extends State<ComparisonPage> {
         ...widget.records.map((r) => DataCell(_buildDataCell(r.coralPlaced))),
       ]),
       DataRow(cells: [
+        DataCell(_buildHeaderCell('Coral Pickup Method')),
+        ...widget.records.map((r) => DataCell(_buildDataCell(r.coralPickupMethod))),
+      ]),
+      DataRow(cells: [
         DataCell(_buildHeaderCell('Auto RP')),
         ...widget.records.map((r) => DataCell(_buildDataCell(r.rankingPoint ? 'Yes' : 'No'))),
       ]),

@@ -75,6 +75,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
   int autoAlgaeInNet = 0;
   int autoAlgaeInProcessor = 0;
 
+  // Add to state variables section
+  String coralPickupMethod = 'None';
+
   @override
   void initState() {
     super.initState();
@@ -386,6 +389,26 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 });
                 _logStateChange('coralPlaced', oldValue, value);
                 //TelemetryService().logAction('dropdown_changed', 'coralPlaced: $oldValue -> $value');
+              },
+            ),
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Coral Pickup Method', style: TextStyle(fontSize: 16)),
+            DropdownButton<String>(
+              value: coralPickupMethod,
+              items: ['None', 'Feeder', 'Ground', 'Both']
+                  .map((option) => DropdownMenuItem(value: option, child: Text(option)))
+                  .toList(),
+              onChanged: (value) {
+                final oldValue = coralPickupMethod;
+                setState(() {
+                  coralPickupMethod = value!;
+                });
+                _logStateChange('coralPickupMethod', oldValue, value);
+                //TelemetryService().logAction('dropdown_changed', 'coralPickupMethod: $oldValue -> $value');
               },
             ),
           ],
@@ -709,6 +732,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         'breakdown': breakdown,
         'autoAlgaeInNet': autoAlgaeInNet,
         'autoAlgaeInProcessor': autoAlgaeInProcessor,
+        'coralPickupMethod': coralPickupMethod,
       }.toString());
 
       final record = ScoutingRecord(
@@ -738,6 +762,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         comments: comments,
         autoAlgaeInNet: autoAlgaeInNet,
         autoAlgaeInProcessor: autoAlgaeInProcessor,
+        coralPickupMethod: coralPickupMethod,
       );
 
       await DataManager.saveRecord(record);
@@ -775,6 +800,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         breakdown = false;
         autoAlgaeInNet = 0;
         autoAlgaeInProcessor = 0;
+        coralPickupMethod = 'None';
         updateTime();
       });
 
