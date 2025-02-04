@@ -111,6 +111,14 @@ class _ComparisonPageState extends State<ComparisonPage> {
         DataCell(_buildHeaderCell('Can Pickup')),
         ...widget.records.map((r) => DataCell(_buildDataCell(r.canPickupAlgae ? 'Yes' : 'No'))),
       ]),
+      DataRow(cells: [
+        DataCell(_buildHeaderCell('Auto Algae in Net')),
+        ...widget.records.map((r) => DataCell(_buildDataCell('${r.autoAlgaeInNet}'))),
+      ]),
+      DataRow(cells: [
+        DataCell(_buildHeaderCell('Auto Algae in Processor')),
+        ...widget.records.map((r) => DataCell(_buildDataCell('${r.autoAlgaeInProcessor}'))),
+      ]),
     ]);
 
     // teleop section
