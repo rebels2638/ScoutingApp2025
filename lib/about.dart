@@ -57,7 +57,7 @@ class AboutPage extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'Chiming Wang\nEthan Kang',
+              'Chiming Wang\nEthan Kang\nRichard Xu',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 16),
