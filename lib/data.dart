@@ -251,7 +251,7 @@ class DataManager {
   static Future<void> deleteMultipleRecords(List<int> indices) async {
     final prefs = await SharedPreferences.getInstance();
     final records = await getRecords();
-    indices.sort((a, b) => b.compareTo(a)); // Sort in descending order
+    indices.sort((a, b) => b.compareTo(a)); // sort descending order
     for (int index in indices) {
       if (index >= 0 && index < records.length) {
         records.removeAt(index);
@@ -303,14 +303,62 @@ class _DataPageState extends State<DataPage> {
           content: Text('Are you sure?'),
           actions: [
             TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.white 
+                    : Colors.black,
+              ),
               onPressed: () async {
-                await DataManager.deleteAllRecords();
+                // Show second confirmation for delete all
                 Navigator.pop(context);
-                _loadRecords();
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Row(
+                        children: [
+                          Icon(Icons.warning, color: Colors.amber),
+                          SizedBox(width: 8),
+                          Text('Warning'),
+                        ],
+                      ),
+                      content: Text('Are you sure you want to delete ALL data?'),
+                      actions: [
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                                ? Colors.white 
+                                : Colors.black,
+                          ),
+                          onPressed: () async {
+                            await DataManager.deleteAllRecords();
+                            Navigator.pop(context);
+                            _loadRecords();
+                          },
+                          child: Text('Yes'),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Text('No'),
+                        ),
+                      ],
+                    );
+                  },
+                );
               },
               child: Text('Delete ALL data'),
             ),
             TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.white 
+                    : Colors.black,
+              ),
               onPressed: () async {
                 List<int> toDelete = [];
                 for (int i = selectedRecords.length - 1; i >= 0; i--) {
