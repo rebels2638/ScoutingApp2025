@@ -691,7 +691,7 @@ class _DataPageState extends State<DataPage> {
                               child: Row(
                                 children: [
                                   Expanded(
-                                    child: Text(
+      child: Text(
                                       'Transfer',
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
@@ -744,6 +744,12 @@ void _showQrCodeForRecord(ScoutingRecord record) {
                 child: QrImageView(
                   data: csvStr,
                   version: QrVersions.auto,
+                  foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.white 
+                      : Colors.black,
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.black 
+                      : Colors.white,
                 ),
               ),
               SizedBox(height: 16),
