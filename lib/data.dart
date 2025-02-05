@@ -257,6 +257,16 @@ class ScoutingRecord {
   }
 
   List<dynamic> toCsvRow() {
+    String robotPathStr = '';
+    if (robotPath != null) {
+      try {
+        // Escape any pipe characters in the JSON string
+        robotPathStr = jsonEncode(robotPath).replaceAll('|', '\\|');
+      } catch (e) {
+        print('Error encoding robotPath: $e');
+      }
+    }
+
     return [
       timestamp,
       matchNumber,
@@ -281,11 +291,11 @@ class ScoutingRecord {
       cageHang,
       bargeRankingPoint ? 1 : 0,
       breakdown ? 1 : 0,
-      comments,
+      comments.replaceAll('|', '\\|'), // Escape pipes in comments
       autoAlgaeInNet,
       autoAlgaeInProcessor,
       coralPickupMethod,
-      robotPath != null ? jsonEncode(robotPath) : '',
+      robotPathStr,
     ];
   }
 
@@ -323,6 +333,20 @@ class ScoutingRecord {
   }
 
   factory ScoutingRecord.fromCsvRow(List<dynamic> row) {
+    List<Map<String, dynamic>>? pathData;
+    if (row[27].toString().isNotEmpty) {
+      try {
+        // Unescape pipe characters before parsing JSON
+        String robotPathStr = row[27].toString().replaceAll('\\|', '|');
+        final decoded = jsonDecode(robotPathStr);
+        if (decoded is List) {
+          pathData = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
+        }
+      } catch (e) {
+        print('Error decoding robotPath: $e');
+      }
+    }
+
     return ScoutingRecord(
       timestamp: row[0].toString(),
       matchNumber: int.parse(row[1].toString()),
@@ -347,13 +371,11 @@ class ScoutingRecord {
       cageHang: row[20].toString(),
       bargeRankingPoint: row[21].toString() == '1',
       breakdown: row[22].toString() == '1',
-      comments: row[23].toString(),
+      comments: row[23].toString().replaceAll('\\|', '|'), // Unescape pipes in comments
       autoAlgaeInNet: int.parse(row[24].toString()),
       autoAlgaeInProcessor: int.parse(row[25].toString()),
       coralPickupMethod: row[26].toString(),
-      robotPath: row[27].toString().isNotEmpty ? 
-        jsonDecode(row[27].toString()) as List<Map<String, dynamic>> : 
-        null,
+      robotPath: pathData,
     );
   }
 }
