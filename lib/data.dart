@@ -52,6 +52,14 @@ class ScoutingRecord {
   
   String? telemetry;
   
+  final String feederStation;
+  
+  // Add coral height fields
+  final int coralOnReefHeight1;
+  final int coralOnReefHeight2;
+  final int coralOnReefHeight3;
+  final int coralOnReefHeight4;
+  
   ScoutingRecord({
     required this.timestamp,
     required this.matchNumber,
@@ -80,8 +88,13 @@ class ScoutingRecord {
     required this.autoAlgaeInNet,
     required this.autoAlgaeInProcessor,
     required this.coralPickupMethod,
+    required this.coralOnReefHeight1,
+    required this.coralOnReefHeight2,
+    required this.coralOnReefHeight3,
+    required this.coralOnReefHeight4,
     this.robotPath,
     this.telemetry,
+    required this.feederStation,
   }) : assert(coralPreloaded != null),
        assert(taxis != null),
        assert(rankingPoint != null),
@@ -122,6 +135,11 @@ class ScoutingRecord {
       'autoAlgaeInNet': autoAlgaeInNet,
       'autoAlgaeInProcessor': autoAlgaeInProcessor,
       'coralPickupMethod': coralPickupMethod,
+      'feederStation': feederStation,
+      'coralOnReefHeight1': coralOnReefHeight1,
+      'coralOnReefHeight2': coralOnReefHeight2,
+      'coralOnReefHeight3': coralOnReefHeight3,
+      'coralOnReefHeight4': coralOnReefHeight4,
     };
   }
 
@@ -154,6 +172,10 @@ class ScoutingRecord {
       autoAlgaeInNet: json['autoAlgaeInNet'] ?? 0,
       autoAlgaeInProcessor: json['autoAlgaeInProcessor'] ?? 0,
       coralPickupMethod: json['coralPickupMethod'] ?? 'None',
+      coralOnReefHeight1: json['coralOnReefHeight1'] ?? 0,
+      coralOnReefHeight2: json['coralOnReefHeight2'] ?? 0,
+      coralOnReefHeight3: json['coralOnReefHeight3'] ?? 0,
+      coralOnReefHeight4: json['coralOnReefHeight4'] ?? 0,
       robotPath: json['robotPath'] != null
           ? (json['robotPath'] as List).map((line) {
               final Map<String, dynamic> lineMap = Map<String, dynamic>.from(line);
@@ -165,6 +187,7 @@ class ScoutingRecord {
             }).toList()
           : null,
       telemetry: json['telemetry'] as String?,
+      feederStation: json['feederStation'] ?? 'None',
     );
   }
 
@@ -197,6 +220,11 @@ class ScoutingRecord {
       'aan': autoAlgaeInNet,
       'aap': autoAlgaeInProcessor,
       'cpm': coralPickupMethod,
+      'fs': feederStation,
+      'coralOnReefHeight1': coralOnReefHeight1,
+      'coralOnReefHeight2': coralOnReefHeight2,
+      'coralOnReefHeight3': coralOnReefHeight3,
+      'coralOnReefHeight4': coralOnReefHeight4,
     };
 
     // Only include robot path if it exists
@@ -244,6 +272,10 @@ class ScoutingRecord {
       autoAlgaeInNet: json['aan'] as int,
       autoAlgaeInProcessor: json['aap'] as int,
       coralPickupMethod: json['cpm'] as String,
+      coralOnReefHeight1: json['coralOnReefHeight1'] as int,
+      coralOnReefHeight2: json['coralOnReefHeight2'] as int,
+      coralOnReefHeight3: json['coralOnReefHeight3'] as int,
+      coralOnReefHeight4: json['coralOnReefHeight4'] as int,
       robotPath: json['rp'] != null ? (json['rp'] as List).map((line) {
         return {
           'points': (line['p'] as List).map((p) => {
@@ -254,6 +286,7 @@ class ScoutingRecord {
           'strokeWidth': line['w'],
         };
       }).toList() : null,
+      feederStation: json['fs'] as String,
     );
   }
 
@@ -296,6 +329,11 @@ class ScoutingRecord {
       autoAlgaeInNet,
       autoAlgaeInProcessor,
       coralPickupMethod,
+      coralOnReefHeight1,
+      coralOnReefHeight2,
+      coralOnReefHeight3,
+      coralOnReefHeight4,
+      feederStation,
       robotPathStr,
     ];
   }
@@ -329,7 +367,12 @@ class ScoutingRecord {
       'autoAlgaeInNet',
       'autoAlgaeInProcessor',
       'coralPickupMethod',
+      'coralOnReefHeight1',
+      'coralOnReefHeight2',
+      'coralOnReefHeight3',
+      'coralOnReefHeight4',
       'robotPath',
+      'feederStation',
     ];
   }
 
@@ -376,6 +419,11 @@ class ScoutingRecord {
       autoAlgaeInNet: int.parse(row[24].toString()),
       autoAlgaeInProcessor: int.parse(row[25].toString()),
       coralPickupMethod: row[26].toString(),
+      coralOnReefHeight1: int.parse(row[27].toString()),
+      coralOnReefHeight2: int.parse(row[28].toString()),
+      coralOnReefHeight3: int.parse(row[29].toString()),
+      coralOnReefHeight4: int.parse(row[30].toString()),
+      feederStation: row[32].toString(),
       robotPath: pathData,
     );
   }
@@ -1177,12 +1225,18 @@ void _showQrCodeForRecord(ScoutingRecord record) {
                         _buildDetailRow('Algae Removed', record.algaeRemoved.toString()),
                         _buildDetailRow('Coral Placed', record.coralPlaced),
                         _buildDetailRow('Ranking Point', record.rankingPoint ? "Yes" : "No"),
-                        _buildDetailRow('Can Pickup', record.canPickupAlgae ? "Yes" : "No"),
+                        _buildDetailRow('Can Pickup Coral', record.canPickupCoral ? "Yes" : "No"),
+                        _buildDetailRow('Can Pickup Algae', record.canPickupAlgae ? "Yes" : "No"),
                         _buildDetailRow('Auto Algae in Net', record.autoAlgaeInNet.toString()),
                         _buildDetailRow('Auto Algae in Processor', record.autoAlgaeInProcessor.toString()),
                         _buildDetailRow('Coral Pickup Method', record.coralPickupMethod),
                       ]),
                       _buildDetailSection('Teleop', [
+                        _buildDetailRow('Coral on Reef (Height 1)', record.coralOnReefHeight1.toString()),
+                        _buildDetailRow('Coral on Reef (Height 2)', record.coralOnReefHeight2.toString()),
+                        _buildDetailRow('Coral on Reef (Height 3)', record.coralOnReefHeight3.toString()),
+                        _buildDetailRow('Coral on Reef (Height 4)', record.coralOnReefHeight4.toString()),
+                        _buildDetailRow('Feeder Station Used', record.feederStation),
                         _buildDetailRow('Algae Scored in Net', record.algaeScoredInNet.toString()),
                         _buildDetailRow('Coral Ranking Point', record.coralRankingPoint ? "Yes" : "No"),
                         _buildDetailRow('Algae Processed', record.algaeProcessed.toString()),

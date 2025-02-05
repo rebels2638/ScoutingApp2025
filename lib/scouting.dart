@@ -82,6 +82,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // Update the type to match the new DrawingLine format
   List<Map<String, dynamic>>? drawingData;
 
+  // Add state variable
+  String feederStation = 'None';
+
   @override
   void initState() {
     super.initState();
@@ -519,6 +522,31 @@ class _ScoutingPageState extends State<ScoutingPage> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Feeder Station Used', style: TextStyle(fontSize: 16)),
+              DropdownButton<String>(
+                value: feederStation,
+                items: ['None', 'Left', 'Right']
+                    .map((option) => DropdownMenuItem(
+                          value: option,
+                          child: Text(option),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  final oldValue = feederStation;
+                  setState(() {
+                    feederStation = value!;
+                  });
+                  _logStateChange('feederStation', oldValue, value);
+                },
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: ToggleRow(
             label: 'Coral Ranking Point?',
             options: ['YES', 'NO'],
@@ -788,6 +816,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
         'autoAlgaeInNet': autoAlgaeInNet,
         'autoAlgaeInProcessor': autoAlgaeInProcessor,
         'coralPickupMethod': coralPickupMethod,
+        'feederStation': feederStation,
+        'coralOnReefHeight1': coralOnReefHeight1,
+        'coralOnReefHeight2': coralOnReefHeight2,
+        'coralOnReefHeight3': coralOnReefHeight3,
+        'coralOnReefHeight4': coralOnReefHeight4,
       }.toString());
 
       final record = ScoutingRecord(
@@ -818,6 +851,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
         autoAlgaeInNet: autoAlgaeInNet,
         autoAlgaeInProcessor: autoAlgaeInProcessor,
         coralPickupMethod: coralPickupMethod,
+        feederStation: feederStation,
+        coralOnReefHeight1: coralOnReefHeight1,
+        coralOnReefHeight2: coralOnReefHeight2,
+        coralOnReefHeight3: coralOnReefHeight3,
+        coralOnReefHeight4: coralOnReefHeight4,
         robotPath: drawingData,
       );
 
@@ -857,6 +895,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         autoAlgaeInNet = 0;
         autoAlgaeInProcessor = 0;
         coralPickupMethod = 'None';
+        feederStation = 'None';
         drawingData = null;
         updateTime();
       });

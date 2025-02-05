@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'data.dart';
+import 'package:csv/csv.dart';
+import 'dart:convert';
 
 class QrScannerPage extends StatefulWidget {
   @override
