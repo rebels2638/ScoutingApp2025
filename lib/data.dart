@@ -99,6 +99,9 @@ class ScoutingRecord {
     'rankingPoint': rankingPoint,
     'canPickupCoral': canPickupCoral,
     'canPickupAlgae': canPickupAlgae,
+    'coralPickupMethod': coralPickupMethod,
+    'autoAlgaeInNet': autoAlgaeInNet,
+    'autoAlgaeInProcessor': autoAlgaeInProcessor,
     'algaeScoredInNet': algaeScoredInNet,
     'coralRankingPoint': coralRankingPoint,
     'algaeProcessed': algaeProcessed,
@@ -110,9 +113,6 @@ class ScoutingRecord {
     'bargeRankingPoint': bargeRankingPoint,
     'breakdown': breakdown,
     'comments': comments,
-    'autoAlgaeInNet': autoAlgaeInNet,
-    'autoAlgaeInProcessor': autoAlgaeInProcessor,
-    'coralPickupMethod': coralPickupMethod,
   };
 
   factory ScoutingRecord.fromJson(Map<String, dynamic> json) => ScoutingRecord(
@@ -662,8 +662,8 @@ class _DataPageState extends State<DataPage> {
                 : ListView.builder(
                     itemCount: _records.length,
                     itemBuilder: (context, index) {
-                      final record = _records[index];
-                      final isSelected = selectedRecords[index];
+                      final record = _records[_records.length - 1 - index];
+                      final isSelected = selectedRecords[_records.length - 1 - index];
                       return Card(
                         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         color: isSelected ? Colors.blue.withOpacity(0.1) : null,
@@ -674,7 +674,7 @@ class _DataPageState extends State<DataPage> {
                                 value: isSelected,
                                 onChanged: (bool? value) {
                                   setState(() {
-                                    selectedRecords[index] = value ?? false;
+                                    selectedRecords[_records.length - 1 - index] = value ?? false;
                                   });
                                 },
                               ),
