@@ -719,7 +719,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                       
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Robot path drawing saved'),
+                          content: Text('Auto path drawing saved'),
                           backgroundColor: Colors.green,
                           duration: Duration(seconds: 2),
                         ),
@@ -727,7 +727,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                     }
                   },
                   icon: const Icon(Icons.draw),
-                  label: const Text('Draw Robot Path'),
+                  label: const Text('Draw Auto Path'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -740,7 +740,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
           const Padding(
             padding: EdgeInsets.only(bottom: 8.0),
             child: Text(
-              'Robot path drawing saved ✓',
+              'Auto path drawing saved ✓',
               style: TextStyle(
                 color: Colors.green,
                 fontWeight: FontWeight.bold,
