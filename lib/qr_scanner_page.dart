@@ -59,7 +59,10 @@ class _QrScannerPageState extends State<QrScannerPage> {
   }
 
   ScoutingRecord _parseCsvToScoutingRecord(String csvData) {
-    final rows = csvData.split(',');
+    final rows = RegExp(r'(?:\"([^\"]*)\")|([^",]+)')
+      .allMatches(csvData)
+      .map((match) => match.group(1) ?? match.group(2) ?? '')
+      .toList();
     if (rows.length < 5) {
       throw Exception('Invalid CSV format');
     }

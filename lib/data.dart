@@ -784,7 +784,7 @@ class _DataPageState extends State<DataPage> {
 
                           List<List<dynamic>> csvData = [];
                           selected.forEach((record) {
-                            csvData.add(record.toCsvRow());
+                            csvData.add(record.toJson().values.toList());
                           });
                           String csv = const ListToCsvConverter().convert(csvData);
                           List<String> recordsCsv = csv.split('\n');
