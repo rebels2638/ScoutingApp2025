@@ -1007,7 +1007,7 @@ class _DataPageState extends State<DataPage> {
                           backgroundColor: Colors.green.shade700,
                           foregroundColor: Colors.white,
                         ),
-                        icon: Icon(Icons.compare_arrows),
+                        icon: Icon(Icons.compare_arrows, color: Colors.white),
                         label: Text('Compare Teams (${selectedRecords.where((e) => e).length})'),
                       ),
                   ],
