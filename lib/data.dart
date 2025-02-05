@@ -1037,7 +1037,7 @@ class _DataPageState extends State<DataPage> {
                                   });
                                 },
                               ),
-                              title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
+                              title: Text('Match #${record.matchNumber} - Team ${record.teamNumber}'),
                               subtitle: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -1045,35 +1045,16 @@ class _DataPageState extends State<DataPage> {
                                   Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
                                 ],
                               ),
+                              trailing: IconButton(
+                                icon: Icon(Icons.qr_code),
+                                onPressed: () {
+                                  _showQrCodeForRecord(record);
+                                },
+                                tooltip: 'Show QR Code',
+                              ),
                               onTap: () {
                                 _showRecordDetails(record);
                               },
-                            ),
-                            Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              child: Row(
-                                children: [
-                                  Expanded(
-      child: Text(
-                                      'Transfer',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ),
-                                  ElevatedButton.icon(
-                                    onPressed: () {
-                                      _showQrCodeForRecord(record);
-                                    },
-                                    icon: Icon(Icons.qr_code, size: 18),
-                                    label: Text('Show QR Code'),
-                                    style: ElevatedButton.styleFrom(
-                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    ),
-                                  ),
-                                ],
-                              ),
                             ),
                           ],
                         ),
