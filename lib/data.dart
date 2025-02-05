@@ -7,6 +7,7 @@ import 'comparison.dart';
 import 'team_analysis.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:csv/csv.dart';
+import 'drawing_page.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -46,6 +47,10 @@ class ScoutingRecord {
   final int autoAlgaeInNet;
   final int autoAlgaeInProcessor;
   
+  final List<Map<String, dynamic>>? robotPath;
+  
+  String? telemetry;
+  
   ScoutingRecord({
     required this.timestamp,
     required this.matchNumber,
@@ -74,6 +79,8 @@ class ScoutingRecord {
     required this.autoAlgaeInNet,
     required this.autoAlgaeInProcessor,
     required this.coralPickupMethod,
+    this.robotPath,
+    this.telemetry,
   }) : assert(coralPreloaded != null),
        assert(taxis != null),
        assert(rankingPoint != null),
@@ -114,6 +121,12 @@ class ScoutingRecord {
       'autoAlgaeInNet': autoAlgaeInNet,
       'autoAlgaeInProcessor': autoAlgaeInProcessor,
       'coralPickupMethod': coralPickupMethod,
+      'robotPath': robotPath?.map((line) => {
+        'points': line['points'],
+        'color': line['color'],
+        'strokeWidth': line['strokeWidth'],
+      }).toList(),
+      'telemetry': telemetry,
     };
   }
 
@@ -146,6 +159,106 @@ class ScoutingRecord {
       autoAlgaeInNet: json['autoAlgaeInNet'] ?? 0,
       autoAlgaeInProcessor: json['autoAlgaeInProcessor'] ?? 0,
       coralPickupMethod: json['coralPickupMethod'] ?? 'None',
+      robotPath: json['robotPath'] != null
+          ? (json['robotPath'] as List).map((line) {
+              final Map<String, dynamic> lineMap = Map<String, dynamic>.from(line);
+              return {
+                'points': lineMap['points'],
+                'color': lineMap['color'],
+                'strokeWidth': lineMap['strokeWidth'],
+              };
+            }).toList()
+          : null,
+      telemetry: json['telemetry'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toCompressedJson() {
+    final Map<String, dynamic> json = {
+      't': teamNumber,
+      'm': matchNumber,
+      'ts': timestamp,
+      'mt': matchType,
+      'ra': isRedAlliance ? 1 : 0,
+      'ct': cageType,
+      'cp': coralPreloaded ? 1 : 0,
+      'tx': taxis ? 1 : 0,
+      'ar': algaeRemoved,
+      'cpl': coralPlaced,
+      'rp': rankingPoint ? 1 : 0,
+      'cpc': canPickupCoral ? 1 : 0,
+      'cpa': canPickupAlgae ? 1 : 0,
+      'asn': algaeScoredInNet,
+      'crp': coralRankingPoint ? 1 : 0,
+      'ap': algaeProcessed,
+      'pas': processedAlgaeScored,
+      'pc': processorCycles,
+      'cop': coOpPoint ? 1 : 0,
+      'rtb': returnedToBarge ? 1 : 0,
+      'ch': cageHang,
+      'brp': bargeRankingPoint ? 1 : 0,
+      'bd': breakdown ? 1 : 0,
+      'cm': comments,
+      'aan': autoAlgaeInNet,
+      'aap': autoAlgaeInProcessor,
+      'cpm': coralPickupMethod,
+    };
+
+    // Only include robot path if it exists
+    if (robotPath != null) {
+      // Convert drawing lines to compressed format
+      json['rp'] = robotPath!.map((line) => {
+        'p': (line['points'] as List).map((p) => {
+          'x': ((p['x'] as num).toDouble() * 10).round() / 10,
+          'y': ((p['y'] as num).toDouble() * 10).round() / 10,
+        }).toList(),
+        'c': line['color'],
+        'w': ((line['strokeWidth'] as num).toDouble() * 10).round() / 10,
+      }).toList();
+    }
+
+    return json;
+  }
+
+  static ScoutingRecord fromCompressedJson(Map<String, dynamic> json) {
+    return ScoutingRecord(
+      teamNumber: json['t'] as int,
+      matchNumber: json['m'] as int,
+      timestamp: json['ts'] as String,
+      matchType: json['mt'] as String,
+      isRedAlliance: json['ra'] == 1,
+      cageType: json['ct'] as String,
+      coralPreloaded: json['cp'] == 1,
+      taxis: json['tx'] == 1,
+      algaeRemoved: json['ar'] as int,
+      coralPlaced: json['cpl'] as String,
+      rankingPoint: json['rp'] == 1,
+      canPickupCoral: json['cpc'] == 1,
+      canPickupAlgae: json['cpa'] == 1,
+      algaeScoredInNet: json['asn'] as int,
+      coralRankingPoint: json['crp'] == 1,
+      algaeProcessed: json['ap'] as int,
+      processedAlgaeScored: json['pas'] as int,
+      processorCycles: json['pc'] as int,
+      coOpPoint: json['cop'] == 1,
+      returnedToBarge: json['rtb'] == 1,
+      cageHang: json['ch'] as String,
+      bargeRankingPoint: json['brp'] == 1,
+      breakdown: json['bd'] == 1,
+      comments: json['cm'] as String,
+      autoAlgaeInNet: json['aan'] as int,
+      autoAlgaeInProcessor: json['aap'] as int,
+      coralPickupMethod: json['cpm'] as String,
+      robotPath: json['rp'] != null ? (json['rp'] as List).map((line) {
+        return {
+          'points': (line['p'] as List).map((p) => {
+            'x': (p['x'] as num).toDouble(),
+            'y': (p['y'] as num).toDouble(),
+          }).toList(),
+          'color': line['c'],
+          'strokeWidth': line['w'],
+        };
+      }).toList() : null,
     );
   }
 }
@@ -154,19 +267,36 @@ class DataManager {
   static const String _storageKey = 'scouting_records';
   
   static Future<void> saveRecord(ScoutingRecord record) async {
-    final prefs = await SharedPreferences.getInstance();
-    final records = await getRecords();
-    records.add(record);
-    await prefs.setString(_storageKey, jsonEncode(records.map((r) => r.toJson()).toList()));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final records = await getRecords();
+      records.add(record);
+      
+      // Convert each record to a Map and then to JSON
+      final List<Map<String, dynamic>> recordMaps = records.map((r) => r.toJson()).toList();
+      final jsonStr = jsonEncode(recordMaps);
+      
+      await prefs.setString(_storageKey, jsonStr);
+    } catch (e, stackTrace) {
+      print('Error saving record: $e');
+      print('Stack trace: $stackTrace');
+      throw e;
+    }
   }
   
   static Future<List<ScoutingRecord>> getRecords() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? recordsJson = prefs.getString(_storageKey);
-    if (recordsJson == null) return [];
-    
-    final List<dynamic> decoded = jsonDecode(recordsJson);
-    return decoded.map((json) => ScoutingRecord.fromJson(json)).toList();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? recordsJson = prefs.getString(_storageKey);
+      if (recordsJson == null) return [];
+      
+      final List<dynamic> decoded = jsonDecode(recordsJson);
+      return decoded.map((json) => ScoutingRecord.fromJson(Map<String, dynamic>.from(json))).toList();
+    } catch (e, stackTrace) {
+      print('Error getting records: $e');
+      print('Stack trace: $stackTrace');
+      return [];
+    }
   }
 
   static Future<void> deleteRecord(int index) async {
@@ -732,10 +862,8 @@ class _DataPageState extends State<DataPage> {
   }
 
 void _showQrCodeForRecord(ScoutingRecord record) {
-  final csvData = [
-    record.toJson().values.toList(),
-  ];
-  final csvStr = const ListToCsvConverter().convert(csvData);
+  // Use compressed JSON format
+  final compressedData = jsonEncode(record.toCompressedJson());
 
   showDialog(
     context: context,
@@ -747,11 +875,12 @@ void _showQrCodeForRecord(ScoutingRecord record) {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 200,
-                height: 200,
+                width: 300, // Increased size to accommodate more data
+                height: 300,
                 child: QrImageView(
-                  data: csvStr,
+                  data: compressedData,
                   version: QrVersions.auto,
+                  errorCorrectionLevel: QrErrorCorrectLevel.L, // Lower error correction for more data
                   foregroundColor: Theme.of(context).brightness == Brightness.dark 
                       ? Colors.white 
                       : Colors.black,
@@ -871,61 +1000,103 @@ void _showQrCodeForRecord(ScoutingRecord record) {
   void _showRecordDetails(ScoutingRecord record) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Match ${record.matchNumber} Details'),
-        content: SingleChildScrollView(
+      builder: (context) => Dialog(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildDetailSection('Match Information', [
-                'Time: ${record.timestamp}',
-                'Type: ${record.matchType}',
-                'Team: ${record.teamNumber}',
-                'Alliance: ${record.isRedAlliance ? "Red" : "Blue"}',
-              ]),
-              _buildDetailSection('Autonomous', [
-                'Cage Type: ${record.cageType}',
-                'Coral Preloaded: ${record.coralPreloaded ? "Yes" : "No"}',
-                'Taxis: ${record.taxis ? "Yes" : "No"}',
-                'Algae Removed: ${record.algaeRemoved}',
-                'Coral Placed: ${record.coralPlaced}',
-                'Ranking Point: ${record.rankingPoint ? "Yes" : "No"}',
-                'Can Pickup: ${record.canPickupAlgae ? "Yes" : "No"}',
-                'Auto Algae in Net: ${record.autoAlgaeInNet}',
-                'Auto Algae in Processor: ${record.autoAlgaeInProcessor}',
-                'Coral Pickup Method: ${record.coralPickupMethod}',
-              ]),
-              _buildDetailSection('Teleop', [
-                'Algae Scored in Net: ${record.algaeScoredInNet}',
-                'Coral Ranking Point: ${record.coralRankingPoint ? "Yes" : "No"}',
-                'Algae Processed: ${record.algaeProcessed}',
-                'Processed Algae Scored: ${record.processedAlgaeScored}',
-                'Processor Cycles: ${record.processorCycles}',
-                'Co-Op Point: ${record.coOpPoint ? "Yes" : "No"}',
-              ]),
-              _buildDetailSection('Endgame', [
-                'Returned to Barge: ${record.returnedToBarge ? "Yes" : "No"}',
-                'Cage Hang: ${record.cageHang}',
-                'Barge Ranking Point: ${record.bargeRankingPoint ? "Yes" : "No"}',
-              ]),
-              _buildDetailSection('Other', [
-                'Breakdown: ${record.breakdown ? "Yes" : "No"}',
-                'Comments: ${record.comments}',
-              ]),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Match ${record.matchNumber} Details',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              Divider(),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailSection('Match Information', [
+                        _buildDetailRow('Time', record.timestamp),
+                        _buildDetailRow('Type', record.matchType),
+                        _buildDetailRow('Team', record.teamNumber.toString()),
+                        _buildDetailRow('Alliance', record.isRedAlliance ? "Red" : "Blue"),
+                      ]),
+                      _buildDetailSection('Autonomous', [
+                        _buildDetailRow('Cage Type', record.cageType),
+                        _buildDetailRow('Coral Preloaded', record.coralPreloaded ? "Yes" : "No"),
+                        _buildDetailRow('Taxis', record.taxis ? "Yes" : "No"),
+                        _buildDetailRow('Algae Removed', record.algaeRemoved.toString()),
+                        _buildDetailRow('Coral Placed', record.coralPlaced),
+                        _buildDetailRow('Ranking Point', record.rankingPoint ? "Yes" : "No"),
+                        _buildDetailRow('Can Pickup', record.canPickupAlgae ? "Yes" : "No"),
+                        _buildDetailRow('Auto Algae in Net', record.autoAlgaeInNet.toString()),
+                        _buildDetailRow('Auto Algae in Processor', record.autoAlgaeInProcessor.toString()),
+                        _buildDetailRow('Coral Pickup Method', record.coralPickupMethod),
+                      ]),
+                      _buildDetailSection('Teleop', [
+                        _buildDetailRow('Algae Scored in Net', record.algaeScoredInNet.toString()),
+                        _buildDetailRow('Coral Ranking Point', record.coralRankingPoint ? "Yes" : "No"),
+                        _buildDetailRow('Algae Processed', record.algaeProcessed.toString()),
+                        _buildDetailRow('Processed Algae Scored', record.processedAlgaeScored.toString()),
+                        _buildDetailRow('Processor Cycles', record.processorCycles.toString()),
+                        _buildDetailRow('Co-Op Point', record.coOpPoint ? "Yes" : "No"),
+                      ]),
+                      _buildDetailSection('Endgame', [
+                        _buildDetailRow('Returned to Barge', record.returnedToBarge ? "Yes" : "No"),
+                        _buildDetailRow('Cage Hang', record.cageHang),
+                        _buildDetailRow('Barge Ranking Point', record.bargeRankingPoint ? "Yes" : "No"),
+                      ]),
+                      _buildDetailSection('Other', [
+                        _buildDetailRow('Breakdown', record.breakdown ? "Yes" : "No"),
+                        _buildDetailRow('Comments', record.comments),
+                      ]),
+                      if (record.robotPath != null)
+                        _buildDetailSection('Robot Path', [
+                          _buildDetailRow('Status', 'Drawing saved'),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DrawingPage(
+                                      isRedAlliance: record.isRedAlliance,
+                                      initialDrawing: record.robotPath,
+                                      readOnly: true,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.visibility),
+                              label: Text('View Drawing'),
+                            ),
+                          ),
+                        ]),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildDetailSection(String title, List<String> details) {
+  Widget _buildDetailSection(String title, List<dynamic> details) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -940,11 +1111,35 @@ void _showQrCodeForRecord(ScoutingRecord record) {
           ),
         ),
         ...details.map((detail) => Padding(
-              padding: const EdgeInsets.only(left: 16.0, bottom: 4.0),
-              child: Text(detail),
-            )),
+          padding: const EdgeInsets.only(left: 16.0, bottom: 4.0),
+          child: detail is String ? Text(detail) : detail,
+        )),
         Divider(),
       ],
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

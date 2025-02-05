@@ -60,6 +60,7 @@ class MyAppState extends State<MyApp> {
   late final ThemeNotifier themeNotifier;
   bool telemetryVisible = false;
   bool _isInitialized = false;
+  List<String> _telemetryData = [];
 
   @override
   void initState() {
@@ -67,6 +68,13 @@ class MyAppState extends State<MyApp> {
     themeNotifier = ThemeNotifier();
     themeNotifier.addListener(_handleThemeChange);
     _initializeApp();
+    
+    // Subscribe to telemetry events
+    TelemetryService().eventStream.listen((event) {
+      setState(() {
+        _telemetryData.add(event.toString());
+      });
+    });
   }
 
   Future<void> _initializeApp() async {
@@ -104,58 +112,71 @@ class MyAppState extends State<MyApp> {
       );
     }
 
-    return TelemetryOverlay(
-      isVisible: telemetryVisible,
-      onVisibilityChanged: toggleTelemetry,
-      child: ThemeProvider(
-        notifier: themeNotifier,
-        child: Builder(
-          builder: (context) {
-            final isDarkMode = ThemeProvider.of(context).isDarkMode;
-            return MaterialApp(
-              debugShowCheckedModeBanner: false,
-              title: 'Scouting App 2025',
-              theme: ThemeData(
-                primarySwatch: Colors.blue,
-                brightness: Brightness.light,
+    return ThemeProvider(
+      notifier: themeNotifier,
+      child: Builder(
+        builder: (context) {
+          final isDarkMode = ThemeProvider.of(context).isDarkMode;
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'Scouting App 2025',
+            theme: ThemeData(
+              primarySwatch: Colors.blue,
+              brightness: Brightness.light,
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              scaffoldBackgroundColor: Colors.black,
+              appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.black,
+                elevation: 0,
               ),
-              darkTheme: ThemeData(
-                brightness: Brightness.dark,
-                scaffoldBackgroundColor: Colors.black,
-                appBarTheme: const AppBarTheme(
-                  backgroundColor: Colors.black,
-                  elevation: 0,
-                ),
-                bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-                  backgroundColor: Colors.black,
-                  selectedItemColor: Colors.blue,
-                  unselectedItemColor: Colors.grey,
-                ),
-                toggleButtonsTheme: ToggleButtonsThemeData(
-                  fillColor: Colors.blue.withOpacity(0.3),
-                  selectedColor: Colors.blue,
-                  color: Colors.grey,
-                ),
-                inputDecorationTheme: const InputDecorationTheme(
-                  border: OutlineInputBorder(),
-                  fillColor: Colors.black,
-                  filled: true,
-                ),
-                dividerColor: Colors.grey[850],
-                cardColor: Colors.black,
-                dialogBackgroundColor: Colors.black,
-                colorScheme: const ColorScheme.dark(
-                  background: Colors.black,
-                  surface: Colors.black,
-                  primary: Colors.blue,
-                  secondary: Colors.blueAccent,
-                ),
+              bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                backgroundColor: Colors.black,
+                selectedItemColor: Colors.blue,
+                unselectedItemColor: Colors.grey,
               ),
-              themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-              home: ScoutingPage(),
-            );
-          },
-        ),
+              toggleButtonsTheme: ToggleButtonsThemeData(
+                fillColor: Colors.blue.withOpacity(0.3),
+                selectedColor: Colors.blue,
+                color: Colors.grey,
+              ),
+              inputDecorationTheme: const InputDecorationTheme(
+                border: OutlineInputBorder(),
+                fillColor: Colors.black,
+                filled: true,
+              ),
+              dividerColor: Colors.grey[850],
+              cardColor: Colors.black,
+              dialogBackgroundColor: Colors.black,
+              colorScheme: const ColorScheme.dark(
+                background: Colors.black,
+                surface: Colors.black,
+                primary: Colors.blue,
+                secondary: Colors.blueAccent,
+              ),
+            ),
+            themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+            home: Stack(
+              children: [
+                ScoutingPage(),
+                if (telemetryVisible)
+                  Positioned(
+                    right: 16,
+                    bottom: 16,
+                    child: TelemetryOverlay(
+                      telemetryData: _telemetryData,
+                      onClose: () {
+                        setState(() {
+                          telemetryVisible = false;
+                        });
+                      },
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

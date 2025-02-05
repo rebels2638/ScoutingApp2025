@@ -12,6 +12,7 @@ import 'widgets/navbar.dart';
 import 'widgets/topbar.dart';
 import 'services/telemetry_service.dart';
 import 'dart:async';
+import 'drawing_page.dart';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -77,6 +78,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
   // Add to state variables section
   String coralPickupMethod = 'None';
+
+  // Update the type to match the new DrawingLine format
+  List<Map<String, dynamic>>? drawingData;
 
   @override
   void initState() {
@@ -692,6 +696,57 @@ class _ScoutingPageState extends State<ScoutingPage> {
             },
           ),
         ),
+        Row(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push<List<Map<String, dynamic>>>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => DrawingPage(
+                          isRedAlliance: isRedAlliance,
+                        ),
+                      ),
+                    );
+                    
+                    if (result != null) {
+                      setState(() {
+                        drawingData = result;
+                      });
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Robot path drawing saved'),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.draw),
+                  label: const Text('Draw Robot Path'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (drawingData != null)
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              'Robot path drawing saved ✓',
+              style: TextStyle(
+                color: Colors.green,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: TextField(
@@ -763,6 +818,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         autoAlgaeInNet: autoAlgaeInNet,
         autoAlgaeInProcessor: autoAlgaeInProcessor,
         coralPickupMethod: coralPickupMethod,
+        robotPath: drawingData,
       );
 
       await DataManager.saveRecord(record);
@@ -801,6 +857,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         autoAlgaeInNet = 0;
         autoAlgaeInProcessor = 0;
         coralPickupMethod = 'None';
+        drawingData = null;
         updateTime();
       });
 
@@ -1143,6 +1200,7 @@ class CounterRow extends StatelessWidget {
         Row(
           children: [
             FloatingActionButton(
+              heroTag: 'decrement_$label',
               mini: true,
               elevation: 0.0,
               backgroundColor: Theme.of(context).brightness == Brightness.dark 
@@ -1165,6 +1223,7 @@ class CounterRow extends StatelessWidget {
               ),
             ),
             FloatingActionButton(
+              heroTag: 'increment_$label',
               mini: true,
               elevation: 0.0,
               backgroundColor: Theme.of(context).brightness == Brightness.dark 

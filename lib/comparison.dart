@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'data.dart';
 import 'database_helper.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'services/telemetry_service.dart';
+import 'widgets/telemetry_overlay.dart';
 
 class ComparisonPage extends StatefulWidget {
   final List<ScoutingRecord> records;
@@ -282,21 +286,42 @@ class _ComparisonPageState extends State<ComparisonPage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        controller: _horizontalController,
-        child: SingleChildScrollView(
-          controller: _verticalController,
-          child: DataTable(
-            columnSpacing: 24,
-            headingRowHeight: 0,
-            columns: [
-              DataColumn(label: Container(width: 150)),
-              ...widget.records.map((r) => DataColumn(label: Container(width: 120))),
-            ],
-            rows: _buildRows(),
+      body: Column(
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            controller: _horizontalController,
+            child: SingleChildScrollView(
+              controller: _verticalController,
+              child: DataTable(
+                columnSpacing: 24,
+                headingRowHeight: 0,
+                columns: [
+                  DataColumn(label: Container(width: 150)),
+                  ...widget.records.map((r) => DataColumn(label: Container(width: 120))),
+                ],
+                rows: _buildRows(),
+              ),
+            ),
           ),
-        ),
+          Expanded(
+            child: Row(
+              children: [
+                Flexible(
+                  flex: 1,
+                  child: TelemetryOverlay(
+                    telemetryData: widget.records.map((record) {
+                      return '[Match ${record.matchNumber} - Team ${record.teamNumber}]\n${record.telemetry ?? "No telemetry data"}';
+                    }).toList(),
+                    onClose: () {
+                      // Handle close if needed
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

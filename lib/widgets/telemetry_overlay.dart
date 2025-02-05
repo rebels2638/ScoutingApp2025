@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import '../services/telemetry_service.dart';
+import 'package:flutter/services.dart';
 
 class TelemetryOverlay extends StatefulWidget {
-  final Widget child;
-  final bool isVisible;
-  final Function(bool)? onVisibilityChanged;
+  final List<String> telemetryData;
+  final VoidCallback onClose;
 
   const TelemetryOverlay({
-    required this.child,
-    required this.isVisible,
-    this.onVisibilityChanged,
     Key? key,
+    required this.telemetryData,
+    required this.onClose,
   }) : super(key: key);
 
   @override
@@ -18,141 +16,297 @@ class TelemetryOverlay extends StatefulWidget {
 }
 
 class _TelemetryOverlayState extends State<TelemetryOverlay> {
-  final List<TelemetryEvent> _events = [];
-  final ScrollController _scrollController = ScrollController();
+  Offset position = const Offset(16, 16);
+  bool isMinimized = false;
   
-  // Add these offset variables to track position
-  double _xOffset = 20;
-  double _yOffset = 100;
-
-  void _clearLogs() {
-    setState(() {
-      _events.clear();
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    TelemetryService().eventStream.listen((event) {
-      setState(() {
-        _events.insert(0, event);
-        if (_events.length > 100) {
-          _events.removeLast();
-        }
-      });
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: TextDirection.ltr,
-      child: Stack(
-        children: [
-          widget.child,
-          if (widget.isVisible)
-            Positioned(
-              left: _xOffset,
-              top: _yOffset,
-              child: GestureDetector(  // Wrap Material with GestureDetector
-                onPanUpdate: (details) {
-                  setState(() {
-                    _xOffset += details.delta.dx;
-                    _yOffset += details.delta.dy;
-                    
-                    // Keep window within screen bounds
-                    _xOffset = _xOffset.clamp(0.0, MediaQuery.of(context).size.width - 300);
-                    _yOffset = _yOffset.clamp(0.0, MediaQuery.of(context).size.height - 200);
-                  });
-                },
-                child: Material(
-                  color: Colors.transparent,
-                  child: Container(
-                    width: 300,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      children: [
-                        Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.blue,
-                            borderRadius: BorderRadius.vertical(top: Radius.circular(8)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.drag_indicator,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'Telemetry',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ],
-                              ),
-                              IconButton(
-                                icon: Icon(Icons.close, color: Colors.white),
-                                onPressed: () {
-                                  _clearLogs();
-                                  widget.onVisibilityChanged?.call(false);
-                                },
-                                padding: EdgeInsets.zero,
-                                constraints: BoxConstraints(),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Expanded(
-                          child: ListView.builder(
-                            controller: _scrollController,
-                            reverse: true,
-                            itemCount: _events.length,
-                            itemBuilder: (context, index) {
-                              final event = _events[index];
-                              return Padding(
-                                padding: EdgeInsets.all(4),
-                                child: Text(
-                                  event.toString(),
-                                  style: TextStyle(
-                                    color: _getEventColor(event.type),
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+    return Positioned(
+      right: position.dx,
+      bottom: position.dy,
+      child: GestureDetector(
+        onPanUpdate: (details) {
+          setState(() {
+            position = Offset(
+              position.dx - details.delta.dx,
+              position.dy - details.delta.dy,
+            );
+          });
+        },
+        child: Card(
+          elevation: 8,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            width: 300,
+            height: isMinimized ? 48 : 400,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
                     ),
                   ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.terminal,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Telemetry',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: Icon(
+                          isMinimized ? Icons.expand_less : Icons.expand_more,
+                          size: 20,
+                        ),
+                        tooltip: isMinimized ? 'Expand' : 'Minimize',
+                        onPressed: () {
+                          setState(() {
+                            isMinimized = !isMinimized;
+                          });
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.copy_all, size: 20),
+                        tooltip: 'Copy all telemetry',
+                        onPressed: () {
+                          final text = widget.telemetryData.join('\n');
+                          Clipboard.setData(ClipboardData(text: text));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('All telemetry copied'),
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                        },
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.close, size: 20),
+                        onPressed: widget.onClose,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        tooltip: 'Close telemetry',
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                // Content
+                if (!isMinimized)
+                  Expanded(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[850]
+                            : Colors.grey[100],
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(12),
+                          bottomRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: widget.telemetryData.isEmpty
+                          ? const Center(
+                              child: Text('No telemetry data available'),
+                            )
+                          : SingleChildScrollView(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  for (var entry in widget.telemetryData)
+                                    Container(
+                                      width: double.infinity,
+                                      margin: const EdgeInsets.only(bottom: 8),
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).brightness == Brightness.dark
+                                            ? Colors.grey[900]
+                                            : Colors.white,
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(
+                                          color: entry.contains('ERROR:') 
+                                              ? Colors.red.withOpacity(0.5)
+                                              : Theme.of(context).brightness == Brightness.dark
+                                                  ? Colors.grey[700]!
+                                                  : Colors.grey[300]!,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Expanded(
+                                            child: GestureDetector(
+                                              onTap: entry.contains('ERROR:') ? () {
+                                                showDialog(
+                                                  context: context,
+                                                  builder: (context) => AlertDialog(
+                                                    title: Row(
+                                                      children: [
+                                                        const Icon(Icons.error_outline, color: Colors.red),
+                                                        const SizedBox(width: 8),
+                                                        const Text('Error Details'),
+                                                      ],
+                                                    ),
+                                                    content: SingleChildScrollView(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          SelectableText(
+                                                            entry,
+                                                            style: const TextStyle(
+                                                              fontFamily: 'RobotoMono',
+                                                              height: 1.5,
+                                                            ),
+                                                          ),
+                                                          const SizedBox(height: 16),
+                                                          const Text(
+                                                            'Debugging Tips:',
+                                                            style: TextStyle(fontWeight: FontWeight.bold),
+                                                          ),
+                                                          const SizedBox(height: 8),
+                                                          if (entry.contains("'List<dynamic>' is not a subtype of type 'Map<dynamic, dynamic>'"))
+                                                            Row(
+                                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                                              children: [
+                                                                Expanded(
+                                                                  child: const Text(
+                                                                    '• Check that your data is in a Map format like:\n'
+                                                                    '  {\n'
+                                                                    '    "key1": "value1",\n'
+                                                                    '    "key2": "value2"\n'
+                                                                    '  }\n\n'
+                                                                    '• Instead of a List format like:\n'
+                                                                    '  ["value1", "value2"]',
+                                                                    style: TextStyle(
+                                                                      fontFamily: 'RobotoMono',
+                                                                      fontSize: 12,
+                                                                    ),
+                                                                  ),
+                                                                ),
+                                                                IconButton(
+                                                                  icon: const Icon(Icons.copy, size: 16),
+                                                                  padding: EdgeInsets.zero,
+                                                                  constraints: const BoxConstraints(),
+                                                                  onPressed: () {
+                                                                    const tipText = 
+                                                                      'Example Map format:\n'
+                                                                      '{\n'
+                                                                      '  "key1": "value1",\n'
+                                                                      '  "key2": "value2"\n'
+                                                                      '}\n\n'
+                                                                      'Instead of List format:\n'
+                                                                      '["value1", "value2"]';
+                                                                    Clipboard.setData(ClipboardData(text: tipText));
+                                                                    Navigator.pop(context);
+                                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                                      const SnackBar(
+                                                                        content: Text('Debugging tips copied'),
+                                                                        duration: Duration(seconds: 1),
+                                                                      ),
+                                                                    );
+                                                                  },
+                                                                  tooltip: 'Copy example format',
+                                                                ),
+                                                              ],
+                                                            ),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    actions: [
+                                                      TextButton(
+                                                        onPressed: () => Navigator.pop(context),
+                                                        child: const Text('Close'),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                );
+                                              } : null,
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  SelectableText(
+                                                    entry,
+                                                    style: TextStyle(
+                                                      fontFamily: 'RobotoMono',
+                                                      fontSize: 13,
+                                                      height: 1.5,
+                                                      color: entry.contains('ERROR:') 
+                                                          ? Colors.red 
+                                                          : Theme.of(context).brightness == Brightness.dark
+                                                              ? Colors.grey[200]
+                                                              : Colors.grey[900],
+                                                      fontWeight: entry.contains('ERROR:') 
+                                                          ? FontWeight.bold 
+                                                          : FontWeight.normal,
+                                                    ),
+                                                  ),
+                                                  if (entry.contains('ERROR:'))
+                                                    Padding(
+                                                      padding: const EdgeInsets.only(top: 8),
+                                                      child: Text(
+                                                        'Tap for debugging tips',
+                                                        style: TextStyle(
+                                                          fontSize: 12,
+                                                          color: Colors.grey[600],
+                                                          fontStyle: FontStyle.italic,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.copy, size: 16),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            onPressed: () {
+                                              Clipboard.setData(ClipboardData(text: entry));
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Entry copied'),
+                                                  duration: Duration(seconds: 1),
+                                                ),
+                                              );
+                                            },
+                                            tooltip: 'Copy entry',
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                    ),
+                  ),
+              ],
             ),
-        ],
+          ),
+        ),
       ),
     );
-  }
-
-  Color _getEventColor(TelemetryType type) {
-    switch (type) {
-      case TelemetryType.error:
-        return Colors.red;
-      case TelemetryType.action:
-        return Colors.green;
-      case TelemetryType.stateChange:
-        return Colors.orange;
-      case TelemetryType.info:
-        return Colors.blue;
-    }
   }
 } 

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
 enum TelemetryType {
   error,
@@ -109,4 +110,113 @@ class TelemetryService {
     _eventController.close();
     _devModeController.close();
   }
+}
+
+class TelemetryDialog extends StatelessWidget {
+  final List<String> telemetryData;
+  final String title;
+
+  const TelemetryDialog({
+    Key? key,
+    required this.telemetryData,
+    this.title = 'Telemetry',
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: MediaQuery.of(context).size.height * 0.8,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.terminal,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.copy_all),
+                      tooltip: 'Copy all',
+                      onPressed: () {
+                        final text = telemetryData.join('\n');
+                        Clipboard.setData(ClipboardData(text: text));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Copied to clipboard'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const Divider(),
+            // Content
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[850]
+                      : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[700]!
+                        : Colors.grey[300]!,
+                  ),
+                ),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: SelectableText(
+                    telemetryData.join('\n'),
+                    style: TextStyle(
+                      fontFamily: 'RobotoMono',
+                      fontSize: 13,
+                      height: 1.5,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[200]
+                          : Colors.grey[900],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void showTelemetryDialog(BuildContext context, List<String> telemetryData, {String? title}) {
+  showDialog(
+    context: context,
+    builder: (context) => TelemetryDialog(
+      telemetryData: telemetryData,
+      title: title ?? 'Telemetry',
+    ),
+  );
 } 
