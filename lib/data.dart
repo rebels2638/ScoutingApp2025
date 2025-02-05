@@ -255,6 +255,107 @@ class ScoutingRecord {
       }).toList() : null,
     );
   }
+
+  List<dynamic> toCsvRow() {
+    return [
+      timestamp,
+      matchNumber,
+      matchType,
+      teamNumber,
+      isRedAlliance ? 1 : 0,
+      cageType,
+      coralPreloaded ? 1 : 0,
+      taxis ? 1 : 0,
+      algaeRemoved,
+      coralPlaced,
+      rankingPoint ? 1 : 0,
+      canPickupCoral ? 1 : 0,
+      canPickupAlgae ? 1 : 0,
+      algaeScoredInNet,
+      coralRankingPoint ? 1 : 0,
+      algaeProcessed,
+      processedAlgaeScored,
+      processorCycles,
+      coOpPoint ? 1 : 0,
+      returnedToBarge ? 1 : 0,
+      cageHang,
+      bargeRankingPoint ? 1 : 0,
+      breakdown ? 1 : 0,
+      comments,
+      autoAlgaeInNet,
+      autoAlgaeInProcessor,
+      coralPickupMethod,
+      robotPath != null ? jsonEncode(robotPath) : '',
+    ];
+  }
+
+  static List<String> getCsvHeaders() {
+    return [
+      'timestamp',
+      'matchNumber',
+      'matchType', 
+      'teamNumber',
+      'isRedAlliance',
+      'cageType',
+      'coralPreloaded',
+      'taxis',
+      'algaeRemoved',
+      'coralPlaced',
+      'rankingPoint',
+      'canPickupCoral',
+      'canPickupAlgae',
+      'algaeScoredInNet',
+      'coralRankingPoint',
+      'algaeProcessed',
+      'processedAlgaeScored',
+      'processorCycles',
+      'coOpPoint',
+      'returnedToBarge',
+      'cageHang',
+      'bargeRankingPoint',
+      'breakdown',
+      'comments',
+      'autoAlgaeInNet',
+      'autoAlgaeInProcessor',
+      'coralPickupMethod',
+      'robotPath',
+    ];
+  }
+
+  factory ScoutingRecord.fromCsvRow(List<dynamic> row) {
+    return ScoutingRecord(
+      timestamp: row[0].toString(),
+      matchNumber: int.parse(row[1].toString()),
+      matchType: row[2].toString(),
+      teamNumber: int.parse(row[3].toString()),
+      isRedAlliance: row[4].toString() == '1',
+      cageType: row[5].toString(),
+      coralPreloaded: row[6].toString() == '1',
+      taxis: row[7].toString() == '1',
+      algaeRemoved: int.parse(row[8].toString()),
+      coralPlaced: row[9].toString(),
+      rankingPoint: row[10].toString() == '1',
+      canPickupCoral: row[11].toString() == '1',
+      canPickupAlgae: row[12].toString() == '1',
+      algaeScoredInNet: int.parse(row[13].toString()),
+      coralRankingPoint: row[14].toString() == '1',
+      algaeProcessed: int.parse(row[15].toString()),
+      processedAlgaeScored: int.parse(row[16].toString()),
+      processorCycles: int.parse(row[17].toString()),
+      coOpPoint: row[18].toString() == '1',
+      returnedToBarge: row[19].toString() == '1',
+      cageHang: row[20].toString(),
+      bargeRankingPoint: row[21].toString() == '1',
+      breakdown: row[22].toString() == '1',
+      comments: row[23].toString(),
+      autoAlgaeInNet: int.parse(row[24].toString()),
+      autoAlgaeInProcessor: int.parse(row[25].toString()),
+      coralPickupMethod: row[26].toString(),
+      robotPath: row[27].toString().isNotEmpty ? 
+        jsonDecode(row[27].toString()) as List<Map<String, dynamic>> : 
+        null,
+    );
+  }
 }
 
 class DataManager {
@@ -266,11 +367,14 @@ class DataManager {
       final records = await getRecords();
       records.add(record);
       
-      // Convert each record to a Map and then to JSON
-      final List<Map<String, dynamic>> recordMaps = records.map((r) => r.toJson()).toList();
-      final jsonStr = jsonEncode(recordMaps);
+      // Convert records to CSV
+      final csvData = [
+        ScoutingRecord.getCsvHeaders(),
+        ...records.map((r) => r.toCsvRow()),
+      ];
       
-      await prefs.setString(_storageKey, jsonStr);
+      final csv = const ListToCsvConverter().convert(csvData);
+      await prefs.setString(_storageKey, csv);
     } catch (e, stackTrace) {
       print('Error saving record: $e');
       print('Stack trace: $stackTrace');
@@ -281,11 +385,14 @@ class DataManager {
   static Future<List<ScoutingRecord>> getRecords() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final String? recordsJson = prefs.getString(_storageKey);
-      if (recordsJson == null) return [];
+      final String? csvData = prefs.getString(_storageKey);
+      if (csvData == null) return [];
       
-      final List<dynamic> decoded = jsonDecode(recordsJson);
-      return decoded.map((json) => ScoutingRecord.fromJson(Map<String, dynamic>.from(json))).toList();
+      final List<List<dynamic>> rows = const CsvToListConverter().convert(csvData);
+      if (rows.isEmpty) return [];
+      
+      // Skip header row
+      return rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
     } catch (e, stackTrace) {
       print('Error getting records: $e');
       print('Stack trace: $stackTrace');
@@ -297,7 +404,10 @@ class DataManager {
     final prefs = await SharedPreferences.getInstance();
     final records = await getRecords();
     records.removeAt(index);
-    await prefs.setString(_storageKey, jsonEncode(records.map((r) => r.toJson()).toList()));
+    await prefs.setString(_storageKey, const ListToCsvConverter().convert([
+      ScoutingRecord.getCsvHeaders(),
+      ...records.map((r) => r.toCsvRow()),
+    ]));
   }
 
   static Future<void> exportToJson() async {
@@ -307,25 +417,30 @@ class DataManager {
         throw Exception('No records to export');
       }
 
-      final jsonStr = jsonEncode(records.map((r) => r.toJson()).toList());
+      final csvData = [
+        ScoutingRecord.getCsvHeaders(),
+        ...records.map((r) => r.toCsvRow()),
+      ];
+      
+      final csv = const ListToCsvConverter().convert(csvData);
       
       String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Scouting Records',
-        fileName: 'scouting_records.json',
+        fileName: 'scouting_records.csv',
         type: FileType.custom,
-        allowedExtensions: ['json'],
+        allowedExtensions: ['csv'],
       );
       
       if (outputFile == null) {
         throw Exception('Export cancelled');
       }
 
-      // ensure file ends with .json
-      if (!outputFile.toLowerCase().endsWith('.json')) {
-        outputFile += '.json';
+      // ensure file ends with .csv
+      if (!outputFile.toLowerCase().endsWith('.csv')) {
+        outputFile += '.csv';
       }
 
-      await File(outputFile).writeAsString(jsonStr, flush: true);
+      await File(outputFile).writeAsString(csv, flush: true);
     } catch (e) {
       throw Exception('Failed to export: ${e.toString()}');
     }
@@ -335,7 +450,7 @@ class DataManager {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['json'],
+        allowedExtensions: ['csv'],
       );
       
       if (result == null || result.files.isEmpty) {
@@ -351,31 +466,33 @@ class DataManager {
         throw Exception('File does not exist');
       }
 
-      final jsonStr = await file.readAsString();
-      if (jsonStr.isEmpty) {
+      final csvStr = await file.readAsString();
+      if (csvStr.isEmpty) {
         throw Exception('File is empty');
       }
       
-      final List<dynamic> decoded = jsonDecode(jsonStr);
-      if (decoded.isEmpty) {
+      final List<List<dynamic>> rows = const CsvToListConverter().convert(csvStr);
+      if (rows.length <= 1) {
         throw Exception('No records found in file');
       }
 
-      final records = decoded.map((json) => ScoutingRecord.fromJson(json)).toList();
+      // Skip header row and convert remaining rows to records
+      final records = rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
       
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_storageKey, jsonStr);
+      final csvData = const ListToCsvConverter().convert([
+        ScoutingRecord.getCsvHeaders(),
+        ...records.map((r) => r.toCsvRow()),
+      ]);
+      await prefs.setString(_storageKey, csvData);
     } catch (e) {
-      if (e is FormatException) {
-        throw Exception('Invalid JSON format');
-      }
       throw Exception('Failed to import: ${e.toString()}');
     }
   }
 
   static Future<void> deleteAllRecords() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_storageKey, jsonEncode([]));
+    await prefs.remove(_storageKey);
   }
 
   static Future<void> deleteMultipleRecords(List<int> indices) async {
@@ -387,7 +504,10 @@ class DataManager {
         records.removeAt(index);
       }
     }
-    await prefs.setString(_storageKey, jsonEncode(records.map((r) => r.toJson()).toList()));
+    await prefs.setString(_storageKey, const ListToCsvConverter().convert([
+      ScoutingRecord.getCsvHeaders(),
+      ...records.map((r) => r.toCsvRow()),
+    ]));
   }
 }
 
@@ -634,7 +754,7 @@ class _DataPageState extends State<DataPage> {
 
                           List<List<dynamic>> csvData = [];
                           selected.forEach((record) {
-                            csvData.add(record.toJson().values.toList());
+                            csvData.add(record.toCsvRow());
                           });
                           String csv = const ListToCsvConverter().convert(csvData);
                           List<String> recordsCsv = csv.split('\n');

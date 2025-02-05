@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+import 'package:csv/csv.dart';
 import 'data.dart';
 
 class DatabaseHelper {
@@ -15,16 +15,24 @@ class DatabaseHelper {
 
   Future<List<ScoutingRecord>> getAllRecords() async {
     final prefs = await SharedPreferences.getInstance();
-    final String? recordsJson = prefs.getString(_storageKey);
-    if (recordsJson == null) return [];
+    final String? csvData = prefs.getString(_storageKey);
+    if (csvData == null) return [];
     
-    List<dynamic> decoded = jsonDecode(recordsJson);
-    return decoded.map((json) => ScoutingRecord.fromJson(json)).toList();
+    final List<List<dynamic>> rows = const CsvToListConverter().convert(csvData);
+    if (rows.isEmpty) return [];
+    
+    // Skip header row
+    return rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
   }
 
   Future<void> saveRecords(List<ScoutingRecord> records) async {
     final prefs = await SharedPreferences.getInstance();
-    final String encoded = jsonEncode(records.map((r) => r.toJson()).toList());
-    await prefs.setString(_storageKey, encoded);
+    final csvData = [
+      ScoutingRecord.getCsvHeaders(),
+      ...records.map((r) => r.toCsvRow()),
+    ];
+    
+    final csv = const ListToCsvConverter().convert(csvData);
+    await prefs.setString(_storageKey, csv);
   }
 } 
