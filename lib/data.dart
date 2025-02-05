@@ -867,7 +867,7 @@ class _DataPageState extends State<DataPage> {
 
                           List<List<dynamic>> csvData = [];
                           selected.forEach((record) {
-                            csvData.add(record.toJson().values.toList());
+                            csvData.add(record.toJson().values.toList().sublist(0, record.toJson().values.length - 2));
                           });
                           String csv = const ListToCsvConverter().convert(csvData);
                           List<String> recordsCsv = csv.split('\n');
@@ -1088,7 +1088,7 @@ class _DataPageState extends State<DataPage> {
 
 void _showQrCodeForRecord(ScoutingRecord record) {
   final csvData = [
-    record.toJson().values.toList(),
+    record.toJson().values.toList().sublist(0, record.toJson().values.length - 2),
   ];
   final csvStr = const ListToCsvConverter().convert(csvData);
 
@@ -1107,6 +1107,12 @@ void _showQrCodeForRecord(ScoutingRecord record) {
                 child: QrImageView(
                   data: csvStr,
                   version: QrVersions.auto,
+                  foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.white 
+                      : Colors.black,
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.black 
+                      : Colors.white,
                 ),
               ),
               SizedBox(height: 16),
