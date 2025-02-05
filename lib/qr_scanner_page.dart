@@ -65,12 +65,12 @@ class _QrScannerPageState extends State<QrScannerPage> {
     }
 
     return ScoutingRecord(
-      timestamp: rows[0], 
-      matchNumber: int.tryParse(rows[1]) ?? 0, 
-      matchType: rows[2], 
-      teamNumber: int.tryParse(rows[3]) ?? 0, 
+      teamNumber: int.tryParse(rows[0]) ?? 0,
+      matchNumber: int.tryParse(rows[1]) ?? 0,
+      timestamp: rows[2],
+      matchType: rows[3],
       isRedAlliance: rows[4].toLowerCase() == 'true',
-      cageType: rows[5], 
+      cageType: rows[5],
       coralPreloaded: rows[6].toLowerCase() == 'true',
       taxis: rows[7].toLowerCase() == 'true',
       algaeRemoved: int.tryParse(rows[8]) ?? 0,
