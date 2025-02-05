@@ -121,12 +121,6 @@ class ScoutingRecord {
       'autoAlgaeInNet': autoAlgaeInNet,
       'autoAlgaeInProcessor': autoAlgaeInProcessor,
       'coralPickupMethod': coralPickupMethod,
-      'robotPath': robotPath?.map((line) => {
-        'points': line['points'],
-        'color': line['color'],
-        'strokeWidth': line['strokeWidth'],
-      }).toList(),
-      'telemetry': telemetry,
     };
   }
 
@@ -796,8 +790,8 @@ class _DataPageState extends State<DataPage> {
                 : ListView.builder(
                     itemCount: _records.length,
                     itemBuilder: (context, index) {
-                      final record = _records[index];
-                      final isSelected = selectedRecords[index];
+                      final record = _records[_records.length - 1 - index];
+                      final isSelected = selectedRecords[_records.length - 1 - index];
                       return Card(
                         margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         color: isSelected ? Colors.blue.withOpacity(0.1) : null,
@@ -808,7 +802,7 @@ class _DataPageState extends State<DataPage> {
                                 value: isSelected,
                                 onChanged: (bool? value) {
                                   setState(() {
-                                    selectedRecords[index] = value ?? false;
+                                    selectedRecords[_records.length - 1 - index] = value ?? false;
                                   });
                                 },
                               ),
