@@ -52,14 +52,6 @@ class ScoutingRecord {
   
   String? telemetry;
   
-  final String feederStation;
-  
-  // Add coral height fields
-  final int coralOnReefHeight1;
-  final int coralOnReefHeight2;
-  final int coralOnReefHeight3;
-  final int coralOnReefHeight4;
-  
   ScoutingRecord({
     required this.timestamp,
     required this.matchNumber,
@@ -88,13 +80,8 @@ class ScoutingRecord {
     required this.autoAlgaeInNet,
     required this.autoAlgaeInProcessor,
     required this.coralPickupMethod,
-    required this.coralOnReefHeight1,
-    required this.coralOnReefHeight2,
-    required this.coralOnReefHeight3,
-    required this.coralOnReefHeight4,
     this.robotPath,
     this.telemetry,
-    required this.feederStation,
   }) : assert(coralPreloaded != null),
        assert(taxis != null),
        assert(rankingPoint != null),
@@ -135,11 +122,6 @@ class ScoutingRecord {
       'autoAlgaeInNet': autoAlgaeInNet,
       'autoAlgaeInProcessor': autoAlgaeInProcessor,
       'coralPickupMethod': coralPickupMethod,
-      'feederStation': feederStation,
-      'coralOnReefHeight1': coralOnReefHeight1,
-      'coralOnReefHeight2': coralOnReefHeight2,
-      'coralOnReefHeight3': coralOnReefHeight3,
-      'coralOnReefHeight4': coralOnReefHeight4,
     };
   }
 
@@ -172,10 +154,6 @@ class ScoutingRecord {
       autoAlgaeInNet: json['autoAlgaeInNet'] ?? 0,
       autoAlgaeInProcessor: json['autoAlgaeInProcessor'] ?? 0,
       coralPickupMethod: json['coralPickupMethod'] ?? 'None',
-      coralOnReefHeight1: json['coralOnReefHeight1'] ?? 0,
-      coralOnReefHeight2: json['coralOnReefHeight2'] ?? 0,
-      coralOnReefHeight3: json['coralOnReefHeight3'] ?? 0,
-      coralOnReefHeight4: json['coralOnReefHeight4'] ?? 0,
       robotPath: json['robotPath'] != null
           ? (json['robotPath'] as List).map((line) {
               final Map<String, dynamic> lineMap = Map<String, dynamic>.from(line);
@@ -187,7 +165,6 @@ class ScoutingRecord {
             }).toList()
           : null,
       telemetry: json['telemetry'] as String?,
-      feederStation: json['feederStation'] ?? 'None',
     );
   }
 
@@ -220,11 +197,6 @@ class ScoutingRecord {
       'aan': autoAlgaeInNet,
       'aap': autoAlgaeInProcessor,
       'cpm': coralPickupMethod,
-      'fs': feederStation,
-      'coralOnReefHeight1': coralOnReefHeight1,
-      'coralOnReefHeight2': coralOnReefHeight2,
-      'coralOnReefHeight3': coralOnReefHeight3,
-      'coralOnReefHeight4': coralOnReefHeight4,
     };
 
     // Only include robot path if it exists
@@ -272,10 +244,6 @@ class ScoutingRecord {
       autoAlgaeInNet: json['aan'] as int,
       autoAlgaeInProcessor: json['aap'] as int,
       coralPickupMethod: json['cpm'] as String,
-      coralOnReefHeight1: json['coralOnReefHeight1'] as int,
-      coralOnReefHeight2: json['coralOnReefHeight2'] as int,
-      coralOnReefHeight3: json['coralOnReefHeight3'] as int,
-      coralOnReefHeight4: json['coralOnReefHeight4'] as int,
       robotPath: json['rp'] != null ? (json['rp'] as List).map((line) {
         return {
           'points': (line['p'] as List).map((p) => {
@@ -286,7 +254,6 @@ class ScoutingRecord {
           'strokeWidth': line['w'],
         };
       }).toList() : null,
-      feederStation: json['fs'] as String,
     );
   }
 
@@ -329,11 +296,6 @@ class ScoutingRecord {
       autoAlgaeInNet,
       autoAlgaeInProcessor,
       coralPickupMethod,
-      coralOnReefHeight1,
-      coralOnReefHeight2,
-      coralOnReefHeight3,
-      coralOnReefHeight4,
-      feederStation,
       robotPathStr,
     ];
   }
@@ -367,12 +329,7 @@ class ScoutingRecord {
       'autoAlgaeInNet',
       'autoAlgaeInProcessor',
       'coralPickupMethod',
-      'coralOnReefHeight1',
-      'coralOnReefHeight2',
-      'coralOnReefHeight3',
-      'coralOnReefHeight4',
       'robotPath',
-      'feederStation',
     ];
   }
 
@@ -419,11 +376,6 @@ class ScoutingRecord {
       autoAlgaeInNet: int.parse(row[24].toString()),
       autoAlgaeInProcessor: int.parse(row[25].toString()),
       coralPickupMethod: row[26].toString(),
-      coralOnReefHeight1: int.parse(row[27].toString()),
-      coralOnReefHeight2: int.parse(row[28].toString()),
-      coralOnReefHeight3: int.parse(row[29].toString()),
-      coralOnReefHeight4: int.parse(row[30].toString()),
-      feederStation: row[32].toString(),
       robotPath: pathData,
     );
   }
@@ -589,435 +541,364 @@ class DataManager {
   }
 }
 
-class DataPage extends StatefulWidget {
-  @override
-  _DataPageState createState() => _DataPageState();
-}
-
-class _DataPageState extends State<DataPage> {
-  List<ScoutingRecord> records = [];
-  List<bool> selectedRecords = [];
-  bool isSelecting = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadRecords();
-  }
-
-  Future<void> _loadRecords() async {
-    final loadedRecords = await DataManager.getRecords();
-    setState(() {
-      records = loadedRecords;
-      selectedRecords = List.generate(loadedRecords.length, (index) => false);
-    });
-  }
-
-  void _showDeleteConfirmation() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Delete Data'),
-          content: Text('Are you sure you want to delete the selected records?'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Cancel'),
-            ),
-            TextButton(
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              onPressed: () async {
-                List<int> toDelete = [];
-                for (int i = 0; i < selectedRecords.length; i++) {
-                  if (selectedRecords[i]) {
-                    toDelete.add(i);
-                  }
-                }
-                await DataManager.deleteMultipleRecords(toDelete);
-                Navigator.pop(context);
-                _loadRecords();
-              },
-              child: Text('Delete'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
+class DataPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.grey.shade900
-                  : Colors.blue.shade50,
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          await DataManager.exportToJson();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Export successful')),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString())),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.grey.shade200,
-                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.black,
-                      ),
-                      icon: Icon(Icons.upload, color: Theme.of(context).brightness == Brightness.dark 
-                          ? null 
-                          : Colors.black),
-                      label: Text('Export'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          await DataManager.importFromJson();
-                          _loadRecords();
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Import successful')),
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString())),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.grey.shade200,
-                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.black,
-                      ),
-                      icon: Icon(Icons.download, color: Theme.of(context).brightness == Brightness.dark 
-                          ? null 
-                          : Colors.black),
-                      label: Text('Import'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        _showDeleteConfirmation();
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.grey.shade200,
-                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.black,
-                        padding: EdgeInsets.symmetric(horizontal: 12),
-                      ),
-                      icon: Icon(
-                        Icons.delete,
-                        color: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.black
-                      ),
-                      label: Text('Delete'),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final records = await DataManager.getRecords();
-                          if (records.isEmpty) {
-                            throw Exception('No records to export');
-                          }
-                          List<ScoutingRecord> selected = [];
-                          for (int i = 0; i < records.length; i++) {
-                            if (selectedRecords[i]) {
-                              selected.add(records[i]);
-                            }
-                          }
-
-                          if (selected.isEmpty) {
-                            throw Exception('No records selected');
-                          }
-
-                          List<List<dynamic>> csvData = [];
-                          selected.forEach((record) {
-                            csvData.add(record.toCsvRow());
-                          });
-                          String csv = const ListToCsvConverter().convert(csvData);
-                          List<String> recordsCsv = csv.split('\n');
-
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                title: Text('Match QR Codes'),
-                                content: Container(
-                                  width: double.maxFinite,
-                                  child: ListView.builder(
-                                    itemCount: recordsCsv.length,
-                                    itemBuilder: (context, index) {
-                                      List<String> fields = recordsCsv[index].split(',');
-                                      String matchNumber = fields[1].trim(); 
-                                      return Column(
-                                        children: [
-                                          Container(
-                                            width: 200,
-                                            height: 200,
-                                            child: QrImageView(
-                                              data: recordsCsv[index],
-                                              version: QrVersions.auto,
-                                              foregroundColor: Theme.of(context).brightness == Brightness.dark 
-                                                  ? Colors.white 
-                                                  : Colors.black,
-                                              backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                                                  ? Colors.black 
-                                                  : Colors.white,
-                                            ),
-                                          ),
-                                          SizedBox(height: 10),
-                                          Text('Match #$matchNumber'),
-                                          Divider(),
-                                        ],
-                                      );
-                                    },
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () {
-                                      Navigator.of(context).pop();
-                                    },
-                                    child: Text('Close'),
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text(e.toString())),
-                          );
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.grey.shade200,
-                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.black,
-                      ),
-                      icon: Icon(Icons.qr_code, color: Theme.of(context).brightness == Brightness.dark 
-                          ? null 
-                          : Colors.black),
-                      label: Text('Show QR Code'),
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Feature not implemented yet'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.grey.shade200,
-                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
-                            ? null 
-                            : Colors.black,
-                      ),
-                      icon: Icon(Icons.barcode_reader, color: Theme.of(context).brightness == Brightness.dark 
-                          ? null 
-                          : Colors.black),
-                      label: Text('Scan QR Code'),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => TeamAnalysisPage(allRecords: records),
-                          ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue.shade700,
-                        foregroundColor: Colors.white,
-                      ),
-                      icon: Icon(Icons.analytics, color: Colors.white),
-                      label: Text('Team Analysis'),
-                    ),
-                    if (selectedRecords.any((e) => e))
-                      ElevatedButton.icon(
-                        onPressed: () {
-                          Map<int, List<ScoutingRecord>> teamRecords = {};
-                          for (int i = 0; i < records.length; i++) {
-                            if (selectedRecords[i]) {
-                              teamRecords.putIfAbsent(records[i].teamNumber, () => []).add(records[i]);
-                            }
-                          }
-                          
-                          List<ScoutingRecord> orderedRecords = teamRecords.values.map((records) {
-                            return records..sort((a, b) =>
-                              (b.algaeScoredInNet + b.processedAlgaeScored)
-                              .compareTo(a.algaeScoredInNet + a.processedAlgaeScored));
-                          }).map((records) => records.first).toList();
-
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ComparisonPage(records: orderedRecords),
-                            ),
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green.shade700,
-                          foregroundColor: Colors.white,
-                        ),
-                        icon: Icon(Icons.compare_arrows),
-                        label: Text('Compare Teams (${selectedRecords.where((e) => e).length})'),
-                      ),
-                  ],
-                ),
-              ],
-            ),
+      appBar: AppBar(
+        title: Text('Match Data'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.qr_code),
+            onPressed: () => _showQRDialog(context),
           ),
-          Expanded(
-            child: records.isEmpty
-                ? Center(child: Text('No scouting records available'))
-                : ListView.builder(
-                    itemCount: records.length,
-                    itemBuilder: (context, index) {
-                      final record = records[index];
-                      return ListTile(
-                        leading: Checkbox(
-                          value: selectedRecords[index],
-                          onChanged: (bool? value) {
-                            setState(() {
-                              selectedRecords[index] = value ?? false;
-                              isSelecting = selectedRecords.contains(true);
-                            });
-                          },
-                        ),
-                        title: Text('Team ${record.teamNumber}'),
-                        subtitle: Text('Match ${record.matchNumber}'),
-                        onTap: () => _showRecordDetails(record),
-                      );
-                    },
-                  ),
+          IconButton(
+            icon: Icon(Icons.analytics),
+            onPressed: () => _showTeamAnalysis(context),
+          ),
+          PopupMenuButton(
+            icon: Icon(Icons.more_vert),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                child: ListTile(
+                  leading: Icon(Icons.file_upload),
+                  title: Text('Export Data'),
+                ),
+                onTap: () => _exportData(context),
+              ),
+              PopupMenuItem(
+                child: ListTile(
+                  leading: Icon(Icons.file_download),
+                  title: Text('Import Data'),
+                ),
+                onTap: () => _importData(context),
+              ),
+              PopupMenuItem(
+                child: ListTile(
+                  leading: Icon(Icons.qr_code_scanner),
+                  title: Text('Scan QR Code'),
+                ),
+                onTap: () => _scanQRCode(context),
+              ),
+              PopupMenuItem(
+                child: ListTile(
+                  leading: Icon(Icons.delete_forever, color: Colors.red),
+                  title: Text('Delete All', style: TextStyle(color: Colors.red)),
+                ),
+                onTap: () => _confirmDeleteAll(context),
+              ),
+            ],
           ),
         ],
       ),
-      floatingActionButton: selectedRecords.contains(true)
-          ? FloatingActionButton(
-              onPressed: _showDeleteConfirmation,
-              child: Icon(Icons.delete),
-            )
-          : null,
+      body: FutureBuilder<List<ScoutingRecord>>(
+        future: DataManager.getRecords(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+          
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.no_sim, size: 64, color: Colors.grey),
+                  SizedBox(height: AppSpacing.md),
+                  Text('No scouting data available',
+                    style: TextStyle(fontSize: 18, color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          return CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.all(AppSpacing.md),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final record = snapshot.data![index];
+                      return ScoutingRecordCard(
+                        record: record,
+                        onCompare: () => _showComparisonDialog(context, record),
+                        onDelete: () => _confirmDelete(context, record),
+                      );
+                    },
+                    childCount: snapshot.data!.length,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final records = await DataManager.getRecords();
+          if (!context.mounted) return;
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TeamAnalysisPage(allRecords: records),
+            ),
+          );
+        },
+        child: Icon(Icons.analytics),
+        tooltip: 'Team Analysis',
+      ),
     );
   }
 
-  void _showRecordDetails(ScoutingRecord record) {
+  void _showQRDialog(BuildContext context) {
+    // Implementation
+  }
+
+  void _showTeamAnalysis(BuildContext context) async {
+    final records = await DataManager.getRecords();
+    if (!context.mounted) return;
+    
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TeamAnalysisPage(allRecords: records),
+      ),
+    );
+  }
+
+  void _showComparisonDialog(BuildContext context, ScoutingRecord record) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(16),
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildDetailSection('Match Info', [
-                _buildDetailRow('Time', record.timestamp),
-                _buildDetailRow('Match', record.matchNumber.toString()),
-                _buildDetailRow('Team', record.teamNumber.toString()),
-                _buildDetailRow('Alliance', record.isRedAlliance ? 'Red' : 'Blue'),
-              ]),
-              _buildDetailSection('Autonomous', [
-                _buildDetailRow('Cage Type', record.cageType),
-                _buildDetailRow('Coral Preloaded', record.coralPreloaded ? "Yes" : "No"),
-                _buildDetailRow('Taxis', record.taxis ? "Yes" : "No"),
-                _buildDetailRow('Algae Removed', record.algaeRemoved.toString()),
-                _buildDetailRow('Coral Placed', record.coralPlaced),
-                _buildDetailRow('Ranking Point', record.rankingPoint ? "Yes" : "No"),
-                _buildDetailRow('Can Pickup', record.canPickupAlgae ? "Yes" : "No"),
-                _buildDetailRow('Auto Algae in Net', record.autoAlgaeInNet.toString()),
-                _buildDetailRow('Auto Algae in Processor', record.autoAlgaeInProcessor.toString()),
-                _buildDetailRow('Coral Pickup Method', record.coralPickupMethod),
-              ]),
-              _buildDetailSection('Teleop', [
-                _buildDetailRow('Algae Scored in Net', record.algaeScoredInNet.toString()),
-                _buildDetailRow('Coral Ranking Point', record.coralRankingPoint ? "Yes" : "No"),
-                _buildDetailRow('Algae Processed', record.algaeProcessed.toString()),
-                _buildDetailRow('Processed Algae Scored', record.processedAlgaeScored.toString()),
-                _buildDetailRow('Processor Cycles', record.processorCycles.toString()),
-                _buildDetailRow('Co-Op Point', record.coOpPoint ? "Yes" : "No"),
-              ]),
-              _buildDetailSection('Endgame', [
-                _buildDetailRow('Returned to Barge', record.returnedToBarge ? "Yes" : "No"),
-                _buildDetailRow('Cage Hang', record.cageHang),
-                _buildDetailRow('Barge Ranking Point', record.bargeRankingPoint ? "Yes" : "No"),
-              ]),
-              _buildDetailSection('Other', [
-                _buildDetailRow('Breakdown', record.breakdown ? "Yes" : "No"),
-                _buildDetailRow('Comments', record.comments),
-              ]),
-              if (record.robotPath != null)
-                _buildDetailSection('Robot Path', [
-                  _buildDetailRow('Status', 'Drawing saved'),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => DrawingPage(
-                              isRedAlliance: record.isRedAlliance,
-                              initialDrawing: record.robotPath,
-                              readOnly: true,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Compare Records',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Card(
+                          margin: EdgeInsets.all(8),
+                          child: Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Match ${record.matchNumber}',
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                                SizedBox(height: 8),
+                                Text('Team ${record.teamNumber}'),
+                                Text(record.isRedAlliance ? 'Red Alliance' : 'Blue Alliance'),
+                                Divider(),
+                                SizedBox(height: 8),
+                                Text('Auto Mode:'),
+                                Text('  • Cage Type: ${record.cageType}'),
+                                Text('  • Coral Preloaded: ${record.coralPreloaded ? "Yes" : "No"}'),
+                                Text('  • Taxis: ${record.taxis ? "Yes" : "No"}'),
+                                Text('  • Algae Removed: ${record.algaeRemoved}'),
+                                Text('  • Coral Placed: ${record.coralPlaced}'),
+                                Text('  • Auto RP: ${record.rankingPoint ? "Yes" : "No"}'),
+                                Text('  • Can Pickup: ${record.canPickupAlgae ? "Yes" : "No"}'),
+                                SizedBox(height: 8),
+                                Text('Teleop:'),
+                                Text('  • Net Algae: ${record.algaeScoredInNet}'),
+                                Text('  • Coral RP: ${record.coralRankingPoint ? "Yes" : "No"}'),
+                                Text('  • Algae Processed: ${record.algaeProcessed}'),
+                                Text('  • Processed Scored: ${record.processedAlgaeScored}'),
+                                Text('  • Processor Cycles: ${record.processorCycles}'),
+                                Text('  • Co-Op Point: ${record.coOpPoint ? "Yes" : "No"}'),
+                                SizedBox(height: 8),
+                                Text('Endgame:'),
+                                Text('  • Returned: ${record.returnedToBarge ? "Yes" : "No"}'),
+                                Text('  • Cage Hang: ${record.cageHang}'),
+                                Text('  • Barge RP: ${record.bargeRankingPoint ? "Yes" : "No"}'),
+                              ],
                             ),
                           ),
-                        );
-                      },
-                      icon: Icon(Icons.visibility),
-                      label: Text('View Drawing'),
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
-                ]),
+                ),
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmDelete(BuildContext context, ScoutingRecord record) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete Record'),
+        content: Text('Are you sure you want to delete this record?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              DataManager.deleteRecord(0);
+            },
+            child: Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDeleteAll(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete All Records'),
+        content: Text('Are you sure you want to delete all records? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context);
+              await DataManager.deleteAllRecords();
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('All records deleted')),
+              );
+            },
+            child: Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _exportData(BuildContext context) {
+    // Implementation
+  }
+
+  void _importData(BuildContext context) {
+    // Implementation
+  }
+
+  void _scanQRCode(BuildContext context) {
+    // Implementation
+  }
+}
+
+class ScoutingRecordCard extends StatelessWidget {
+  final ScoutingRecord record;
+  final VoidCallback onCompare;
+  final VoidCallback onDelete;
+
+  const ScoutingRecordCard({
+    required this.record,
+    required this.onCompare,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: EdgeInsets.only(bottom: AppSpacing.md),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: onCompare,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: (record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).withOpacity(0.1),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Team ${record.teamNumber}',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance,
+                          ),
+                        ),
+                        Text(
+                          '${record.matchType} Match ${record.matchNumber}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Theme.of(context).textTheme.bodySmall?.color,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.delete_outline),
+                    onPressed: onDelete,
+                    color: AppColors.error,
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildMetricRow('Auto Algae', record.algaeRemoved.toString()),
+                  _buildMetricRow('Teleop Algae', record.algaeScoredInNet.toString()),
+                  _buildMetricRow('Processed', record.algaeProcessed.toString()),
+                  if (record.comments.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(top: AppSpacing.sm),
+                      child: Text(
+                        record.comments,
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1034,38 +915,6 @@ class _DataPageState extends State<DataPage> {
             value,
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailSection(String title, List<Widget> children) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Text(
-            title,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        ...children,
-      ],
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label),
-          Text(value),
         ],
       ),
     );

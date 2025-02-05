@@ -105,61 +105,87 @@ class _DrawingPageState extends State<DrawingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Draw Auto Path'),
-        actions: widget.readOnly ? null : [
+        title: Text('Auto Path Drawing'),
+        actions: widget.readOnly ? [] : [
           IconButton(
             icon: Icon(Icons.undo),
-            onPressed: lines.isEmpty ? null : _undo,
+            onPressed: lines.isEmpty ? null : undo,
+            tooltip: 'Undo',
           ),
           IconButton(
             icon: Icon(Icons.redo),
-            onPressed: redoHistory.isEmpty ? null : _redo,
+            onPressed: redoHistory.isEmpty ? null : redo,
+            tooltip: 'Redo',
           ),
           IconButton(
-            icon: Icon(isErasing ? Icons.edit : Icons.cleaning_services),
+            icon: Icon(isErasing ? Icons.edit : Icons.auto_fix_high),
             onPressed: () {
               setState(() {
                 isErasing = !isErasing;
               });
             },
+            tooltip: isErasing ? 'Draw Mode' : 'Erase Mode',
           ),
+          if (!widget.readOnly)
+            IconButton(
+              icon: Icon(Icons.save),
+              onPressed: () {
+                Navigator.pop(context, lines.map((line) => line.toMap()).toList());
+              },
+              tooltip: 'Save Drawing',
+            ),
         ],
       ),
       body: Stack(
         children: [
-          // Background field image
-          Image.asset(
-            'assets/field_image.png',
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.contain,
-          ),
-          // Drawing canvas
-          GestureDetector(
-            onPanStart: widget.readOnly ? null : _onPanStart,
-            onPanUpdate: widget.readOnly ? null : _onPanUpdate,
-            onPanEnd: widget.readOnly ? null : _onPanEnd,
+          Container(
+            color: Theme.of(context).scaffoldBackgroundColor,
             child: CustomPaint(
               painter: DrawingPainter(
                 lines: lines,
                 currentColor: currentColor,
                 strokeWidth: strokeWidth,
               ),
-              size: Size.infinite,
+              child: GestureDetector(
+                onPanStart: widget.readOnly ? null : _onPanStart,
+                onPanUpdate: widget.readOnly ? null : _onPanUpdate,
+                onPanEnd: widget.readOnly ? null : _onPanEnd,
+              ),
             ),
           ),
+          if (!widget.readOnly)
+            Positioned(
+              left: AppSpacing.md,
+              bottom: AppSpacing.md,
+              child: Card(
+                elevation: 4,
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.sm),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Stroke Width'),
+                      Slider(
+                        value: strokeWidth,
+                        min: 1.0,
+                        max: 20.0,
+                        onChanged: (value) {
+                          setState(() {
+                            strokeWidth = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
-      ),
-      floatingActionButton: widget.readOnly ? null : FloatingActionButton(
-        onPressed: () {
-          Navigator.pop(context, lines.map((line) => line.toCompressedJson()).toList());
-        },
-        child: Icon(Icons.save),
       ),
     );
   }
 
-  void _undo() {
+  void undo() {
     if (lines.isNotEmpty) {
       setState(() {
         redoHistory.add(lines.removeLast());
@@ -167,7 +193,7 @@ class _DrawingPageState extends State<DrawingPage> {
     }
   }
 
-  void _redo() {
+  void redo() {
     if (redoHistory.isNotEmpty) {
       setState(() {
         lines.add(redoHistory.removeLast());
