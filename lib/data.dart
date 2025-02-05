@@ -8,6 +8,7 @@ import 'team_analysis.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:csv/csv.dart';
 import 'drawing_page.dart';
+import 'qr_scanner_page.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -290,6 +291,16 @@ class ScoutingRecord {
   }
 
   List<dynamic> toCsvRow() {
+    String robotPathStr = '';
+    if (robotPath != null) {
+      try {
+        // Escape any pipe characters in the JSON string
+        robotPathStr = jsonEncode(robotPath).replaceAll('|', '\\|');
+      } catch (e) {
+        print('Error encoding robotPath: $e');
+      }
+    }
+
     return [
       timestamp,
       matchNumber,
@@ -314,7 +325,7 @@ class ScoutingRecord {
       cageHang,
       bargeRankingPoint ? 1 : 0,
       breakdown ? 1 : 0,
-      comments,
+      comments.replaceAll('|', '\\|'), // Escape pipes in comments
       autoAlgaeInNet,
       autoAlgaeInProcessor,
       coralPickupMethod,
@@ -322,8 +333,8 @@ class ScoutingRecord {
       coralOnReefHeight2,
       coralOnReefHeight3,
       coralOnReefHeight4,
-      robotPath != null ? jsonEncode(robotPath) : '',
       feederStation,
+      robotPathStr,
     ];
   }
 
@@ -366,6 +377,20 @@ class ScoutingRecord {
   }
 
   factory ScoutingRecord.fromCsvRow(List<dynamic> row) {
+    List<Map<String, dynamic>>? pathData;
+    if (row[27].toString().isNotEmpty) {
+      try {
+        // Unescape pipe characters before parsing JSON
+        String robotPathStr = row[27].toString().replaceAll('\\|', '|');
+        final decoded = jsonDecode(robotPathStr);
+        if (decoded is List) {
+          pathData = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
+        }
+      } catch (e) {
+        print('Error decoding robotPath: $e');
+      }
+    }
+
     return ScoutingRecord(
       timestamp: row[0].toString(),
       matchNumber: int.parse(row[1].toString()),
@@ -390,7 +415,7 @@ class ScoutingRecord {
       cageHang: row[20].toString(),
       bargeRankingPoint: row[21].toString() == '1',
       breakdown: row[22].toString() == '1',
-      comments: row[23].toString(),
+      comments: row[23].toString().replaceAll('\\|', '|'), // Unescape pipes in comments
       autoAlgaeInNet: int.parse(row[24].toString()),
       autoAlgaeInProcessor: int.parse(row[25].toString()),
       coralPickupMethod: row[26].toString(),
@@ -398,10 +423,8 @@ class ScoutingRecord {
       coralOnReefHeight2: int.parse(row[28].toString()),
       coralOnReefHeight3: int.parse(row[29].toString()),
       coralOnReefHeight4: int.parse(row[30].toString()),
-      robotPath: row[31].toString().isNotEmpty ? 
-        jsonDecode(row[31].toString()) as List<Map<String, dynamic>> : 
-        null,
       feederStation: row[32].toString(),
+      robotPath: pathData,
     );
   }
 }
@@ -421,7 +444,7 @@ class DataManager {
         ...records.map((r) => r.toCsvRow()),
       ];
       
-      final csv = const ListToCsvConverter().convert(csvData);
+      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
       await prefs.setString(_storageKey, csv);
     } catch (e, stackTrace) {
       print('Error saving record: $e');
@@ -434,13 +457,21 @@ class DataManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? csvData = prefs.getString(_storageKey);
-      if (csvData == null) return [];
+      if (csvData == null || csvData.isEmpty) return [];
       
-      final List<List<dynamic>> rows = const CsvToListConverter().convert(csvData);
-      if (rows.isEmpty) return [];
+      final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(csvData);
+      if (rows.isEmpty || rows.length <= 1) return [];
       
-      // Skip header row
-      return rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
+      // Skip header row and convert remaining rows
+      return rows.skip(1).map((row) {
+        try {
+          return ScoutingRecord.fromCsvRow(row);
+        } catch (e) {
+          print('Error parsing row: $e');
+          print('Row data: $row');
+          return null;
+        }
+      }).where((record) => record != null).cast<ScoutingRecord>().toList();
     } catch (e, stackTrace) {
       print('Error getting records: $e');
       print('Stack trace: $stackTrace');
@@ -452,7 +483,22 @@ class DataManager {
     final prefs = await SharedPreferences.getInstance();
     final records = await getRecords();
     records.removeAt(index);
-    await prefs.setString(_storageKey, const ListToCsvConverter().convert([
+    await prefs.setString(_storageKey, const ListToCsvConverter(fieldDelimiter: '|').convert([
+      ScoutingRecord.getCsvHeaders(),
+      ...records.map((r) => r.toCsvRow()),
+    ]));
+  }
+
+  static Future<void> deleteMultipleRecords(List<int> indices) async {
+    final prefs = await SharedPreferences.getInstance();
+    final records = await getRecords();
+    indices.sort((a, b) => b.compareTo(a)); // sort descending order
+    for (int index in indices) {
+      if (index >= 0 && index < records.length) {
+        records.removeAt(index);
+      }
+    }
+    await prefs.setString(_storageKey, const ListToCsvConverter(fieldDelimiter: '|').convert([
       ScoutingRecord.getCsvHeaders(),
       ...records.map((r) => r.toCsvRow()),
     ]));
@@ -470,7 +516,7 @@ class DataManager {
         ...records.map((r) => r.toCsvRow()),
       ];
       
-      final csv = const ListToCsvConverter().convert(csvData);
+      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
       
       String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Scouting Records',
@@ -483,7 +529,6 @@ class DataManager {
         throw Exception('Export cancelled');
       }
 
-      // ensure file ends with .csv
       if (!outputFile.toLowerCase().endsWith('.csv')) {
         outputFile += '.csv';
       }
@@ -541,21 +586,6 @@ class DataManager {
   static Future<void> deleteAllRecords() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_storageKey);
-  }
-
-  static Future<void> deleteMultipleRecords(List<int> indices) async {
-    final prefs = await SharedPreferences.getInstance();
-    final records = await getRecords();
-    indices.sort((a, b) => b.compareTo(a)); // sort descending order
-    for (int index in indices) {
-      if (index >= 0 && index < records.length) {
-        records.removeAt(index);
-      }
-    }
-    await prefs.setString(_storageKey, const ListToCsvConverter().convert([
-      ScoutingRecord.getCsvHeaders(),
-      ...records.map((r) => r.toCsvRow()),
-    ]));
   }
 }
 
@@ -875,11 +905,9 @@ class _DataPageState extends State<DataPage> {
                     ),
                     ElevatedButton.icon(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Feature not implemented yet'),
-                            duration: Duration(seconds: 2),
-                          ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => QrScannerPage()),
                         );
                       },
                       style: ElevatedButton.styleFrom(
@@ -1024,8 +1052,10 @@ class _DataPageState extends State<DataPage> {
   }
 
 void _showQrCodeForRecord(ScoutingRecord record) {
-  // Use compressed JSON format
-  final compressedData = jsonEncode(record.toCompressedJson());
+  final csvData = [
+    record.toJson().values.toList(),
+  ];
+  final csvStr = const ListToCsvConverter().convert(csvData);
 
   showDialog(
     context: context,
@@ -1037,18 +1067,11 @@ void _showQrCodeForRecord(ScoutingRecord record) {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 300, // Increased size to accommodate more data
-                height: 300,
+                width: 200, 
+                height: 200,
                 child: QrImageView(
-                  data: compressedData,
+                  data: csvStr,
                   version: QrVersions.auto,
-                  errorCorrectionLevel: QrErrorCorrectLevel.L, // Lower error correction for more data
-                  foregroundColor: Theme.of(context).brightness == Brightness.dark 
-                      ? Colors.white 
-                      : Colors.black,
-                  backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                      ? Colors.black 
-                      : Colors.white,
                 ),
               ),
               SizedBox(height: 16),

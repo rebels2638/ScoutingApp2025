@@ -747,7 +747,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                       
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Robot path drawing saved'),
+                          content: Text('Auto path drawing saved'),
                           backgroundColor: Colors.green,
                           duration: Duration(seconds: 2),
                         ),
@@ -755,7 +755,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                     }
                   },
                   icon: const Icon(Icons.draw),
-                  label: const Text('Draw Robot Path'),
+                  label: const Text('Draw Auto Path'),
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
@@ -768,7 +768,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
           const Padding(
             padding: EdgeInsets.only(bottom: 8.0),
             child: Text(
-              'Robot path drawing saved ✓',
+              'Auto path drawing saved ✓',
               style: TextStyle(
                 color: Colors.green,
                 fontWeight: FontWeight.bold,
@@ -980,7 +980,7 @@ class _TeamNumberSelectorState extends State<TeamNumberSelector> {
   }
 
   List<int> _numberToDigits(int number) {
-    String numStr = number.toString().padLeft(4, '0');
+    String numStr = number.toString().padLeft(5, '0');
     return numStr.split('').map(int.parse).toList();
   }
 
@@ -1030,7 +1030,7 @@ class _TeamNumberSelectorState extends State<TeamNumberSelector> {
                 Expanded(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(4, (columnIndex) {
+                    children: List.generate(5, (columnIndex) {
                       return SizedBox(
                         width: 60,
                         child: ListWheelScrollView(
