@@ -16,7 +16,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
     if (csvData == null) return;
 
     try {
-      final record = _parseQrData(csvData);
+      final record = _parseCsvToScoutingRecord(csvData);
 
       showDialog(
         context: context,
@@ -60,44 +60,44 @@ class _QrScannerPageState extends State<QrScannerPage> {
     }
   }
 
-  ScoutingRecord _parseQrData(String data) {
+  ScoutingRecord _parseCsvToScoutingRecord(String csvData) {
     try {
-      final List<List<dynamic>> rows = const CsvToListConverter().convert(data);
+      final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(csvData);
       if (rows.isEmpty) throw Exception('Invalid QR code data');
       
       final row = rows[0];
       return ScoutingRecord(
         timestamp: row[0].toString(),
-        matchNumber: int.parse(row[1].toString()),
+        matchNumber: int.tryParse(row[1].toString()) ?? 0,
         matchType: row[2].toString(),
-        teamNumber: int.parse(row[3].toString()),
+        teamNumber: int.tryParse(row[3].toString()) ?? 0,
         isRedAlliance: row[4].toString() == '1',
         cageType: row[5].toString(),
         coralPreloaded: row[6].toString() == '1',
         taxis: row[7].toString() == '1',
-        algaeRemoved: int.parse(row[8].toString()),
+        algaeRemoved: int.tryParse(row[8].toString()) ?? 0,
         coralPlaced: row[9].toString(),
         rankingPoint: row[10].toString() == '1',
         canPickupCoral: row[11].toString() == '1',
         canPickupAlgae: row[12].toString() == '1',
-        algaeScoredInNet: int.parse(row[13].toString()),
+        algaeScoredInNet: int.tryParse(row[13].toString()) ?? 0,
         coralRankingPoint: row[14].toString() == '1',
-        algaeProcessed: int.parse(row[15].toString()),
-        processedAlgaeScored: int.parse(row[16].toString()),
-        processorCycles: int.parse(row[17].toString()),
+        algaeProcessed: int.tryParse(row[15].toString()) ?? 0,
+        processedAlgaeScored: int.tryParse(row[16].toString()) ?? 0,
+        processorCycles: int.tryParse(row[17].toString()) ?? 0,
         coOpPoint: row[18].toString() == '1',
         returnedToBarge: row[19].toString() == '1',
         cageHang: row[20].toString(),
         bargeRankingPoint: row[21].toString() == '1',
         breakdown: row[22].toString() == '1',
         comments: row[23].toString(),
-        autoAlgaeInNet: int.parse(row[24].toString()),
-        autoAlgaeInProcessor: int.parse(row[25].toString()),
+        autoAlgaeInNet: int.tryParse(row[24].toString()) ?? 0,
+        autoAlgaeInProcessor: int.tryParse(row[25].toString()) ?? 0,
         coralPickupMethod: row[26].toString(),
-        coralOnReefHeight1: int.parse(row[27].toString()),
-        coralOnReefHeight2: int.parse(row[28].toString()),
-        coralOnReefHeight3: int.parse(row[29].toString()),
-        coralOnReefHeight4: int.parse(row[30].toString()),
+        coralOnReefHeight1: int.tryParse(row[27].toString()) ?? 0,
+        coralOnReefHeight2: int.tryParse(row[28].toString()) ?? 0,
+        coralOnReefHeight3: int.tryParse(row[29].toString()) ?? 0,
+        coralOnReefHeight4: int.tryParse(row[30].toString()) ?? 0,
         feederStation: row[31].toString(),
         robotPath: row[32].toString().isNotEmpty ? 
           jsonDecode(row[32].toString()) as List<Map<String, dynamic>> : 
