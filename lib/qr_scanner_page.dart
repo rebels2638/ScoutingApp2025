@@ -70,11 +70,14 @@ class _QrScannerPageState extends State<QrScannerPage> {
     }
 
     return ScoutingRecord(
-      teamNumber: int.tryParse(rows[0]) ?? 0,
-      matchNumber: int.tryParse(rows[1]) ?? 0,
+      // Match info
+      matchNumber: int.tryParse(rows[0]) ?? 0,
+      matchType: rows[1],
       timestamp: rows[2],
-      matchType: rows[3],
+      teamNumber: int.tryParse(rows[3]) ?? 0,
       isRedAlliance: rows[4].toLowerCase() == 'true',
+
+      // Auto
       cageType: rows[5],
       coralPreloaded: rows[6].toLowerCase() == 'true',
       taxis: rows[7].toLowerCase() == 'true',
@@ -83,20 +86,31 @@ class _QrScannerPageState extends State<QrScannerPage> {
       rankingPoint: rows[10].toLowerCase() == 'true',
       canPickupCoral: rows[11].toLowerCase() == 'true',
       canPickupAlgae: rows[12].toLowerCase() == 'true',
-      algaeScoredInNet: int.tryParse(rows[13]) ?? 0,
-      coralRankingPoint: rows[14].toLowerCase() == 'true',
-      algaeProcessed: int.tryParse(rows[15]) ?? 0,
-      processedAlgaeScored: int.tryParse(rows[16]) ?? 0,
-      processorCycles: int.tryParse(rows[17]) ?? 0,
-      coOpPoint: rows[18].toLowerCase() == 'true',
-      returnedToBarge: rows[19].toLowerCase() == 'true',
-      cageHang: rows[20],
-      bargeRankingPoint: rows[21].toLowerCase() == 'true',
-      breakdown: rows[22].toLowerCase() == 'true',
-      comments: rows[23],
-      autoAlgaeInNet: int.tryParse(rows[24]) ?? 0,
-      autoAlgaeInProcessor: int.tryParse(rows[25]) ?? 0,
-      coralPickupMethod: rows.length > 26 ? rows[26] : 'None',
+      autoAlgaeInNet: int.tryParse(rows[13]) ?? 0,
+      autoAlgaeInProcessor: int.tryParse(rows[14]) ?? 0,
+      coralPickupMethod: rows.length > 26 ? rows[15] : 'None',
+
+      // Teleop
+      coralOnReefHeight1: rows.length > 28 ? int.tryParse(rows[16]) ?? 0 : 0,
+      coralOnReefHeight2: rows.length > 29 ? int.tryParse(rows[17]) ?? 0 : 0,
+      coralOnReefHeight3: rows.length > 30 ? int.tryParse(rows[18]) ?? 0 : 0,
+      coralOnReefHeight4: rows.length > 31 ? int.tryParse(rows[19]) ?? 0 : 0,
+      feederStation: rows.length > 27 ? rows[20] : 'Unknown',
+      algaeScoredInNet: int.tryParse(rows[21]) ?? 0,
+      coralRankingPoint: rows[22].toLowerCase() == 'true',
+      algaeProcessed: int.tryParse(rows[23]) ?? 0,
+      processedAlgaeScored: int.tryParse(rows[24]) ?? 0,
+      processorCycles: int.tryParse(rows[25]) ?? 0,
+      coOpPoint: rows[26].toLowerCase() == 'true',
+
+      // Endgame
+      returnedToBarge: rows[27].toLowerCase() == 'true',
+      cageHang: rows[28],
+      bargeRankingPoint: rows[29].toLowerCase() == 'true',
+
+      // Other
+      breakdown: rows[30].toLowerCase() == 'true',
+      comments: rows[31],
     );
   }
 

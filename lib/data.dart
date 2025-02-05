@@ -883,7 +883,7 @@ class _DataPageState extends State<DataPage> {
                                     itemCount: recordsCsv.length,
                                     itemBuilder: (context, index) {
                                       List<String> fields = recordsCsv[index].split(',');
-                                      String matchNumber = fields[1].trim(); 
+                                      String matchNumber = fields[0].trim(); 
                                       return Column(
                                         children: [
                                           Container(
