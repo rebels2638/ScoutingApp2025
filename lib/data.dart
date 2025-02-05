@@ -52,6 +52,14 @@ class ScoutingRecord {
   
   String? telemetry;
   
+  final String feederStation;
+  
+  // Add coral height fields
+  final int coralOnReefHeight1;
+  final int coralOnReefHeight2;
+  final int coralOnReefHeight3;
+  final int coralOnReefHeight4;
+  
   ScoutingRecord({
     required this.timestamp,
     required this.matchNumber,
@@ -80,8 +88,13 @@ class ScoutingRecord {
     required this.autoAlgaeInNet,
     required this.autoAlgaeInProcessor,
     required this.coralPickupMethod,
+    required this.coralOnReefHeight1,
+    required this.coralOnReefHeight2,
+    required this.coralOnReefHeight3,
+    required this.coralOnReefHeight4,
     this.robotPath,
     this.telemetry,
+    required this.feederStation,
   }) : assert(coralPreloaded != null),
        assert(taxis != null),
        assert(rankingPoint != null),
@@ -122,6 +135,11 @@ class ScoutingRecord {
       'autoAlgaeInNet': autoAlgaeInNet,
       'autoAlgaeInProcessor': autoAlgaeInProcessor,
       'coralPickupMethod': coralPickupMethod,
+      'feederStation': feederStation,
+      'coralOnReefHeight1': coralOnReefHeight1,
+      'coralOnReefHeight2': coralOnReefHeight2,
+      'coralOnReefHeight3': coralOnReefHeight3,
+      'coralOnReefHeight4': coralOnReefHeight4,
     };
   }
 
@@ -154,6 +172,10 @@ class ScoutingRecord {
       autoAlgaeInNet: json['autoAlgaeInNet'] ?? 0,
       autoAlgaeInProcessor: json['autoAlgaeInProcessor'] ?? 0,
       coralPickupMethod: json['coralPickupMethod'] ?? 'None',
+      coralOnReefHeight1: json['coralOnReefHeight1'] ?? 0,
+      coralOnReefHeight2: json['coralOnReefHeight2'] ?? 0,
+      coralOnReefHeight3: json['coralOnReefHeight3'] ?? 0,
+      coralOnReefHeight4: json['coralOnReefHeight4'] ?? 0,
       robotPath: json['robotPath'] != null
           ? (json['robotPath'] as List).map((line) {
               final Map<String, dynamic> lineMap = Map<String, dynamic>.from(line);
@@ -165,6 +187,7 @@ class ScoutingRecord {
             }).toList()
           : null,
       telemetry: json['telemetry'] as String?,
+      feederStation: json['feederStation'] ?? 'None',
     );
   }
 
@@ -197,6 +220,11 @@ class ScoutingRecord {
       'aan': autoAlgaeInNet,
       'aap': autoAlgaeInProcessor,
       'cpm': coralPickupMethod,
+      'fs': feederStation,
+      'coralOnReefHeight1': coralOnReefHeight1,
+      'coralOnReefHeight2': coralOnReefHeight2,
+      'coralOnReefHeight3': coralOnReefHeight3,
+      'coralOnReefHeight4': coralOnReefHeight4,
     };
 
     // Only include robot path if it exists
@@ -244,6 +272,10 @@ class ScoutingRecord {
       autoAlgaeInNet: json['aan'] as int,
       autoAlgaeInProcessor: json['aap'] as int,
       coralPickupMethod: json['cpm'] as String,
+      coralOnReefHeight1: json['coralOnReefHeight1'] as int,
+      coralOnReefHeight2: json['coralOnReefHeight2'] as int,
+      coralOnReefHeight3: json['coralOnReefHeight3'] as int,
+      coralOnReefHeight4: json['coralOnReefHeight4'] as int,
       robotPath: json['rp'] != null ? (json['rp'] as List).map((line) {
         return {
           'points': (line['p'] as List).map((p) => {
@@ -254,6 +286,7 @@ class ScoutingRecord {
           'strokeWidth': line['w'],
         };
       }).toList() : null,
+      feederStation: json['fs'] as String,
     );
   }
 
@@ -296,6 +329,11 @@ class ScoutingRecord {
       autoAlgaeInNet,
       autoAlgaeInProcessor,
       coralPickupMethod,
+      coralOnReefHeight1,
+      coralOnReefHeight2,
+      coralOnReefHeight3,
+      coralOnReefHeight4,
+      feederStation,
       robotPathStr,
     ];
   }
@@ -329,7 +367,12 @@ class ScoutingRecord {
       'autoAlgaeInNet',
       'autoAlgaeInProcessor',
       'coralPickupMethod',
+      'coralOnReefHeight1',
+      'coralOnReefHeight2',
+      'coralOnReefHeight3',
+      'coralOnReefHeight4',
       'robotPath',
+      'feederStation',
     ];
   }
 
@@ -376,6 +419,11 @@ class ScoutingRecord {
       autoAlgaeInNet: int.parse(row[24].toString()),
       autoAlgaeInProcessor: int.parse(row[25].toString()),
       coralPickupMethod: row[26].toString(),
+      coralOnReefHeight1: int.parse(row[27].toString()),
+      coralOnReefHeight2: int.parse(row[28].toString()),
+      coralOnReefHeight3: int.parse(row[29].toString()),
+      coralOnReefHeight4: int.parse(row[30].toString()),
+      feederStation: row[32].toString(),
       robotPath: pathData,
     );
   }
@@ -580,40 +628,562 @@ class _DataPageState extends State<DataPage> {
   void _showQRDialog(List<ScoutingRecord> records) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'QR Codes',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete Data'),
+          content: Text('Are you sure?'),
+          actions: [
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.white 
+                    : Colors.black,
               ),
-              SizedBox(height: 16),
-              Container(
-                height: 400,
-                child: ListView.builder(
-                  itemCount: records.length,
-                  itemBuilder: (context, index) {
-                    final record = records[index];
-                    return Column(
-                      children: [
-                        Text('Team ${record.teamNumber} - Match ${record.matchNumber}'),
-                        SizedBox(height: 8),
-                        QrImageView(
-                          data: jsonEncode(record.toJson()),
-                          size: 200,
+              onPressed: () async {
+                // Show second confirmation for delete all
+                Navigator.pop(context);
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Row(
+                        children: [
+                          Icon(Icons.warning, color: Colors.amber),
+                          SizedBox(width: 8),
+                          Text('Warning'),
+                        ],
+                      ),
+                      content: Text('Are you sure you want to delete ALL data?'),
+                      actions: [
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                                ? Colors.white 
+                                : Colors.black,
+                          ),
+                          onPressed: () async {
+                            await DataManager.deleteAllRecords();
+                            Navigator.pop(context);
+                            _loadRecords();
+                          },
+                          child: Text('Yes'),
                         ),
-                        SizedBox(height: 16),
+                        TextButton(
+                          style: TextButton.styleFrom(
+                            foregroundColor: Colors.red,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          child: Text('No'),
+                        ),
                       ],
                     );
                   },
+                );
+              },
+              child: Text('Delete ALL data'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                    ? Colors.white 
+                    : Colors.black,
+              ),
+              onPressed: () async {
+                List<int> toDelete = [];
+                for (int i = selectedRecords.length - 1; i >= 0; i--) {
+                  if (selectedRecords[i]) {
+                    toDelete.add(i);
+                  }
+                }
+                await DataManager.deleteMultipleRecords(toDelete);
+                Navigator.pop(context);
+                _loadRecords();
+              },
+              child: Text('Delete selected data'),
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('No'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey.shade900
+                  : Colors.blue.shade50,
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await DataManager.exportToJson();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Export successful')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString())),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.grey.shade200,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black,
+                      ),
+                      icon: Icon(Icons.upload, color: Theme.of(context).brightness == Brightness.dark 
+                          ? null 
+                          : Colors.black),
+                      label: Text('Export'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          await DataManager.importFromJson();
+                          _loadRecords();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Import successful')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString())),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.grey.shade200,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black,
+                      ),
+                      icon: Icon(Icons.download, color: Theme.of(context).brightness == Brightness.dark 
+                          ? null 
+                          : Colors.black),
+                      label: Text('Import'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _showDeleteConfirmation();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.grey.shade200,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black,
+                        padding: EdgeInsets.symmetric(horizontal: 12),
+                      ),
+                      icon: Icon(
+                        Icons.delete,
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black
+                      ),
+                      label: Text('Delete'),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final records = await DataManager.getRecords();
+                          if (records.isEmpty) {
+                            throw Exception('No records to export');
+                          }
+                          List<ScoutingRecord> selected = [];
+                          for (int i = 0; i < records.length; i++) {
+                            if (selectedRecords[i]) {
+                              selected.add(records[i]);
+                            }
+                          }
+
+                          if (selected.isEmpty) {
+                            throw Exception('No records selected');
+                          }
+
+                          List<List<dynamic>> csvData = [];
+                          selected.forEach((record) {
+                            csvData.add(record.toCsvRow());
+                          });
+                          String csv = const ListToCsvConverter().convert(csvData);
+                          List<String> recordsCsv = csv.split('\n');
+
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: Text('Match QR Codes'),
+                                content: Container(
+                                  width: double.maxFinite,
+                                  child: ListView.builder(
+                                    itemCount: recordsCsv.length,
+                                    itemBuilder: (context, index) {
+                                      List<String> fields = recordsCsv[index].split(',');
+                                      String matchNumber = fields[1].trim(); 
+                                      return Column(
+                                        children: [
+                                          Container(
+                                            width: 200,
+                                            height: 200,
+                                            child: QrImageView(
+                                              data: recordsCsv[index],
+                                              version: QrVersions.auto,
+                                              foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                                                  ? Colors.white 
+                                                  : Colors.black,
+                                              backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                                                  ? Colors.black 
+                                                  : Colors.white,
+                                            ),
+                                          ),
+                                          SizedBox(height: 10),
+                                          Text('Match #$matchNumber'),
+                                          Divider(),
+                                        ],
+                                      );
+                                    },
+                                  ),
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: Text('Close'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text(e.toString())),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.grey.shade200,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black,
+                      ),
+                      icon: Icon(Icons.qr_code, color: Theme.of(context).brightness == Brightness.dark 
+                          ? null 
+                          : Colors.black),
+                      label: Text('Show QR Code'),
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Feature not implemented yet'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.grey.shade200,
+                        foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                            ? null 
+                            : Colors.black,
+                      ),
+                      icon: Icon(Icons.barcode_reader, color: Theme.of(context).brightness == Brightness.dark 
+                          ? null 
+                          : Colors.black),
+                      label: Text('Scan QR Code'),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => TeamAnalysisPage(allRecords: _records),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue.shade700,
+                        foregroundColor: Colors.white,
+                      ),
+                      icon: Icon(Icons.analytics, color: Colors.white),
+                      label: Text('Team Analysis'),
+                    ),
+                    if (selectedRecords.any((e) => e))
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          Map<int, List<ScoutingRecord>> teamRecords = {};
+                          for (int i = 0; i < _records.length; i++) {
+                            if (selectedRecords[i]) {
+                              teamRecords.putIfAbsent(_records[i].teamNumber, () => []).add(_records[i]);
+                            }
+                          }
+                          
+                          List<ScoutingRecord> orderedRecords = teamRecords.values.map((records) {
+                            return records..sort((a, b) =>
+                              (b.algaeScoredInNet + b.processedAlgaeScored)
+                              .compareTo(a.algaeScoredInNet + a.processedAlgaeScored));
+                          }).map((records) => records.first).toList();
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ComparisonPage(records: orderedRecords),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green.shade700,
+                          foregroundColor: Colors.white,
+                        ),
+                        icon: Icon(Icons.compare_arrows),
+                        label: Text('Compare Teams (${selectedRecords.where((e) => e).length})'),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: _records.isEmpty
+                ? Center(child: Text('No scouting records available'))
+                : ListView.builder(
+                    itemCount: _records.length,
+                    itemBuilder: (context, index) {
+                      final record = _records[_records.length - 1 - index];
+                      final isSelected = selectedRecords[_records.length - 1 - index];
+                      return Card(
+                        margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        color: isSelected ? Colors.blue.withOpacity(0.1) : null,
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: Checkbox(
+                                value: isSelected,
+                                onChanged: (bool? value) {
+                                  setState(() {
+                                    selectedRecords[_records.length - 1 - index] = value ?? false;
+                                  });
+                                },
+                              ),
+                              title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${record.matchType} - ${record.timestamp}'),
+                                  Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
+                                ],
+                              ),
+                              onTap: () {
+                                _showRecordDetails(record);
+                              },
+                            ),
+                            Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              child: Row(
+                                children: [
+                                  Expanded(
+      child: Text(
+                                      'Transfer',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                  ),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      _showQrCodeForRecord(record);
+                                    },
+                                    icon: Icon(Icons.qr_code, size: 18),
+                                    label: Text('Show QR Code'),
+                                    style: ElevatedButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+void _showQrCodeForRecord(ScoutingRecord record) {
+  // Use compressed JSON format
+  final compressedData = jsonEncode(record.toCompressedJson());
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 300, // Increased size to accommodate more data
+                height: 300,
+                child: QrImageView(
+                  data: compressedData,
+                  version: QrVersions.auto,
+                  errorCorrectionLevel: QrErrorCorrectLevel.L, // Lower error correction for more data
+                  foregroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.white 
+                      : Colors.black,
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.black 
+                      : Colors.white,
                 ),
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Close'),
+              SizedBox(height: 16),
+              Text('Scan to transfer data'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+  void _showComparisonDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Compare Records',
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        selectedRecords = List.generate(_records.length, (index) => false);
+                      });
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (int i = 0; i < _records.length; i++)
+                        if (selectedRecords[i])
+                          Expanded(
+                            child: Card(
+                              margin: EdgeInsets.all(8),
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Match ${_records[i].matchNumber}',
+                                      style: Theme.of(context).textTheme.titleMedium,
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text('Team ${_records[i].teamNumber}'),
+                                    Text(_records[i].isRedAlliance ? 'Red Alliance' : 'Blue Alliance'),
+                                    Divider(),
+                                    SizedBox(height: 8),
+                                    Text('Auto Mode:'),
+                                    Text('  • Cage Type: ${_records[i].cageType}'),
+                                    Text('  • Coral Preloaded: ${_records[i].coralPreloaded ? "Yes" : "No"}'),
+                                    Text('  • Taxis: ${_records[i].taxis ? "Yes" : "No"}'),
+                                    Text('  • Algae Removed: ${_records[i].algaeRemoved}'),
+                                    Text('  • Coral Placed: ${_records[i].coralPlaced}'),
+                                    Text('  • Auto RP: ${_records[i].rankingPoint ? "Yes" : "No"}'),
+                                    Text('  • Can Pickup: ${_records[i].canPickupAlgae ? "Yes" : "No"}'),
+                                    SizedBox(height: 8),
+                                    Text('Teleop:'),
+                                    Text('  • Net Algae: ${_records[i].algaeScoredInNet}'),
+                                    Text('  • Coral RP: ${_records[i].coralRankingPoint ? "Yes" : "No"}'),
+                                    Text('  • Algae Processed: ${_records[i].algaeProcessed}'),
+                                    Text('  • Processed Scored: ${_records[i].processedAlgaeScored}'),
+                                    Text('  • Processor Cycles: ${_records[i].processorCycles}'),
+                                    Text('  • Co-Op Point: ${_records[i].coOpPoint ? "Yes" : "No"}'),
+                                    SizedBox(height: 8),
+                                    Text('Endgame:'),
+                                    Text('  • Returned: ${_records[i].returnedToBarge ? "Yes" : "No"}'),
+                                    Text('  • Cage Hang: ${_records[i].cageHang}'),
+                                    Text('  • Barge RP: ${_records[i].bargeRankingPoint ? "Yes" : "No"}'),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -622,164 +1192,100 @@ class _DataPageState extends State<DataPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isSelecting ? '${selectedRecords.length} selected' : 'Data'),
-        actions: [
-          if (isSelecting) ...[
-            IconButton(
-              icon: Icon(Icons.qr_code),
-              onPressed: () => _showQRDialog(selectedRecords),
-            ),
-            IconButton(
-              icon: Icon(Icons.compare),
-              onPressed: selectedRecords.length >= 2 
-                ? () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ComparisonPage(records: selectedRecords),
-                    ),
-                  )
-                : null,
-            ),
-          ],
-        ],
-      ),
-      body: ListView.builder(
-        itemCount: records.length,
-        itemBuilder: (context, index) {
-          final record = records[index];
-          return ScoutingRecordCard(
-            record: record,
-            isSelected: selectedRecords.contains(record),
-            onTap: () {
-              if (isSelecting) {
-                _toggleSelection(record);
-              }
-            },
-            onLongPress: () {
-              if (!isSelecting) {
-                setState(() {
-                  isSelecting = true;
-                  selectedRecords.add(record);
-                });
-              }
-            },
-            onCompare: () {
-              if (!isSelecting) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ComparisonPage(
-                      records: [record],
-                    ),
-                  ),
-                );
-              }
-            },
-            onDelete: () async {
-              // ... existing delete functionality ...
-            },
-          );
-        },
-      ),
-    );
-  }
-}
-
-class ScoutingRecordCard extends StatelessWidget {
-  final ScoutingRecord record;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-  final VoidCallback onCompare;
-  final VoidCallback onDelete;
-
-  const ScoutingRecordCard({
-    required this.record,
-    required this.isSelected,
-    required this.onTap,
-    required this.onLongPress,
-    required this.onCompare,
-    required this.onDelete,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.only(bottom: AppSpacing.md),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        onTap: onTap,
-        onLongPress: onLongPress,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: (record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).withOpacity(0.1),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
-              ),
-              child: Row(
+  void _showRecordDetails(ScoutingRecord record) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.8,
+          height: MediaQuery.of(context).size.height * 0.8,
+          padding: EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Team ${record.teamNumber}',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance,
-                          ),
-                        ),
-                        Text(
-                          '${record.matchType} Match ${record.matchNumber}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).textTheme.bodySmall?.color,
-                          ),
-                        ),
-                      ],
-                    ),
+                  Text(
+                    'Match ${record.matchNumber} Details',
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   IconButton(
-                    icon: Icon(Icons.delete_outline),
-                    onPressed: onDelete,
-                    color: AppColors.error,
+                    icon: Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
                   ),
                 ],
               ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildMetricRow('Auto Algae', record.algaeRemoved.toString()),
-                  _buildMetricRow('Teleop Algae', record.algaeScoredInNet.toString()),
-                  _buildMetricRow('Processed', record.algaeProcessed.toString()),
-                  if (record.comments.isNotEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(top: AppSpacing.sm),
-                      child: Text(
-                        record.comments,
-                        style: TextStyle(
-                          fontStyle: FontStyle.italic,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                ],
+              Divider(),
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildDetailSection('Match Information', [
+                        _buildDetailRow('Time', record.timestamp),
+                        _buildDetailRow('Type', record.matchType),
+                        _buildDetailRow('Team', record.teamNumber.toString()),
+                        _buildDetailRow('Alliance', record.isRedAlliance ? "Red" : "Blue"),
+                      ]),
+                      _buildDetailSection('Autonomous', [
+                        _buildDetailRow('Cage Type', record.cageType),
+                        _buildDetailRow('Coral Preloaded', record.coralPreloaded ? "Yes" : "No"),
+                        _buildDetailRow('Taxis', record.taxis ? "Yes" : "No"),
+                        _buildDetailRow('Algae Removed', record.algaeRemoved.toString()),
+                        _buildDetailRow('Coral Placed', record.coralPlaced),
+                        _buildDetailRow('Ranking Point', record.rankingPoint ? "Yes" : "No"),
+                        _buildDetailRow('Can Pickup', record.canPickupAlgae ? "Yes" : "No"),
+                        _buildDetailRow('Auto Algae in Net', record.autoAlgaeInNet.toString()),
+                        _buildDetailRow('Auto Algae in Processor', record.autoAlgaeInProcessor.toString()),
+                        _buildDetailRow('Coral Pickup Method', record.coralPickupMethod),
+                      ]),
+                      _buildDetailSection('Teleop', [
+                        _buildDetailRow('Algae Scored in Net', record.algaeScoredInNet.toString()),
+                        _buildDetailRow('Coral Ranking Point', record.coralRankingPoint ? "Yes" : "No"),
+                        _buildDetailRow('Algae Processed', record.algaeProcessed.toString()),
+                        _buildDetailRow('Processed Algae Scored', record.processedAlgaeScored.toString()),
+                        _buildDetailRow('Processor Cycles', record.processorCycles.toString()),
+                        _buildDetailRow('Co-Op Point', record.coOpPoint ? "Yes" : "No"),
+                      ]),
+                      _buildDetailSection('Endgame', [
+                        _buildDetailRow('Returned to Barge', record.returnedToBarge ? "Yes" : "No"),
+                        _buildDetailRow('Cage Hang', record.cageHang),
+                        _buildDetailRow('Barge Ranking Point', record.bargeRankingPoint ? "Yes" : "No"),
+                      ]),
+                      _buildDetailSection('Other', [
+                        _buildDetailRow('Breakdown', record.breakdown ? "Yes" : "No"),
+                        _buildDetailRow('Comments', record.comments),
+                      ]),
+                      if (record.robotPath != null)
+                        _buildDetailSection('Robot Path', [
+                          _buildDetailRow('Status', 'Drawing saved'),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => DrawingPage(
+                                      isRedAlliance: record.isRedAlliance,
+                                      initialDrawing: record.robotPath,
+                                      readOnly: true,
+                                    ),
+                                  ),
+                                );
+                              },
+                              icon: Icon(Icons.visibility),
+                              label: Text('View Drawing'),
+                            ),
+                          ),
+                        ]),
+                    ],
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

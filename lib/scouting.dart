@@ -86,6 +86,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // Update the type to match the new DrawingLine format
   List<Map<String, dynamic>>? drawingData;
 
+  // Add state variable
+  String feederStation = 'None';
+
   @override
   void initState() {
     super.initState();
@@ -791,6 +794,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
         'autoAlgaeInNet': autoAlgaeInNet,
         'autoAlgaeInProcessor': autoAlgaeInProcessor,
         'coralPickupMethod': coralPickupMethod,
+        'feederStation': feederStation,
+        'coralOnReefHeight1': coralOnReefHeight1,
+        'coralOnReefHeight2': coralOnReefHeight2,
+        'coralOnReefHeight3': coralOnReefHeight3,
+        'coralOnReefHeight4': coralOnReefHeight4,
       }.toString());
 
       final record = ScoutingRecord(
@@ -821,6 +829,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
         autoAlgaeInNet: autoAlgaeInNet,
         autoAlgaeInProcessor: autoAlgaeInProcessor,
         coralPickupMethod: coralPickupMethod,
+        feederStation: feederStation,
+        coralOnReefHeight1: coralOnReefHeight1,
+        coralOnReefHeight2: coralOnReefHeight2,
+        coralOnReefHeight3: coralOnReefHeight3,
+        coralOnReefHeight4: coralOnReefHeight4,
         robotPath: drawingData,
       );
 
@@ -860,6 +873,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         autoAlgaeInNet = 0;
         autoAlgaeInProcessor = 0;
         coralPickupMethod = 'None';
+        feederStation = 'None';
         drawingData = null;
         updateTime();
       });
