@@ -941,7 +941,7 @@ class _TeamNumberSelectorState extends State<TeamNumberSelector> {
   }
 
   List<int> _numberToDigits(int number) {
-    String numStr = number.toString().padLeft(4, '0');
+    String numStr = number.toString().padLeft(5, '0');
     return numStr.split('').map(int.parse).toList();
   }
 
@@ -991,7 +991,7 @@ class _TeamNumberSelectorState extends State<TeamNumberSelector> {
                 Expanded(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(4, (columnIndex) {
+                    children: List.generate(5, (columnIndex) {
                       return SizedBox(
                         width: 60,
                         child: ListWheelScrollView(
