@@ -8,6 +8,7 @@ import 'team_analysis.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:csv/csv.dart';
 import 'drawing_page.dart';
+import 'qr_scanner_page.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -856,11 +857,9 @@ class _DataPageState extends State<DataPage> {
                     ),
                     ElevatedButton.icon(
                       onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Feature not implemented yet'),
-                            duration: Duration(seconds: 2),
-                          ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => QrScannerPage()),
                         );
                       },
                       style: ElevatedButton.styleFrom(
@@ -1005,8 +1004,10 @@ class _DataPageState extends State<DataPage> {
   }
 
 void _showQrCodeForRecord(ScoutingRecord record) {
-  // Use compressed JSON format
-  final compressedData = jsonEncode(record.toCompressedJson());
+  final csvData = [
+    record.toJson().values.toList(),
+  ];
+  final csvStr = const ListToCsvConverter().convert(csvData);
 
   showDialog(
     context: context,
@@ -1018,18 +1019,11 @@ void _showQrCodeForRecord(ScoutingRecord record) {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 300, // Increased size to accommodate more data
-                height: 300,
+                width: 200, 
+                height: 200,
                 child: QrImageView(
-                  data: compressedData,
+                  data: csvStr,
                   version: QrVersions.auto,
-                  errorCorrectionLevel: QrErrorCorrectLevel.L, // Lower error correction for more data
-                  foregroundColor: Theme.of(context).brightness == Brightness.dark 
-                      ? Colors.white 
-                      : Colors.black,
-                  backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                      ? Colors.black 
-                      : Colors.white,
                 ),
               ),
               SizedBox(height: 16),
