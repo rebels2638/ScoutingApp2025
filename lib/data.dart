@@ -373,7 +373,7 @@ class DataManager {
         ...records.map((r) => r.toCsvRow()),
       ];
       
-      final csv = const ListToCsvConverter().convert(csvData);
+      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
       await prefs.setString(_storageKey, csv);
     } catch (e, stackTrace) {
       print('Error saving record: $e');
@@ -386,13 +386,21 @@ class DataManager {
     try {
       final prefs = await SharedPreferences.getInstance();
       final String? csvData = prefs.getString(_storageKey);
-      if (csvData == null) return [];
+      if (csvData == null || csvData.isEmpty) return [];
       
-      final List<List<dynamic>> rows = const CsvToListConverter().convert(csvData);
-      if (rows.isEmpty) return [];
+      final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(csvData);
+      if (rows.isEmpty || rows.length <= 1) return [];
       
-      // Skip header row
-      return rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
+      // Skip header row and convert remaining rows
+      return rows.skip(1).map((row) {
+        try {
+          return ScoutingRecord.fromCsvRow(row);
+        } catch (e) {
+          print('Error parsing row: $e');
+          print('Row data: $row');
+          return null;
+        }
+      }).where((record) => record != null).cast<ScoutingRecord>().toList();
     } catch (e, stackTrace) {
       print('Error getting records: $e');
       print('Stack trace: $stackTrace');
@@ -404,7 +412,22 @@ class DataManager {
     final prefs = await SharedPreferences.getInstance();
     final records = await getRecords();
     records.removeAt(index);
-    await prefs.setString(_storageKey, const ListToCsvConverter().convert([
+    await prefs.setString(_storageKey, const ListToCsvConverter(fieldDelimiter: '|').convert([
+      ScoutingRecord.getCsvHeaders(),
+      ...records.map((r) => r.toCsvRow()),
+    ]));
+  }
+
+  static Future<void> deleteMultipleRecords(List<int> indices) async {
+    final prefs = await SharedPreferences.getInstance();
+    final records = await getRecords();
+    indices.sort((a, b) => b.compareTo(a)); // sort descending order
+    for (int index in indices) {
+      if (index >= 0 && index < records.length) {
+        records.removeAt(index);
+      }
+    }
+    await prefs.setString(_storageKey, const ListToCsvConverter(fieldDelimiter: '|').convert([
       ScoutingRecord.getCsvHeaders(),
       ...records.map((r) => r.toCsvRow()),
     ]));
@@ -422,7 +445,7 @@ class DataManager {
         ...records.map((r) => r.toCsvRow()),
       ];
       
-      final csv = const ListToCsvConverter().convert(csvData);
+      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
       
       String? outputFile = await FilePicker.platform.saveFile(
         dialogTitle: 'Export Scouting Records',
@@ -435,7 +458,6 @@ class DataManager {
         throw Exception('Export cancelled');
       }
 
-      // ensure file ends with .csv
       if (!outputFile.toLowerCase().endsWith('.csv')) {
         outputFile += '.csv';
       }
@@ -493,21 +515,6 @@ class DataManager {
   static Future<void> deleteAllRecords() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_storageKey);
-  }
-
-  static Future<void> deleteMultipleRecords(List<int> indices) async {
-    final prefs = await SharedPreferences.getInstance();
-    final records = await getRecords();
-    indices.sort((a, b) => b.compareTo(a)); // sort descending order
-    for (int index in indices) {
-      if (index >= 0 && index < records.length) {
-        records.removeAt(index);
-      }
-    }
-    await prefs.setString(_storageKey, const ListToCsvConverter().convert([
-      ScoutingRecord.getCsvHeaders(),
-      ...records.map((r) => r.toCsvRow()),
-    ]));
   }
 }
 

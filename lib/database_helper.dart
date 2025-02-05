@@ -16,13 +16,19 @@ class DatabaseHelper {
   Future<List<ScoutingRecord>> getAllRecords() async {
     final prefs = await SharedPreferences.getInstance();
     final String? csvData = prefs.getString(_storageKey);
-    if (csvData == null) return [];
+    if (csvData == null || csvData.isEmpty) return [];
     
-    final List<List<dynamic>> rows = const CsvToListConverter().convert(csvData);
-    if (rows.isEmpty) return [];
+    final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(csvData);
+    if (rows.isEmpty || rows.length <= 1) return [];
     
-    // Skip header row
-    return rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
+    return rows.skip(1).map((row) {
+      try {
+        return ScoutingRecord.fromCsvRow(row);
+      } catch (e) {
+        print('Error parsing row: $e');
+        return null;
+      }
+    }).where((record) => record != null).cast<ScoutingRecord>().toList();
   }
 
   Future<void> saveRecords(List<ScoutingRecord> records) async {
@@ -32,7 +38,7 @@ class DatabaseHelper {
       ...records.map((r) => r.toCsvRow()),
     ];
     
-    final csv = const ListToCsvConverter().convert(csvData);
+    final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
     await prefs.setString(_storageKey, csv);
   }
 } 
