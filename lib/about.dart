@@ -70,7 +70,7 @@ class _AboutPageState extends State<AboutPage> {
             ),
             SizedBox(height: 8),
             Text(
-              'Version 0.2.3-beta\n02/03/2025',
+              'Version 0.3.0-beta\n02/03/2025',
               style: TextStyle(
                 fontSize: 16,
                 fontStyle: FontStyle.italic,
