@@ -171,6 +171,26 @@ class _ComparisonPageState extends State<ComparisonPage> {
 
     rows.addAll([
       DataRow(cells: [
+        DataCell(_buildHeaderCell('Coral Height 1')),
+        ...widget.records.map((r) => DataCell(_buildDataCell('${r.coralOnReefHeight1}'))),
+      ]),
+      DataRow(cells: [
+        DataCell(_buildHeaderCell('Coral Height 2')),
+        ...widget.records.map((r) => DataCell(_buildDataCell('${r.coralOnReefHeight2}'))),
+      ]),
+      DataRow(cells: [
+        DataCell(_buildHeaderCell('Coral Height 3')),
+        ...widget.records.map((r) => DataCell(_buildDataCell('${r.coralOnReefHeight3}'))),
+      ]),
+      DataRow(cells: [
+        DataCell(_buildHeaderCell('Coral Height 4')),
+        ...widget.records.map((r) => DataCell(_buildDataCell('${r.coralOnReefHeight4}'))),
+      ]),
+      DataRow(cells: [
+        DataCell(_buildHeaderCell('Feeder Station')),
+        ...widget.records.map((r) => DataCell(_buildDataCell(r.feederStation))),
+      ]),
+      DataRow(cells: [
         DataCell(_buildHeaderCell('Net Algae')),
         ...widget.records.map((r) => DataCell(_buildDataCell('${r.algaeScoredInNet}'))),
       ]),
