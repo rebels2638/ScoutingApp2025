@@ -13,6 +13,10 @@ import 'widgets/topbar.dart';
 import 'services/telemetry_service.dart';
 import 'dart:async';
 import 'drawing_page.dart';
+import 'theme/app_theme.dart';  // Add this import
+import 'database_helper.dart';
+import 'widgets/telemetry_overlay.dart';
+import 'dart:math';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -24,7 +28,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
   // state variables for match info
   int matchNumber = 0;
-  String matchType = 'Unset';
+  String matchType = 'Practice';
   String currentTime = '';
 
   // state vars for team info
@@ -127,646 +131,645 @@ class _ScoutingPageState extends State<ScoutingPage> {
     });
   }
 
-  // navbar redirects
-  Widget _getPage(int index) {
-    switch (index) {
-      case 0:
-        return _buildScoutingPage();
-      case 1:
-        return DataPage();
-      case 2:
-        return SettingsPage();
-      case 3:
-        return AboutPage();
-      default:
-        return _buildScoutingPage();
-    }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: TopBar(
+        title: _currentIndex == 0 ? 'Scouting' :
+               _currentIndex == 1 ? 'Data' :
+               _currentIndex == 2 ? 'Settings' :
+               'About',
+        actions: _currentIndex == 0 ? [
+          IconButton(
+            icon: Icon(Icons.refresh),
+            tooltip: 'Reset Form',
+            onPressed: () => _showResetDialog(context),
+          ),
+          if (_isDevMode)
+            IconButton(
+              icon: Icon(Icons.analytics),
+              onPressed: () {
+                final myAppState = context.findAncestorStateOfType<MyAppState>();
+                if (myAppState != null) {
+                  myAppState.toggleTelemetry(!myAppState.telemetryVisible);
+                }
+              },
+            ),
+          IconButton(
+            icon: Icon(Icons.save),
+            onPressed: _saveRecord,
+          ),
+        ] : null,
+      ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildScoutingPage(),
+          DataPage(),
+          SettingsPage(),
+          AboutPage(),
+        ],
+      ),
+      bottomNavigationBar: NavBar(
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
+      ),
+    );
+  }
+
+  // Show reset confirmation dialog
+  void _showResetDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.orange),
+            SizedBox(width: AppSpacing.sm),
+            Text('Reset Form'),
+          ],
+        ),
+        content: Text('Are you sure you want to reset all fields? This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _resetForm();
+            },
+            child: Text('Reset'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Reset form fields
+  void _resetForm() {
+    setState(() {
+      final nextMatch = matchNumber + 1;
+      matchNumber = nextMatch;
+      matchType = 'Practice';
+      teamNumber = 0;
+      isRedAlliance = true;
+      cageType = 'Shallow';
+      coralPreloaded = false;
+      taxis = false;
+      algaeRemoved = 0;
+      coralPlaced = 'No';
+      rankingPoint = false;
+      algaeScoredInNet = 0;
+      coralOnReefHeight1 = 0;
+      coralOnReefHeight2 = 0;
+      coralOnReefHeight3 = 0;
+      coralOnReefHeight4 = 0;
+      coralRankingPoint = false;
+      algaeProcessed = 0;
+      processedAlgaeScored = 0;
+      processorCycles = 0;
+      coOpPoint = false;
+      returnedToBarge = false;
+      cageHang = 'None';
+      bargeRankingPoint = false;
+      breakdown = false;
+      comments = '';
+      canPickupAlgae = false;
+      canPickupCoral = false;
+      autoAlgaeInNet = 0;
+      autoAlgaeInProcessor = 0;
+      coralPickupMethod = 'None';
+      drawingData = null;
+      updateTime();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white),
+            SizedBox(width: AppSpacing.sm),
+            Text('Form reset successfully'),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+      ),
+    );
   }
 
   Widget _buildScoutingPage() {
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        // match info section
-        SectionHeader(title: 'Match Information', icon: Icons.view_module),
-        InfoRow(label: 'Time', value: currentTime),
-        CounterRow(
-          label: 'Number',
-          value: matchNumber,
-          onIncrement: () {
-            final oldValue = matchNumber;
-            setState(() {
-              matchNumber++;
-            });
-            _logStateChange('matchNumber', oldValue, matchNumber);
-            //TelemetryService().logAction('counter_increment', 'matchNumber');
-          },
-          onDecrement: () {
-            if (matchNumber > 0) {
-              final oldValue = matchNumber;
-              setState(() {
-                matchNumber--;
-              });
-              _logStateChange('matchNumber', oldValue, matchNumber);
-              //TelemetryService().logAction('counter_decrement', 'matchNumber');
-            }
-          },
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildMatchInfoSection(),
+            _buildAutoSection(),
+            _buildTeleopSection(),
+            _buildEndgameSection(),
+            _buildOtherSection(),
+          ],
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: DropdownButtonFormField<String>(
-            decoration: InputDecoration(labelText: 'Type'),
-            value: matchType,
-            items: ['Unset', 'Practice', 'Qualification', 'Playoff']
-                .map((type) => DropdownMenuItem(value: type, child: Text(type)))
-                .toList(),
-            onChanged: (value) {
-              final oldValue = matchType;
-              setState(() {
-                matchType = value!;
-              });
-              _logStateChange('matchType', oldValue, value);
-              //TelemetryService().logAction('dropdown_changed', 'matchType: $oldValue -> $value');
-            },
-          ),
-        ),
-        SizedBox(height: 20),
-        SectionHeader(title: 'Team Information', icon: Icons.people),
-        TeamNumberSelector(
-          initialValue: teamNumber,
-          onChanged: (value) {
-            TelemetryService().logAction('team_number_changed', 'to $value');
-            setState(() {
-              teamNumber = value;
-            });
-          },
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      ),
+    );
+  }
+
+  Widget _buildMatchInfoSection() {
+    return SectionCard(
+      title: 'Match Information',
+      icon: Icons.event,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Match number and type
+          Row(
             children: [
-              Text('Alliance', style: TextStyle(fontSize: 16)),
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: ToggleButtons(
-                  borderRadius: BorderRadius.circular(8),
-                  selectedBorderColor: Colors.transparent,
-                  borderWidth: 1,
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? (isRedAlliance ? Colors.red.shade900 : Colors.blue.shade900)
-                      : (isRedAlliance ? Colors.red.shade300 : Colors.blue.shade300),
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                  selectedColor: Theme.of(context).textTheme.bodyLarge?.color,
-                  constraints: BoxConstraints(minWidth: 100, minHeight: 40),
-                  isSelected: [isRedAlliance, !isRedAlliance],
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text(
-                        'RED',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text(
-                        'BLUE',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                        ),
-                      ),
-                    ),
-                  ],
-                  onPressed: (index) {
-                    TelemetryService().logAction('alliance_selection_changed', 'from ${isRedAlliance ? "red" : "blue"} to ${index == 0 ? "red" : "blue"}');
+              Expanded(
+                child: NumberInput(
+                  label: 'Match Number',
+                  value: matchNumber,
+                  onChanged: (value) {
                     setState(() {
-                      isRedAlliance = index == 0;
+                      matchNumber = value;
+                      _logStateChange('matchNumber', matchNumber, value);
                     });
+                  },
+                ),
+              ),
+              SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: DropdownCard(
+                  label: 'Match Type',
+                  value: matchType,
+                  items: const ['Practice', 'Qualification', 'Playoff'],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        matchType = value;
+                        _logStateChange('matchType', matchType, value);
+                      });
+                    }
                   },
                 ),
               ),
             ],
           ),
-        ),
-        Divider(),
-        // auto section
-        SectionHeader(title: 'Autonomous', icon: Icons.settings),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Num. of Algae Removed',
+          SizedBox(height: AppSpacing.md),
+          
+          // Team selection
+          TeamSelector(
+            teamNumber: teamNumber,
+            isRedAlliance: isRedAlliance,
+            onTeamChanged: (value) {
+              setState(() {
+                teamNumber = value;
+                _logStateChange('teamNumber', teamNumber, value);
+              });
+            },
+            onAllianceChanged: (value) {
+              setState(() {
+                isRedAlliance = value;
+                _logStateChange('isRedAlliance', isRedAlliance, value);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAutoSection() {
+    return SectionCard(
+      title: 'Autonomous',
+      icon: Icons.auto_awesome,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Taxis and path first for importance
+          SwitchCard(
+            label: 'Taxis',
+            value: taxis,
+            onChanged: (value) {
+              setState(() {
+                taxis = value;
+                _logStateChange('taxis', taxis, value);
+              });
+            },
+          ),
+          DrawingButton(
+            isRedAlliance: isRedAlliance,
+            hasPath: drawingData != null,
+            onPathSaved: (path) {
+              setState(() {
+                drawingData = path;
+                _logStateChange('drawingData', 'updated', 'new path');
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Auto path saved'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+          ),
+          
+          // Scoring section
+          SectionHeader(
+            title: 'Scoring',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          CounterRow(
+            label: 'Algae Removed',
             value: algaeRemoved,
-            onIncrement: () {
-              final oldValue = algaeRemoved;
+            onChanged: (value) {
               setState(() {
-                algaeRemoved++;
+                algaeRemoved = value;
+                _logStateChange('algaeRemoved', algaeRemoved, value);
               });
-              _logStateChange('algaeRemoved', oldValue, algaeRemoved);
-              //TelemetryService().logAction('counter_increment', 'algaeRemoved');
-            },
-            onDecrement: () {
-              if (algaeRemoved > 0) {
-                final oldValue = algaeRemoved;
-                setState(() {
-                  algaeRemoved--;
-                });
-                _logStateChange('algaeRemoved', oldValue, algaeRemoved);
-                //TelemetryService().logAction('counter_decrement', 'algaeRemoved');
-              }
             },
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Algae Scored in Net',
+          CounterRow(
+            label: 'Algae in Net',
             value: autoAlgaeInNet,
-            onIncrement: () {
-              final oldValue = autoAlgaeInNet;
+            onChanged: (value) {
               setState(() {
-                autoAlgaeInNet++;
+                autoAlgaeInNet = value;
+                _logStateChange('autoAlgaeInNet', autoAlgaeInNet, value);
               });
-              _logStateChange('autoAlgaeInNet', oldValue, autoAlgaeInNet);
-              //TelemetryService().logAction('counter_increment', 'autoAlgaeInNet');
-            },
-            onDecrement: () {
-              if (autoAlgaeInNet > 0) {
-                final oldValue = autoAlgaeInNet;
-                setState(() {
-                  autoAlgaeInNet--;
-                });
-                _logStateChange('autoAlgaeInNet', oldValue, autoAlgaeInNet);
-                //TelemetryService().logAction('counter_decrement', 'autoAlgaeInNet');
-              }
             },
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Algae Scored in Processor',
+          CounterRow(
+            label: 'Algae in Processor',
             value: autoAlgaeInProcessor,
-            onIncrement: () {
-              final oldValue = autoAlgaeInProcessor;
+            onChanged: (value) {
               setState(() {
-                autoAlgaeInProcessor++;
+                autoAlgaeInProcessor = value;
+                _logStateChange('autoAlgaeInProcessor', autoAlgaeInProcessor, value);
               });
-              _logStateChange('autoAlgaeInProcessor', oldValue, autoAlgaeInProcessor);
-              //TelemetryService().logAction('counter_increment', 'autoAlgaeInProcessor');
-            },
-            onDecrement: () {
-              if (autoAlgaeInProcessor > 0) {
-                final oldValue = autoAlgaeInProcessor;
-                setState(() {
-                  autoAlgaeInProcessor--;
-                });
-                _logStateChange('autoAlgaeInProcessor', oldValue, autoAlgaeInProcessor);
-                //TelemetryService().logAction('counter_decrement', 'autoAlgaeInProcessor');
-              }
             },
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
+          
+          // Coral section
+          SectionHeader(
+            title: 'Coral',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          DropdownCard(
             label: 'Cage Type',
-            options: ['SHALLOW', 'DEEP'],
-            selectedIndex: cageType == 'Shallow' ? 0 : 1,
-            onSelected: (index) {
-              TelemetryService().logAction('toggle_changed', 'cageType');
-              final oldValue = cageType;
-              setState(() {
-                cageType = index == 0 ? 'Shallow' : 'Deep';
-              });
-              _logStateChange('cageType', oldValue, cageType);
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Coral Preloaded?',
-            options: ['YES', 'NO'],
-            selectedIndex: coralPreloaded ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = coralPreloaded;
-              setState(() {
-                coralPreloaded = index == 0;
-              });
-              _logStateChange('coralPreloaded', oldValue, coralPreloaded);
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Taxis?',
-            options: ['YES', 'NO'],
-            selectedIndex: taxis ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = taxis;
-              setState(() {
-                taxis = index == 0;
-              });
-              _logStateChange('taxis', oldValue, taxis);
-            },
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Coral Placed?', style: TextStyle(fontSize: 16)),
-            DropdownButton<String>(
-              value: coralPlaced,
-              items: ['No', 'Yes - Shallow', 'Yes - Deep']
-                  .map((option) => DropdownMenuItem(value: option, child: Text(option)))
-                  .toList(),
-              onChanged: (value) {
-                final oldValue = coralPlaced;
+            value: cageType,
+            items: const ['Shallow', 'Deep'],
+            onChanged: (value) {
+              if (value != null) {
                 setState(() {
-                  coralPlaced = value!;
+                  cageType = value;
+                  _logStateChange('cageType', cageType, value);
                 });
-                _logStateChange('coralPlaced', oldValue, value);
-                //TelemetryService().logAction('dropdown_changed', 'coralPlaced: $oldValue -> $value');
-              },
-            ),
-          ],
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Coral Pickup Method', style: TextStyle(fontSize: 16)),
-            DropdownButton<String>(
-              value: coralPickupMethod,
-              items: ['None', 'Feeder', 'Ground', 'Both']
-                  .map((option) => DropdownMenuItem(value: option, child: Text(option)))
-                  .toList(),
-              onChanged: (value) {
-                final oldValue = coralPickupMethod;
+              }
+            },
+          ),
+          SwitchCard(
+            label: 'Coral Preloaded',
+            value: coralPreloaded,
+            onChanged: (value) {
+              setState(() {
+                coralPreloaded = value;
+                _logStateChange('coralPreloaded', coralPreloaded, value);
+              });
+            },
+          ),
+          DropdownCard(
+            label: 'Coral Placed',
+            value: coralPlaced,
+            items: const ['No', 'Yes - Shallow', 'Yes - Deep'],
+            onChanged: (value) {
+              if (value != null) {
                 setState(() {
-                  coralPickupMethod = value!;
+                  coralPlaced = value;
+                  _logStateChange('coralPlaced', coralPlaced, value);
                 });
-                _logStateChange('coralPickupMethod', oldValue, value);
-                //TelemetryService().logAction('dropdown_changed', 'coralPickupMethod: $oldValue -> $value');
-              },
-            ),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Ranking Point?',
-            options: ['YES', 'NO'],
-            selectedIndex: rankingPoint ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = rankingPoint;
-              setState(() {
-                rankingPoint = index == 0;
-              });
-              _logStateChange('rankingPoint', oldValue, rankingPoint);
-            },
-          ),
-        ),
-        Divider(),
-        // tele-op section
-        SectionHeader(title: 'Tele-op', icon: Icons.directions_run),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Coral on Reef, Height 1',
-            value: coralOnReefHeight1,
-            onIncrement: () {
-              final oldValue = coralOnReefHeight1;
-              setState(() => coralOnReefHeight1++);
-              _logStateChange('coralOnReefHeight1', oldValue, coralOnReefHeight1);
-            },
-            onDecrement: () {
-              if (coralOnReefHeight1 > 0) {
-                final oldValue = coralOnReefHeight1;
-                setState(() => coralOnReefHeight1--);
-                _logStateChange('coralOnReefHeight1', oldValue, coralOnReefHeight1);
               }
             },
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Coral on Reef, Height 2',
-            value: coralOnReefHeight2,
-            onIncrement: () {
-              final oldValue = coralOnReefHeight2;
-              setState(() => coralOnReefHeight2++);
-              _logStateChange('coralOnReefHeight2', oldValue, coralOnReefHeight2);
-              //TelemetryService().logAction('counter_increment', 'coralOnReefHeight2');
-            },
-            onDecrement: () {
-              if (coralOnReefHeight2 > 0) {
-                final oldValue = coralOnReefHeight2;
-                setState(() => coralOnReefHeight2--);
-                _logStateChange('coralOnReefHeight2', oldValue, coralOnReefHeight2);
-                //TelemetryService().logAction('counter_decrement', 'coralOnReefHeight2');
-              }
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Coral on Reef, Height 3',
-            value: coralOnReefHeight3,
-            onIncrement: () {
-              final oldValue = coralOnReefHeight3;
-              setState(() => coralOnReefHeight3++);
-              _logStateChange('coralOnReefHeight3', oldValue, coralOnReefHeight3);
-              //TelemetryService().logAction('counter_increment', 'coralOnReefHeight3');
-            },
-            onDecrement: () {
-              if (coralOnReefHeight3 > 0) {
-                final oldValue = coralOnReefHeight3;
-                setState(() => coralOnReefHeight3--);
-                _logStateChange('coralOnReefHeight3', oldValue, coralOnReefHeight3);
-                //TelemetryService().logAction('counter_decrement', 'coralOnReefHeight3');
-              }
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Coral on Reef, Height 4',
-            value: coralOnReefHeight4,
-            onIncrement: () {
-              final oldValue = coralOnReefHeight4;
-              setState(() => coralOnReefHeight4++);
-              _logStateChange('coralOnReefHeight4', oldValue, coralOnReefHeight4);
-              //TelemetryService().logAction('counter_increment', 'coralOnReefHeight4');
-            },
-            onDecrement: () {
-              if (coralOnReefHeight4 > 0) {
-                final oldValue = coralOnReefHeight4;
-                setState(() => coralOnReefHeight4--);
-                _logStateChange('coralOnReefHeight4', oldValue, coralOnReefHeight4);
-                //TelemetryService().logAction('counter_decrement', 'coralOnReefHeight4');
-              }
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Coral Ranking Point?',
-            options: ['YES', 'NO'],
-            selectedIndex: coralRankingPoint ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = coralRankingPoint;
+          
+          // Ranking point
+          SwitchCard(
+            label: 'Ranking Point',
+            value: rankingPoint,
+            onChanged: (value) {
               setState(() {
-                coralRankingPoint = index == 0;
+                rankingPoint = value;
+                _logStateChange('rankingPoint', rankingPoint, value);
               });
-              _logStateChange('coralRankingPoint', oldValue, coralRankingPoint);
             },
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Coral ground pickup?',
-            options: ['YES', 'NO'],
-            selectedIndex: canPickupCoral ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = canPickupCoral;
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeleopSection() {
+    return SectionCard(
+      title: 'Teleop',
+      icon: Icons.sports_esports,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Algae scoring section
+          SectionHeader(
+            title: 'Algae Scoring',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          CounterRow(
+            label: 'Algae in Net',
+            value: algaeScoredInNet,
+            onChanged: (value) {
               setState(() {
-                canPickupCoral = index == 0;
+                algaeScoredInNet = value;
+                _logStateChange('algaeScoredInNet', algaeScoredInNet, value);
               });
-              _logStateChange('canPickupCoral', oldValue, canPickupCoral);
-              //TelemetryService().logAction('toggle_changed', 'canPickupCoral');
             },
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Algae ground pickup?',
-            options: ['YES', 'NO'],
-            selectedIndex: canPickupAlgae ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = canPickupAlgae;
-              setState(() {
-                canPickupAlgae = index == 0;
-              });
-              _logStateChange('canPickupAlgae', oldValue, canPickupAlgae);
-              //TelemetryService().logAction('toggle_changed', 'canPickupAlgae');
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
+          CounterRow(
             label: 'Algae Processed',
             value: algaeProcessed,
-            onIncrement: () {
-              final oldValue = algaeProcessed;
-              setState(() => algaeProcessed++);
-              _logStateChange('algaeProcessed', oldValue, algaeProcessed);
-              //TelemetryService().logAction('counter_increment', 'algaeProcessed');
-            },
-            onDecrement: () {
-              if (algaeProcessed > 0) {
-                final oldValue = algaeProcessed;
-                setState(() => algaeProcessed--);
-                _logStateChange('algaeProcessed', oldValue, algaeProcessed);
-                //TelemetryService().logAction('counter_decrement', 'algaeProcessed');
-              }
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: CounterRow(
-            label: 'Processed Algae Scored',
-            value: processedAlgaeScored,
-            onIncrement: () {
-              final oldValue = processedAlgaeScored;
-              setState(() => processedAlgaeScored++);
-              _logStateChange('processedAlgaeScored', oldValue, processedAlgaeScored);
-              //TelemetryService().logAction('counter_increment', 'processedAlgaeScored');
-            },
-            onDecrement: () {
-              if (processedAlgaeScored > 0) {
-                final oldValue = processedAlgaeScored;
-                setState(() => processedAlgaeScored--);
-                _logStateChange('processedAlgaeScored', oldValue, processedAlgaeScored);
-                //TelemetryService().logAction('counter_decrement', 'processedAlgaeScored');
-              }
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Co-op Point?',
-            options: ['YES', 'NO'],
-            selectedIndex: coOpPoint ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = coOpPoint;
-              setState(() {
-                coOpPoint = index == 0;
-              });
-              _logStateChange('coOpPoint', oldValue, coOpPoint);
-              //TelemetryService().logAction('toggle_changed', 'coOpPoint');
-            },
-          ),
-        ),
-        Divider(),
-        // endgame section
-        SectionHeader(title: 'Endgame', icon: Icons.flag),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Returned to Barge?',
-            options: ['YES', 'NO'],
-            selectedIndex: returnedToBarge ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = returnedToBarge;
-              setState(() {
-                returnedToBarge = index == 0;
-              });
-              _logStateChange('returnedToBarge', oldValue, returnedToBarge);
-              //TelemetryService().logAction('toggle_changed', 'returnedToBarge');
-            },
-          ),
-        ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Cage Hang', style: TextStyle(fontSize: 16)),
-            DropdownButton<String>(
-              value: cageHang,
-              items: ['None', 'Shallow', 'Deep']
-                  .map((option) => DropdownMenuItem(value: option, child: Text(option)))
-                  .toList(),
-              onChanged: (value) {
-                final oldValue = cageHang;
-                setState(() {
-                  cageHang = value!;
-                });
-                _logStateChange('cageHang', oldValue, value);
-                //TelemetryService().logAction('dropdown_changed', 'cageHang: $oldValue -> $value');
-              },
-            ),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Barge Ranking Point?',
-            options: ['YES', 'NO'],
-            selectedIndex: bargeRankingPoint ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = bargeRankingPoint;
-              setState(() {
-                bargeRankingPoint = index == 0;
-              });
-              _logStateChange('bargeRankingPoint', oldValue, bargeRankingPoint);
-              //TelemetryService().logAction('toggle_changed', 'bargeRankingPoint');
-            },
-          ),
-        ),
-        Divider(),
-        // other section
-        SectionHeader(title: 'Other', icon: Icons.miscellaneous_services),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Breakdown?',
-            options: ['YES', 'NO'],
-            selectedIndex: breakdown ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = breakdown;
-              setState(() {
-                breakdown = index == 0;
-              });
-              _logStateChange('breakdown', oldValue, breakdown);
-              //TelemetryService().logAction('toggle_changed', 'breakdown');
-            },
-          ),
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: ElevatedButton.icon(
-                  onPressed: () async {
-                    final result = await Navigator.push<List<Map<String, dynamic>>>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => DrawingPage(
-                          isRedAlliance: isRedAlliance,
-                        ),
-                      ),
-                    );
-                    
-                    if (result != null) {
-                      setState(() {
-                        drawingData = result;
-                      });
-                      
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Auto path drawing saved'),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.draw),
-                  label: const Text('Draw Auto Path'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (drawingData != null)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 8.0),
-            child: Text(
-              'Auto path drawing saved ✓',
-              style: TextStyle(
-                color: Colors.green,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: TextField(
-            maxLength: 150,
-            maxLines: 3,
-            decoration: InputDecoration(
-              labelText: 'Comments',
-              border: OutlineInputBorder(),
-              counterText: '${comments.length}/150',
-            ),
             onChanged: (value) {
-              final oldValue = comments;
               setState(() {
-                comments = value;
+                algaeProcessed = value;
+                _logStateChange('algaeProcessed', algaeProcessed, value);
               });
-              _logStateChange('comments', oldValue, value);
             },
           ),
-        ),
-      ],
+          CounterRow(
+            label: 'Processed Scored',
+            value: processedAlgaeScored,
+            onChanged: (value) {
+              setState(() {
+                processedAlgaeScored = value;
+                _logStateChange('processedAlgaeScored', processedAlgaeScored, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Processor Cycles',
+            value: processorCycles,
+            onChanged: (value) {
+              setState(() {
+                processorCycles = value;
+                _logStateChange('processorCycles', processorCycles, value);
+              });
+            },
+          ),
+          
+          // Coral scoring section
+          SectionHeader(
+            title: 'Coral Scoring',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          CounterRow(
+            label: 'Height 1',
+            value: coralOnReefHeight1,
+            onChanged: (value) {
+              setState(() {
+                coralOnReefHeight1 = value;
+                _logStateChange('coralOnReefHeight1', coralOnReefHeight1, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Height 2',
+            value: coralOnReefHeight2,
+            onChanged: (value) {
+              setState(() {
+                coralOnReefHeight2 = value;
+                _logStateChange('coralOnReefHeight2', coralOnReefHeight2, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Height 3',
+            value: coralOnReefHeight3,
+            onChanged: (value) {
+              setState(() {
+                coralOnReefHeight3 = value;
+                _logStateChange('coralOnReefHeight3', coralOnReefHeight3, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Height 4',
+            value: coralOnReefHeight4,
+            onChanged: (value) {
+              setState(() {
+                coralOnReefHeight4 = value;
+                _logStateChange('coralOnReefHeight4', coralOnReefHeight4, value);
+              });
+            },
+          ),
+          
+          // Robot capabilities section
+          SectionHeader(
+            title: 'Capabilities',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          SizedBox(height: 8),
+          Column(
+            children: [
+              SwitchCard(
+                label: 'Pickup Algae',
+                value: canPickupAlgae,
+                onChanged: (value) {
+                  setState(() {
+                    canPickupAlgae = value;
+                    _logStateChange('canPickupAlgae', canPickupAlgae, value);
+                  });
+                },
+              ),
+              SizedBox(height: 8),
+              SwitchCard(
+                label: 'Pickup Coral', 
+                value: canPickupCoral,
+                onChanged: (value) {
+                  setState(() {
+                    canPickupCoral = value;
+                    _logStateChange('canPickupCoral', canPickupCoral, value);
+                  });
+                },
+              ),
+              SizedBox(height: 12),
+              DropdownCard(
+                label: 'Coral Pickup Method',
+                value: coralPickupMethod,
+                items: const ['None', 'Ground', 'Human Player', 'Both'],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      coralPickupMethod = value;
+                      _logStateChange('coralPickupMethod', coralPickupMethod, value);
+                    });
+                  }
+                },
+              ),
+            ],
+          ),
+          
+          // Points section
+          SectionHeader(
+            title: 'Points',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          SwitchCard(
+            label: 'Co-Op Point',
+            value: coOpPoint,
+            onChanged: (value) {
+              setState(() {
+                coOpPoint = value;
+                _logStateChange('coOpPoint', coOpPoint, value);
+              });
+            },
+          ),
+          SwitchCard(
+            label: 'Coral Ranking Point',
+            value: coralRankingPoint,
+            onChanged: (value) {
+              setState(() {
+                coralRankingPoint = value;
+                _logStateChange('coralRankingPoint', coralRankingPoint, value);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEndgameSection() {
+    return SectionCard(
+      title: 'Endgame',
+      icon: Icons.flag,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Barge section
+          SectionHeader(
+            title: 'Barge',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          SwitchCard(
+            label: 'Returned to Barge',
+            value: returnedToBarge,
+            onChanged: (value) {
+              setState(() {
+                returnedToBarge = value;
+                _logStateChange('returnedToBarge', returnedToBarge, value);
+              });
+            },
+          ),
+          
+          // Hanging section
+          SectionHeader(
+            title: 'Hanging',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          DropdownCard(
+            label: 'Cage Hang',
+            value: cageHang,
+            items: const ['None', 'Low', 'Mid', 'High'],
+            onChanged: (value) {
+              if (value != null) {
+                setState(() {
+                  cageHang = value;
+                  _logStateChange('cageHang', cageHang, value);
+                });
+              }
+            },
+          ),
+          SwitchCard(
+            label: 'Barge RP',
+            value: bargeRankingPoint,
+            onChanged: (value) {
+              setState(() {
+                bargeRankingPoint = value;
+                _logStateChange('bargeRankingPoint', bargeRankingPoint, value);
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOtherSection() {
+    return SectionCard(
+      title: 'Other',
+      icon: Icons.more_horiz,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Robot status
+          SectionHeader(
+            title: 'Robot Status',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          SwitchCard(
+            label: 'Robot Breakdown',
+            value: breakdown,
+            onChanged: (value) {
+              setState(() {
+                breakdown = value;
+                _logStateChange('breakdown', breakdown, value);
+              });
+            },
+          ),
+          
+          // Comments section
+          SectionHeader(
+            title: 'Notes',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              boxShadow: AppShadows.small,
+            ),
+            padding: EdgeInsets.all(AppSpacing.sm),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  maxLines: 3,
+                  maxLength: 150,
+                  decoration: InputDecoration(
+                    hintText: 'Enter any additional notes...',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.all(AppSpacing.sm),
+                  ),
+                  style: TextStyle(fontSize: 14),
+                  onChanged: (value) {
+                    setState(() {
+                      comments = value;
+                      _logStateChange('comments', 'updated', 'new comment');
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -873,39 +876,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
         ),
       );
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: TopBar(
-        title: _currentIndex == 0 ? 'Scouting' :
-               _currentIndex == 1 ? 'Data' :
-               _currentIndex == 2 ? 'Settings' :
-               'About',
-        actions: _currentIndex == 0 ? [
-          if (_isDevMode)
-            IconButton(
-              icon: Icon(Icons.analytics),
-              onPressed: () {
-                final myAppState = context.findAncestorStateOfType<MyAppState>();
-                if (myAppState != null) {
-                  myAppState.toggleTelemetry(!myAppState.telemetryVisible);
-                }
-              },
-            ),
-          IconButton(
-            icon: Icon(Icons.save),
-            onPressed: _saveRecord,
-          ),
-        ] : null,
-      ),
-      body: _getPage(_currentIndex),
-      bottomNavigationBar: NavBar(
-        currentIndex: _currentIndex,
-        onTap: _onItemTapped,
-      ),
-    );
   }
 
   void _logStateChange(String field, dynamic oldValue, dynamic newValue) {
@@ -1079,21 +1049,23 @@ class _TeamNumberSelectorState extends State<TeamNumberSelector> {
 
 class SectionHeader extends StatelessWidget {
   final String title;
-  final IconData icon;
+  final Color color;
 
-  const SectionHeader({required this.title, required this.icon});
+  const SectionHeader({required this.title, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 24, color: Colors.black),
-        SizedBox(width: 8),
-        Text(
-          title,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+    return Padding(
+      padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: color,
+          letterSpacing: 0.5,
         ),
-      ],
+      ),
     );
   }
 }
@@ -1175,69 +1147,467 @@ class ToggleRow extends StatelessWidget {
 class CounterRow extends StatelessWidget {
   final String label;
   final int value;
-  final VoidCallback onIncrement;
-  final VoidCallback onDecrement;
+  final ValueChanged<int> onChanged;
 
   const CounterRow({
+    Key? key,
     required this.label,
     required this.value,
-    required this.onIncrement,
-    required this.onDecrement,
-  });
+    required this.onChanged,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 16,
-            color: Theme.of(context).textTheme.bodyLarge?.color,
-          ),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
         ),
-        Row(
-          children: [
-            FloatingActionButton(
-              heroTag: 'decrement_$label',
-              mini: true,
-              elevation: 0.0,
-              backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                  ? Colors.blue.shade900 
-                  : null,
-              onPressed: onDecrement,
-              child: Icon(
-                Icons.remove,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.remove, size: 18),
+                  onPressed: value > 0 ? () => onChanged(value - 1) : null,
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                  style: IconButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+                Container(
+                  constraints: BoxConstraints(minWidth: 36),
+                  alignment: Alignment.center,
+                  child: Text(
+                    value.toString(),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.add, size: 18),
+                  onPressed: () => onChanged(value + 1),
+                  padding: EdgeInsets.zero,
+                  constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                  style: IconButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SectionCard extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final Widget child;
+
+  const SectionCard({
+    Key? key,
+    required this.title,
+    required this.icon,
+    required this.child,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: EdgeInsets.only(bottom: AppSpacing.md),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: AppShadows.small,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: [
+                Icon(icon, color: Theme.of(context).colorScheme.primary),
+                SizedBox(width: AppSpacing.sm),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.all(AppSpacing.md),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DrawingButton extends StatelessWidget {
+  final bool isRedAlliance;
+  final bool hasPath;
+  final Function(List<Map<String, dynamic>>) onPathSaved;
+
+  const DrawingButton({
+    Key? key,
+    required this.isRedAlliance,
+    required this.hasPath,
+    required this.onPathSaved,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          ElevatedButton.icon(
+            onPressed: () async {
+              final result = await Navigator.push<List<Map<String, dynamic>>>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DrawingPage(
+                    isRedAlliance: isRedAlliance,
+                  ),
+                ),
+              );
+              
+              if (result != null) {
+                onPathSaved(result);
+              }
+            },
+            icon: Icon(hasPath ? Icons.edit : Icons.draw),
+            label: Text(hasPath ? 'Edit Auto Path' : 'Draw Auto Path'),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              backgroundColor: hasPath ? 
+                Theme.of(context).colorScheme.primaryContainer :
+                null,
+            ),
+          ),
+          if (hasPath)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              padding: const EdgeInsets.only(top: 4.0),
               child: Text(
-                value.toString(),
+                'Auto path saved ✓',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 16,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
-            FloatingActionButton(
-              heroTag: 'increment_$label',
-              mini: true,
-              elevation: 0.0,
-              backgroundColor: Theme.of(context).brightness == Brightness.dark 
-                  ? Colors.blue.shade900 
-                  : null,
-              onPressed: onIncrement,
-              child: Icon(
-                Icons.add,
-                color: Theme.of(context).textTheme.bodyLarge?.color,
+        ],
+      ),
+    );
+  }
+}
+
+class SwitchCard extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+
+  const SwitchCard({
+    Key? key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
-          ],
+          ),
+          Switch.adaptive(
+            value: value,
+            onChanged: onChanged,
+            activeColor: Theme.of(context).colorScheme.primary,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class NumberInput extends StatelessWidget {
+  final String label;
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  const NumberInput({
+    Key? key,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: AppShadows.small,
+      ),
+      padding: EdgeInsets.all(AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          TextField(
+            controller: TextEditingController(text: value.toString()),
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.sm,
+                vertical: AppSpacing.xs,
+              ),
+              border: OutlineInputBorder(),
+            ),
+            onChanged: (text) {
+              final newValue = int.tryParse(text);
+              if (newValue != null) {
+                onChanged(newValue);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class DropdownCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final List<String> items;
+  final ValueChanged<String?> onChanged;
+
+  const DropdownCard({
+    Key? key,
+    required this.label,
+    required this.value,
+    required this.items,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: AppShadows.small,
+      ),
+      padding: EdgeInsets.all(AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          DropdownButton<String>(
+            value: value,
+            isExpanded: true,
+            underline: SizedBox(),
+            items: items.map((item) {
+              return DropdownMenuItem(
+                value: item,
+                child: Text(item),
+              );
+            }).toList(),
+            onChanged: onChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TeamSelector extends StatelessWidget {
+  final int teamNumber;
+  final bool isRedAlliance;
+  final ValueChanged<int> onTeamChanged;
+  final ValueChanged<bool> onAllianceChanged;
+
+  const TeamSelector({
+    Key? key,
+    required this.teamNumber,
+    required this.isRedAlliance,
+    required this.onTeamChanged,
+    required this.onAllianceChanged,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: AppShadows.small,
+      ),
+      padding: EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Team Selection',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              Expanded(
+                child: TeamNumberSelector(
+                  initialValue: teamNumber,
+                  onChanged: onTeamChanged,
+                ),
+              ),
+              SizedBox(width: AppSpacing.md),
+              Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  border: Border.all(
+                    color: Theme.of(context).dividerColor,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    _AllianceButton(
+                      label: 'Red',
+                      isSelected: isRedAlliance,
+                      color: AppColors.redAlliance,
+                      onTap: () => onAllianceChanged(true),
+                    ),
+                    _AllianceButton(
+                      label: 'Blue',
+                      isSelected: !isRedAlliance,
+                      color: AppColors.blueAlliance,
+                      onTap: () => onAllianceChanged(false),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AllianceButton extends StatelessWidget {
+  final String label;
+  final bool isSelected;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _AllianceButton({
+    Key? key,
+    required this.label,
+    required this.isSelected,
+    required this.color,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: Duration(milliseconds: 200),
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
         ),
-      ],
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? color : Theme.of(context).textTheme.bodyLarge?.color,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ),
     );
   }
 }

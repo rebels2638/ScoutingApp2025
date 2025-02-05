@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'theme/app_theme.dart';
 
 // Add a class to store line properties
 class DrawingLine {
@@ -59,6 +60,14 @@ class DrawingLine {
       strokeWidth: (json['w'] as num).toDouble(),
     );
   }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'points': points.map((p) => {'x': p.dx, 'y': p.dy}).toList(),
+      'color': color.value,
+      'strokeWidth': strokeWidth,
+    };
+  }
 }
 
 class DrawingPage extends StatefulWidget {
@@ -67,29 +76,106 @@ class DrawingPage extends StatefulWidget {
   final bool readOnly;
 
   const DrawingPage({
-    super.key,
+    Key? key,
     required this.isRedAlliance,
     this.initialDrawing,
     this.readOnly = false,
-  });
+  }) : super(key: key);
 
   @override
-  State<DrawingPage> createState() => _DrawingPageState();
+  _DrawingPageState createState() => _DrawingPageState();
 }
 
 class _DrawingPageState extends State<DrawingPage> {
-  late List<DrawingLine> lines;
-  List<DrawingLine> undoHistory = [];
+  List<DrawingLine> lines = [];
   List<DrawingLine> redoHistory = [];
-  List<Offset>? currentLine;
+  Color currentColor = Colors.black;
   bool isErasing = false;
-  Color currentColor = Colors.blue;
-  double strokeWidth = 3.0;
+  double strokeWidth = 5.0;
+  List<Offset>? currentLine;
 
   @override
   void initState() {
     super.initState();
-    currentColor = widget.isRedAlliance ? Colors.red : Colors.blue;
+    currentColor = widget.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance;
+    _initializeDrawing();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Draw Auto Path'),
+        actions: widget.readOnly ? null : [
+          IconButton(
+            icon: Icon(Icons.undo),
+            onPressed: lines.isEmpty ? null : _undo,
+          ),
+          IconButton(
+            icon: Icon(Icons.redo),
+            onPressed: redoHistory.isEmpty ? null : _redo,
+          ),
+          IconButton(
+            icon: Icon(isErasing ? Icons.edit : Icons.cleaning_services),
+            onPressed: () {
+              setState(() {
+                isErasing = !isErasing;
+              });
+            },
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          // Background field image
+          Image.asset(
+            'assets/field_image.png',
+            width: double.infinity,
+            height: double.infinity,
+            fit: BoxFit.contain,
+          ),
+          // Drawing canvas
+          GestureDetector(
+            onPanStart: widget.readOnly ? null : _onPanStart,
+            onPanUpdate: widget.readOnly ? null : _onPanUpdate,
+            onPanEnd: widget.readOnly ? null : _onPanEnd,
+            child: CustomPaint(
+              painter: DrawingPainter(
+                lines: lines,
+                currentColor: currentColor,
+                strokeWidth: strokeWidth,
+              ),
+              size: Size.infinite,
+            ),
+          ),
+        ],
+      ),
+      floatingActionButton: widget.readOnly ? null : FloatingActionButton(
+        onPressed: () {
+          Navigator.pop(context, lines.map((line) => line.toCompressedJson()).toList());
+        },
+        child: Icon(Icons.save),
+      ),
+    );
+  }
+
+  void _undo() {
+    if (lines.isNotEmpty) {
+      setState(() {
+        redoHistory.add(lines.removeLast());
+      });
+    }
+  }
+
+  void _redo() {
+    if (redoHistory.isNotEmpty) {
+      setState(() {
+        lines.add(redoHistory.removeLast());
+      });
+    }
+  }
+
+  void _initializeDrawing() {
     try {
       lines = widget.initialDrawing?.map((map) {
         final pointsList = (map['points'] as List).map((p) {
@@ -112,240 +198,54 @@ class _DrawingPageState extends State<DrawingPage> {
     }
   }
 
-  void undo() {
-    if (lines.isNotEmpty) {
-      setState(() {
-        redoHistory.add(lines.removeLast());
-      });
-    }
+  void _onPanStart(DragStartDetails details) {
+    setState(() {
+      currentLine = [details.localPosition];
+      if (!isErasing) {
+        lines.add(DrawingLine(
+          points: currentLine!,
+          color: currentColor,
+          strokeWidth: strokeWidth,
+        ));
+        redoHistory.clear();
+      }
+    });
   }
 
-  void redo() {
-    if (redoHistory.isNotEmpty) {
-      setState(() {
-        lines.add(redoHistory.removeLast());
-      });
-    }
+  void _onPanUpdate(DragUpdateDetails details) {
+    setState(() {
+      if (isErasing) {
+        lines.removeWhere((line) {
+          return line.points.any((point) =>
+              (point - details.localPosition).distance < 20.0);
+        });
+      } else if (currentLine != null) {
+        currentLine!.add(details.localPosition);
+        // Update the points of the last line
+        lines.last = DrawingLine(
+          points: currentLine!,
+          color: currentColor,
+          strokeWidth: strokeWidth,
+        );
+      }
+    });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Auto Path Drawing'),
-        actions: widget.readOnly ? [] : [
-          IconButton(
-            icon: Icon(Icons.undo),
-            onPressed: lines.isEmpty ? null : undo,
-            tooltip: 'Undo',
-          ),
-          IconButton(
-            icon: Icon(Icons.redo),
-            onPressed: redoHistory.isEmpty ? null : redo,
-            tooltip: 'Redo',
-          ),
-          IconButton(
-            icon: Icon(isErasing ? Icons.edit : Icons.auto_fix_high),
-            onPressed: () {
-              setState(() {
-                isErasing = !isErasing;
-              });
-            },
-            tooltip: isErasing ? 'Draw Mode' : 'Erase Mode',
-          ),
-          PopupMenuButton<Color>(
-            icon: Icon(Icons.color_lens),
-            tooltip: 'Change Color',
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: Colors.red,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      color: Colors.red,
-                    ),
-                    SizedBox(width: 8),
-                    Text('Red'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: Colors.blue,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      color: Colors.blue,
-                    ),
-                    SizedBox(width: 8),
-                    Text('Blue'),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: Colors.green,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      color: Colors.green,
-                    ),
-                    SizedBox(width: 8),
-                    Text('Green'),
-                  ],
-                ),
-              ),
-            ],
-            onSelected: (Color color) {
-              setState(() {
-                currentColor = color;
-              });
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.clear),
-            onPressed: () {
-              setState(() {
-                undoHistory.addAll(lines);
-                lines.clear();
-                redoHistory.clear();
-              });
-            },
-            tooltip: 'Clear All',
-          ),
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: saveDrawing,
-            tooltip: 'Save Drawing',
-          ),
-        ],
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Background Image
-          Image.asset(
-            'assets/field_image.png',
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.contain,
-          ),
-          // Drawing Layer
-          Positioned.fill(
-            child: GestureDetector(
-              onPanStart: widget.readOnly ? null : (details) {
-                setState(() {
-                  currentLine = [details.localPosition];
-                  if (!isErasing) {
-                    lines.add(DrawingLine(
-                      points: currentLine!,
-                      color: currentColor,
-                      strokeWidth: strokeWidth,
-                    ));
-                    redoHistory.clear();
-                  }
-                });
-              },
-              onPanUpdate: widget.readOnly ? null : (details) {
-                setState(() {
-                  if (isErasing) {
-                    lines.removeWhere((line) {
-                      return line.points.any((point) =>
-                          (point - details.localPosition).distance < 20.0);
-                    });
-                  } else if (currentLine != null) {
-                    currentLine!.add(details.localPosition);
-                    // Update the points of the last line
-                    lines.last = DrawingLine(
-                      points: currentLine!,
-                      color: currentColor,
-                      strokeWidth: strokeWidth,
-                    );
-                  }
-                });
-              },
-              onPanEnd: widget.readOnly ? null : (details) {
-                currentLine = null;
-              },
-              child: CustomPaint(
-                painter: DrawingPainter(lines: lines),
-                size: Size.infinite,
-              ),
-            ),
-          ),
-          // Stroke Width Slider
-          if (!widget.readOnly)
-            Positioned(
-              left: 16,
-              bottom: 16,
-              child: Container(
-                padding: EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.line_weight, color: Colors.white),
-                    SizedBox(width: 8),
-                    SizedBox(
-                      width: 150,
-                      child: Slider(
-                        value: strokeWidth,
-                        min: 1.0,
-                        max: 10.0,
-                        onChanged: (value) {
-                          setState(() {
-                            strokeWidth = value;
-                          });
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  // Update save functionality
-  void saveDrawing() {
-    try {
-      final drawingData = lines.map((line) => {
-        'points': line.points.map((p) => {
-          'x': p.dx,
-          'y': p.dy,
-        }).toList(),
-        'color': line.color.value,
-        'strokeWidth': line.strokeWidth,
-      }).toList();
-      
-      // Debug print to see the data structure
-      print('Drawing data before save: $drawingData');
-      
-      Navigator.pop(context, drawingData);
-    } catch (e) {
-      print('Error saving drawing: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error saving drawing: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
+  void _onPanEnd(DragEndDetails details) {
+    currentLine = null;
   }
 }
 
 class DrawingPainter extends CustomPainter {
   final List<DrawingLine> lines;
+  final Color currentColor;
+  final double strokeWidth;
 
-  DrawingPainter({required this.lines});
+  DrawingPainter({
+    required this.lines,
+    required this.currentColor,
+    required this.strokeWidth,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {

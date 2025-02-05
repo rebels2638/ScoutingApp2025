@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'data.dart';
-import 'database_helper.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
-import 'services/telemetry_service.dart';
-import 'widgets/telemetry_overlay.dart';
+import 'theme/app_theme.dart';
 import 'drawing_page.dart';
 
 class ComparisonPage extends StatelessWidget {
@@ -54,67 +50,96 @@ class _ComparisonViewState extends State<ComparisonView> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Column(
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          controller: _horizontalScrollController,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Container(
-            constraints: BoxConstraints(
-              minWidth: MediaQuery.of(context).size.width,
-            ),
-            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: widget.records.map((record) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: TeamHeader(
-                    teamNumber: record.teamNumber,
-                    isRedAlliance: record.isRedAlliance,
-                    matchCount: widget.records.where((r) => r.teamNumber == record.teamNumber).length,
-                  ),
-                );
-              }).toList(),
+        // Team Headers with Animation
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            boxShadow: AppShadows.small,
+          ),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            controller: _horizontalScrollController,
+            physics: const BouncingScrollPhysics(),
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: widget.records.map((record) {
+                  return Padding(
+                    padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                    child: TeamHeader(
+                      teamNumber: record.teamNumber,
+                      isRedAlliance: record.isRedAlliance,
+                      matchCount: widget.records.where((r) => r.teamNumber == record.teamNumber).length,
+                    ),
+                  );
+                }).toList(),
+              ),
             ),
           ),
         ),
-        TabBar(
-          controller: _tabController,
-          isScrollable: true,  // Make tabs scrollable
-          tabs: const [
-            Tab(text: 'Auto'),
-            Tab(text: 'Teleop'),
-            Tab(text: 'Endgame'),
-            Tab(text: 'Overview'),
-          ],
+
+        // Tab Bar with Animation
+        Container(
+          color: Theme.of(context).colorScheme.surface,
+          child: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            physics: const BouncingScrollPhysics(),
+            tabs: [
+              _buildTab(Icons.auto_awesome, 'Auto'),
+              _buildTab(Icons.sports_esports, 'Teleop'),
+              _buildTab(Icons.flag, 'Endgame'),
+              _buildTab(Icons.summarize, 'Overview'),
+            ],
+          ),
         ),
+
+        // Tab Content with Animation
         Expanded(
           child: TabBarView(
             controller: _tabController,
+            physics: const BouncingScrollPhysics(),
             children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: AutoComparisonTab(records: widget.records),
-              ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: TeleopComparisonTab(records: widget.records),
-              ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: EndgameComparisonTab(records: widget.records),
-              ),
-              OverviewComparisonTab(records: widget.records),
+              _buildTabContent(AutoComparisonTab(records: widget.records)),
+              _buildTabContent(TeleopComparisonTab(records: widget.records)),
+              _buildTabContent(EndgameComparisonTab(records: widget.records)),
+              _buildTabContent(OverviewComparisonTab(records: widget.records)),
             ],
           ),
         ),
       ],
     );
   }
+
+  Widget _buildTab(IconData icon, String label) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon),
+          SizedBox(width: AppSpacing.sm),
+          Text(label),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabContent(Widget child) {
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: child,
+      ),
+    );
+  }
 }
 
-class TeamHeader extends StatelessWidget {
+// Updated TeamHeader with animations
+class TeamHeader extends StatefulWidget {
   final int teamNumber;
   final bool isRedAlliance;
   final int matchCount;
@@ -127,37 +152,89 @@ class TeamHeader extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<TeamHeader> createState() => _TeamHeaderState();
+}
+
+class _TeamHeaderState extends State<TeamHeader> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: (isRedAlliance ? Colors.red : Colors.blue).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: (isRedAlliance ? Colors.red : Colors.blue).withOpacity(0.3),
+    return MouseRegion(
+      onEnter: (_) => _controller.forward(),
+      onExit: (_) => _controller.reverse(),
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) => Transform.scale(
+          scale: _scaleAnimation.value,
+          child: child,
         ),
-      ),
-      child: Column(
-        children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              'Team $teamNumber',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: isRedAlliance ? Colors.red : Colors.blue,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: (widget.isRedAlliance ? Colors.red : Colors.blue).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: (widget.isRedAlliance ? Colors.red : Colors.blue).withOpacity(0.3),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: (widget.isRedAlliance ? Colors.red : Colors.blue).withOpacity(0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            ),
+            ],
           ),
-          Text(
-            '$matchCount matches',
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).textTheme.bodySmall?.color,
-            ),
+          child: Column(
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  'Team ${widget.teamNumber}',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: widget.isRedAlliance ? Colors.red : Colors.blue,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (widget.isRedAlliance ? Colors.red : Colors.blue).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${widget.matchCount} matches',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: widget.isRedAlliance ? Colors.red : Colors.blue,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
