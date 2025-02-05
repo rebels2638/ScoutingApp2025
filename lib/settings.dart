@@ -58,13 +58,13 @@ class _SettingsPageState extends State<SettingsPage> {
         //Divider(),
         
         // other section
-        SectionHeader(title: 'Other', icon: Icons.miscellaneous_services),
+        SectionHeader(title: 'Developer', icon: Icons.miscellaneous_services),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Developer Mode', style: TextStyle(fontSize: 16)),
+              Text('Enable Telemetry Logging', style: TextStyle(fontSize: 16)),
               Switch(
                 value: _isDevMode,
                 onChanged: (value) async {
