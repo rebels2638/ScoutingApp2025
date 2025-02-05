@@ -138,8 +138,16 @@ class _DrawingPageState extends State<DrawingPage> {
       ),
       body: Stack(
         children: [
+          // Background field image
+          Positioned.fill(
+            child: Image.asset(
+              'assets/field_image.png',
+              fit: BoxFit.contain,
+            ),
+          ),
+          // Drawing area
           Container(
-            color: Theme.of(context).scaffoldBackgroundColor,
+            // You can remove the hard-coded color if desired.
             child: CustomPaint(
               painter: DrawingPainter(
                 lines: lines,
