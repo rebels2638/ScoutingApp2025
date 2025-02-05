@@ -35,6 +35,7 @@ class ComparisonView extends StatefulWidget {
 
 class _ComparisonViewState extends State<ComparisonView> with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final ScrollController _horizontalScrollController = ScrollController();
   
   @override
   void initState() {
@@ -45,6 +46,7 @@ class _ComparisonViewState extends State<ComparisonView> with SingleTickerProvid
   @override
   void dispose() {
     _tabController.dispose();
+    _horizontalScrollController.dispose();
     super.dispose();
   }
 
@@ -52,22 +54,34 @@ class _ComparisonViewState extends State<ComparisonView> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: widget.records.map((record) {
-              return TeamHeader(
-                teamNumber: record.teamNumber,
-                isRedAlliance: record.isRedAlliance,
-                matchCount: widget.records.where((r) => r.teamNumber == record.teamNumber).length,
-              );
-            }).toList(),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          controller: _horizontalScrollController,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Container(
+            constraints: BoxConstraints(
+              minWidth: MediaQuery.of(context).size.width,
+            ),
+            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: widget.records.map((record) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: TeamHeader(
+                    teamNumber: record.teamNumber,
+                    isRedAlliance: record.isRedAlliance,
+                    matchCount: widget.records.where((r) => r.teamNumber == record.teamNumber).length,
+                  ),
+                );
+              }).toList(),
+            ),
           ),
         ),
         TabBar(
           controller: _tabController,
+          isScrollable: true,  // Make tabs scrollable
           tabs: const [
             Tab(text: 'Auto'),
             Tab(text: 'Teleop'),
@@ -79,9 +93,18 @@ class _ComparisonViewState extends State<ComparisonView> with SingleTickerProvid
           child: TabBarView(
             controller: _tabController,
             children: [
-              AutoComparisonTab(records: widget.records),
-              TeleopComparisonTab(records: widget.records),
-              EndgameComparisonTab(records: widget.records),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: AutoComparisonTab(records: widget.records),
+              ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: TeleopComparisonTab(records: widget.records),
+              ),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: EndgameComparisonTab(records: widget.records),
+              ),
               OverviewComparisonTab(records: widget.records),
             ],
           ),
@@ -154,12 +177,15 @@ class ComparisonMetric extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return Container(
+      constraints: BoxConstraints(
+        minWidth: MediaQuery.of(context).size.width,
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          Expanded(
-            flex: 2,
+          SizedBox(
+            width: 150,  // Fixed width for labels
             child: Text(
               label,
               style: TextStyle(
@@ -169,24 +195,23 @@ class ComparisonMetric extends StatelessWidget {
             ),
           ),
           ...List.generate(values.length, (index) {
-            return Expanded(
-              child: Container(
-                padding: EdgeInsets.all(8),
-                margin: EdgeInsets.symmetric(horizontal: 4),
-                decoration: BoxDecoration(
-                  color: colors[index].withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: colors[index].withOpacity(0.3),
-                  ),
+            return Container(
+              width: 100,  // Fixed width for values
+              padding: EdgeInsets.all(8),
+              margin: EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: colors[index].withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: colors[index].withOpacity(0.3),
                 ),
-                child: Text(
-                  values[index],
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: colors[index],
-                    fontWeight: FontWeight.w500,
-                  ),
+              ),
+              child: Text(
+                values[index],
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: colors[index],
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             );
@@ -388,7 +413,7 @@ class TeamOverviewCard extends StatelessWidget {
                       );
                     },
                     icon: Icon(Icons.map),
-                    label: Text('View Robot Path'),
+                    label: Text('View Auto Path'),
                   ),
               ],
             ),

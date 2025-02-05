@@ -132,7 +132,7 @@ class _DrawingPageState extends State<DrawingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Robot Path Drawing'),
+        title: const Text('Auto Path Drawing'),
         actions: widget.readOnly ? [] : [
           IconButton(
             icon: Icon(Icons.undo),
