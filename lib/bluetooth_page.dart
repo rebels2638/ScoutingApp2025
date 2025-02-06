@@ -62,6 +62,8 @@ class _BluetoothPageState extends State<BluetoothPage> {
                       setState(() {
                         _isCentral = index == 0;
                         _bleService.setCentralMode(_isCentral);
+                        // Clear discovered devices when switching modes
+                        _discoveredDevices.clear();
                       });
                     },
                     children: [
@@ -81,6 +83,12 @@ class _BluetoothPageState extends State<BluetoothPage> {
               if (_connectionStatus != null)
                 Text('Status: $_connectionStatus',
                     style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(
+                _isCentral 
+                    ? 'Scanning for scouters...' 
+                    : 'Waiting for leader to connect...',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
             ],
           ),
         ),
@@ -97,20 +105,23 @@ class _BluetoothPageState extends State<BluetoothPage> {
             child: Text(_bleService.isScanning ? 'Stop Scanning' : 'Start Scanning'),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: _discoveredDevices.length,
-              itemBuilder: (context, index) {
-                final device = _discoveredDevices[index];
-                return ListTile(
-                  title: Text(device.name.isEmpty ? 'Unknown Device' : device.name),
-                  subtitle: Text(device.id),
-                  trailing: ElevatedButton(
-                    onPressed: () => _bleService.connectToDevice(device),
-                    child: Text('Connect'),
+            child: _discoveredDevices.isEmpty
+                ? Center(child: Text('No devices found'))
+                : ListView.builder(
+                    itemCount: _discoveredDevices.length,
+                    itemBuilder: (context, index) {
+                      final device = _discoveredDevices[index];
+                      return ListTile(
+                        leading: Icon(Icons.bluetooth),
+                        title: Text(device.name.isEmpty ? 'Unknown Scouter' : device.name),
+                        subtitle: Text(device.id),
+                        trailing: ElevatedButton(
+                          onPressed: () => _bleService.connectToDevice(device),
+                          child: Text('Connect'),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ] else ...[
           ElevatedButton(
@@ -122,13 +133,20 @@ class _BluetoothPageState extends State<BluetoothPage> {
               }
               setState(() {});
             },
-            child: Text(_bleService.isAdvertising ? 'Stop Advertising' : 'Start Advertising'),
+            child: Text(_bleService.isAdvertising ? 'Stop Advertising' : 'Make Discoverable'),
           ),
           if (_bleService.isConnected)
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text('Connected to central device',
-                  style: TextStyle(color: Colors.green)),
+              child: Column(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.green, size: 48),
+                  Text('Connected to leader',
+                      style: TextStyle(color: Colors.green, fontSize: 16)),
+                  Text('Ready to send match data',
+                      style: TextStyle(fontStyle: FontStyle.italic)),
+                ],
+              ),
             ),
         ],
       ],

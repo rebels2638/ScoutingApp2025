@@ -52,15 +52,21 @@ class BleService {
   }
 
   Future<void> startScanning() async {
-    if (_isScanning) return;
-    
-    _isScanning = true;
-    _scanSubscription = _ble.scanForDevices(
-      withServices: [Uuid.parse(serviceUuid)],
-    ).listen(
-      (device) => _deviceController.add(device),
-      onError: (error) => print('Scanning error: $error'),
-    );
+    if (!_isScanning && _isCentral) {
+      _isScanning = true;
+      _scanSubscription = _ble.scanForDevices(
+        withServices: [Uuid.parse(serviceUuid)],
+        scanMode: ScanMode.lowLatency,
+      ).listen(
+        (device) {
+          // Only add peripheral devices
+          if (!device.name.contains('Central')) {
+            _deviceController.add(device);
+          }
+        },
+        onError: (error) => print('Central scanning error: $error'),
+      );
+    }
   }
 
   Future<void> stopScanning() async {
@@ -72,75 +78,72 @@ class BleService {
   Future<void> startAdvertising() async {
     if (!_isCentral && !_isAdvertising) {
       try {
-        // Create a GATT server
-        final characteristic = QualifiedCharacteristic(
-          serviceId: Uuid.parse(serviceUuid),
-          characteristicId: Uuid.parse(characteristicUuid),
-          deviceId: '',  // Empty for advertising
-        );
-
-        // Start advertising the service
-        await _ble.publishCharacteristic(
-          characteristic,
-          properties: CharacteristicProperties(
-            write: true,
-            read: true,
-            notify: true,
-          ),
-          permissions: CharacteristicPermissions(
-            write: true,
-            read: true,
-          ),
-          initialValue: [0],
+        // Start scanning for central devices that might want to connect
+        _scanSubscription = _ble.scanForDevices(
+          withServices: [Uuid.parse(serviceUuid)],
+          scanMode: ScanMode.lowLatency,
+        ).listen(
+          (device) {
+            // When we detect a central device, allow it to connect
+            _deviceController.add(device);
+          },
+          onError: (error) => print('Peripheral scanning error: $error'),
         );
         
         _isAdvertising = true;
       } catch (e) {
-        print('Error advertising: $e');
+        print('Error starting peripheral mode: $e');
+        _isAdvertising = false;
         rethrow;
       }
     }
   }
 
   Future<void> stopAdvertising() async {
-    if (_isAdvertising) {
-      try {
-        final characteristic = QualifiedCharacteristic(
-          serviceId: Uuid.parse(serviceUuid),
-          characteristicId: Uuid.parse(characteristicUuid),
-          deviceId: '',
-        );
-        await _ble.unpublishCharacteristic(characteristic);
-      } catch (e) {
-        print('Error stopping advertisement: $e');
-      } finally {
-        _isAdvertising = false;
-      }
-    }
+    _isAdvertising = false;
   }
 
   Future<void> connectToDevice(DiscoveredDevice device) async {
-    if (_isCentral) {
-      await _connectionSubscription?.cancel();
-      
-      _connectionSubscription = _ble.connectToDevice(
-        id: device.id,
-        connectionTimeout: const Duration(seconds: 5),
-      ).listen(
-        (connectionState) {
-          _connectionStateController.add(connectionState);
-          if (connectionState.connectionState == DeviceConnectionState.connected) {
-            _connectedDeviceId = device.id;
-          } else if (connectionState.connectionState == DeviceConnectionState.disconnected) {
-            _connectedDeviceId = null;
+    await _connectionSubscription?.cancel();
+    
+    // Set device name based on role
+    final deviceName = _isCentral ? 'Central-${device.id}' : 'Peripheral-${device.id}';
+    
+    _connectionSubscription = _ble.connectToDevice(
+      id: device.id,
+      connectionTimeout: const Duration(seconds: 5),
+    ).listen(
+      (connectionState) {
+        _connectionStateController.add(connectionState);
+        
+        if (connectionState.connectionState == DeviceConnectionState.connected) {
+          _connectedDeviceId = device.id;
+          
+          // Set up characteristic subscription for receiving data
+          if (!_isCentral) {
+            final characteristic = QualifiedCharacteristic(
+              serviceId: Uuid.parse(serviceUuid),
+              characteristicId: Uuid.parse(characteristicUuid),
+              deviceId: device.id,
+            );
+            
+            _ble.subscribeToCharacteristic(characteristic).listen(
+              (data) {
+                // Handle incoming data
+                print('Received data from central: ${String.fromCharCodes(data)}');
+              },
+              onError: (error) => print('Error receiving data: $error'),
+            );
           }
-        },
-        onError: (error) {
-          print('Connection error: $error');
+        } else if (connectionState.connectionState == DeviceConnectionState.disconnected) {
           _connectedDeviceId = null;
-        },
-      );
-    }
+        }
+      },
+      onError: (error) {
+        print('Connection error: $error');
+        _connectedDeviceId = null;
+      },
+    );
   }
 
   Future<void> disconnect() async {
@@ -149,22 +152,33 @@ class BleService {
   }
 
   Future<void> sendMatchData(ScoutingRecord record) async {
-    if (!_isCentral && _connectedDeviceId != null) {
+    if (_connectedDeviceId != null) {
       final csvData = record.toCsvRow();
-      final characteristic = QualifiedCharacteristic(
-        serviceId: Uuid.parse(serviceUuid),
-        characteristicId: Uuid.parse(characteristicUuid),
-        deviceId: _connectedDeviceId!,
-      );
+      final data = csvData.toString().codeUnits;
       
-      try {
-        await _ble.writeCharacteristicWithResponse(
-          characteristic,
-          value: csvData.toString().codeUnits,
+      // Split data into chunks if needed (BLE has packet size limits)
+      final chunkSize = 512; // Typical BLE packet size limit
+      for (var i = 0; i < data.length; i += chunkSize) {
+        final chunk = data.sublist(
+          i, 
+          i + chunkSize > data.length ? data.length : i + chunkSize
         );
-      } catch (e) {
-        print('Error sending data: $e');
-        rethrow;
+        
+        final characteristic = QualifiedCharacteristic(
+          serviceId: Uuid.parse(serviceUuid),
+          characteristicId: Uuid.parse(characteristicUuid),
+          deviceId: _connectedDeviceId!,
+        );
+        
+        try {
+          await _ble.writeCharacteristicWithResponse(
+            characteristic,
+            value: chunk,
+          );
+        } catch (e) {
+          print('Error sending data chunk: $e');
+          rethrow;
+        }
       }
     }
   }
