@@ -20,7 +20,7 @@ class ScoutingRecord {
   final String matchType;
   final int teamNumber;
   final bool isRedAlliance;
-
+  
   // auto
   final String cageType;
   final bool coralPreloaded;
@@ -31,7 +31,7 @@ class ScoutingRecord {
   final bool canPickupCoral;
   final bool canPickupAlgae;
   final String coralPickupMethod;
-
+  
   // teleop
   final int algaeScoredInNet;
   final bool coralRankingPoint;
@@ -39,31 +39,31 @@ class ScoutingRecord {
   final int processedAlgaeScored;
   final int processorCycles;
   final bool coOpPoint;
-
+  
   // endgame
   final bool returnedToBarge;
   final String cageHang;
   final bool bargeRankingPoint;
-
+  
   // other
   final bool breakdown;
   final String comments;
 
   final int autoAlgaeInNet;
   final int autoAlgaeInProcessor;
-
+  
   final List<Map<String, dynamic>>? robotPath;
-
+  
   String? telemetry;
-
+  
   final String feederStation;
-
+  
   // Add coral height fields
   final int coralOnReefHeight1;
   final int coralOnReefHeight2;
   final int coralOnReefHeight3;
   final int coralOnReefHeight4;
-
+  
   ScoutingRecord({
     required this.timestamp,
     required this.matchNumber,
@@ -110,17 +110,13 @@ class ScoutingRecord {
        assert(bargeRankingPoint != null),
        assert(breakdown != null);
 
-
   Map<String, dynamic> toJson() {
     return {
-      // Match info
-      'matchNumber': matchNumber,
-      'matchType': matchType,
-      'timestamp': timestamp,
       'teamNumber': teamNumber,
+      'matchNumber': matchNumber,
+      'timestamp': timestamp,
+      'matchType': matchType,
       'isRedAlliance': isRedAlliance,
-
-      // Auto
       'cageType': cageType,
       'coralPreloaded': coralPreloaded,
       'taxis': taxis,
@@ -129,33 +125,20 @@ class ScoutingRecord {
       'rankingPoint': rankingPoint,
       'canPickupCoral': canPickupCoral,
       'canPickupAlgae': canPickupAlgae,
-      'autoAlgaeInNet': autoAlgaeInNet,
-      'autoAlgaeInProcessor': autoAlgaeInProcessor,
-      'coralPickupMethod': coralPickupMethod,
-
-      // Teleop
-      'coralOnReefHeight1': coralOnReefHeight1,
-      'coralOnReefHeight2': coralOnReefHeight2,
-      'coralOnReefHeight3': coralOnReefHeight3,
-      'coralOnReefHeight4': coralOnReefHeight4,
-      'feederStation': feederStation,
       'algaeScoredInNet': algaeScoredInNet,
       'coralRankingPoint': coralRankingPoint,
       'algaeProcessed': algaeProcessed,
       'processedAlgaeScored': processedAlgaeScored,
       'processorCycles': processorCycles,
       'coOpPoint': coOpPoint,
-
-      // Endgame
       'returnedToBarge': returnedToBarge,
       'cageHang': cageHang,
       'bargeRankingPoint': bargeRankingPoint,
-
-      // Other
       'breakdown': breakdown,
       'comments': comments,
-      'robotPath': robotPath,
-      'telemetry': telemetry,
+      'autoAlgaeInNet': autoAlgaeInNet,
+      'autoAlgaeInProcessor': autoAlgaeInProcessor,
+      'coralPickupMethod': coralPickupMethod,
     };
   }
 
@@ -215,7 +198,7 @@ class ScoutingRecord {
       'ts': timestamp,
       't': teamNumber,
       'ra': isRedAlliance ? 1 : 0,
-
+      
       // Auto
       'ct': cageType,
       'cp': coralPreloaded ? 1 : 0,
@@ -228,7 +211,7 @@ class ScoutingRecord {
       'aan': autoAlgaeInNet,
       'aap': autoAlgaeInProcessor,
       'cpm': coralPickupMethod,
-
+      
       // Teleop
       'ch1': coralOnReefHeight1,
       'ch2': coralOnReefHeight2,
@@ -241,12 +224,12 @@ class ScoutingRecord {
       'pas': processedAlgaeScored,
       'pc': processorCycles,
       'cop': coOpPoint ? 1 : 0,
-
+      
       // Endgame
       'rtb': returnedToBarge ? 1 : 0,
       'ch': cageHang,
       'brp': bargeRankingPoint ? 1 : 0,
-
+      
       // Other
       'bd': breakdown ? 1 : 0,
       'cm': comments,
@@ -320,7 +303,7 @@ class ScoutingRecord {
       timestamp,
       teamNumber,
       isRedAlliance ? 1 : 0,
-
+      
       // Auto
       cageType,
       coralPreloaded ? 1 : 0,
@@ -333,7 +316,7 @@ class ScoutingRecord {
       autoAlgaeInNet,
       autoAlgaeInProcessor,
       coralPickupMethod,
-
+      
       // Teleop
       coralOnReefHeight1,
       coralOnReefHeight2,
@@ -346,12 +329,12 @@ class ScoutingRecord {
       processedAlgaeScored,
       processorCycles,
       coOpPoint ? 1 : 0,
-
+      
       // Endgame
       returnedToBarge ? 1 : 0,
       cageHang,
       bargeRankingPoint ? 1 : 0,
-
+      
       // Other
       breakdown ? 1 : 0,
       comments.replaceAll('|', '\\|'),
@@ -367,7 +350,7 @@ class ScoutingRecord {
       'timestamp',
       'teamNumber',
       'isRedAlliance',
-
+      
       // Auto
       'cageType',
       'coralPreloaded',
@@ -380,7 +363,7 @@ class ScoutingRecord {
       'autoAlgaeInNet',
       'autoAlgaeInProcessor',
       'coralPickupMethod',
-
+      
       // Teleop
       'coralOnReefHeight1',
       'coralOnReefHeight2',
@@ -393,12 +376,12 @@ class ScoutingRecord {
       'processedAlgaeScored',
       'processorCycles',
       'coOpPoint',
-
+      
       // Endgame
       'returnedToBarge',
       'cageHang',
       'bargeRankingPoint',
-
+      
       // Other
       'breakdown',
       'comments',
@@ -427,7 +410,7 @@ class ScoutingRecord {
       timestamp: row[2].toString(),
       teamNumber: int.parse(row[3].toString()),
       isRedAlliance: row[4].toString() == '1',
-
+      
       // Auto
       cageType: row[5].toString(),
       coralPreloaded: row[6].toString() == '1',
@@ -440,7 +423,7 @@ class ScoutingRecord {
       autoAlgaeInNet: int.parse(row[13].toString()),
       autoAlgaeInProcessor: int.parse(row[14].toString()),
       coralPickupMethod: row[15].toString(),
-
+      
       // Teleop
       coralOnReefHeight1: int.parse(row[16].toString()),
       coralOnReefHeight2: int.parse(row[17].toString()),
@@ -453,12 +436,12 @@ class ScoutingRecord {
       processedAlgaeScored: int.parse(row[24].toString()),
       processorCycles: int.parse(row[25].toString()),
       coOpPoint: row[26].toString() == '1',
-
+      
       // Endgame
       returnedToBarge: row[27].toString() == '1',
       cageHang: row[28].toString(),
       bargeRankingPoint: row[29].toString() == '1',
-
+      
       // Other
       breakdown: row[30].toString() == '1',
       comments: row[31].toString().replaceAll('\\|', '|'),
@@ -473,15 +456,24 @@ class DataManager {
   DataManager._internal();
 
   List<ScoutingRecord> _records = [];
-
+  
   // Add back the static methods that were removed
   static Future<void> saveRecord(ScoutingRecord record) async {
     try {
       final records = await DatabaseHelper.instance.getAllRecords();
       records.add(record);
-      await DatabaseHelper.instance.saveRecords(records);
-    } catch (e) {
+      
+      // Convert records to CSV
+      final csvData = [
+        ScoutingRecord.getCsvHeaders(),
+        ...records.map((r) => r.toCsvRow()),
+      ];
+      
+      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
+      await prefs.setString(_storageKey, csv);
+    } catch (e, stackTrace) {
       print('Error saving record: $e');
+      print('Stack trace: $stackTrace');
       throw e;
     }
   }
@@ -491,6 +483,7 @@ class DataManager {
       return await DatabaseHelper.instance.getAllRecords();
     } catch (e) {
       print('Error getting records: $e');
+      print('Stack trace: $stackTrace');
       return [];
     }
   }
@@ -573,13 +566,15 @@ class DataManager {
 }
 
 class DataPage extends StatefulWidget {
+  const DataPage({Key? key}) : super(key: key);
+
   @override
   DataPageState createState() => DataPageState();
 }
 
 class DataPageState extends State<DataPage> with WidgetsBindingObserver {
-  List<ScoutingRecord> records = [];
-  Set<int> selectedRecordIndices = {};
+  List<ScoutingRecord> _records = [];
+  Set<int> selectedRecords = {};
 
   @override
   void initState() {
@@ -611,7 +606,7 @@ class DataPageState extends State<DataPage> with WidgetsBindingObserver {
     List<ScoutingRecord> recs = await DatabaseHelper.instance.getAllRecords();
     if (mounted) {
       setState(() {
-        records = recs;
+        _records = recs;
       });
     }
   }
@@ -622,20 +617,23 @@ class DataPageState extends State<DataPage> with WidgetsBindingObserver {
       appBar: AppBar(
         title: Text('Match Data'),
         actions: [
-          if (selectedRecordIndices.isNotEmpty)
+          if (selectedRecords.isNotEmpty)
             Container(
               margin: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
               child: FilledButton.icon(
                 icon: Icon(Icons.compare_arrows),
-                label: Text('Compare (${selectedRecordIndices.length})'),
+                label: Text('Compare (${selectedRecords.length})'),
                 onPressed: () {
-                  final selectedRecords = selectedRecordIndices
-                      .map((i) => records[i])
+                  final selectedList = _records
+                      .asMap()
+                      .entries
+                      .where((e) => selectedRecords.contains(e.key))
+                      .map((e) => e.value)
                       .toList();
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ComparisonPage(records: selectedRecords),
+                      builder: (context) => ComparisonPage(records: selectedList),
                     ),
                   );
                 },
@@ -655,9 +653,9 @@ class DataPageState extends State<DataPage> with WidgetsBindingObserver {
             itemBuilder: (context) => [
               PopupMenuItem(
                 child: Text('Clear Selection'),
-                enabled: selectedRecordIndices.isNotEmpty,
+                enabled: selectedRecords.isNotEmpty,
                 onTap: () {
-                  setState(() => selectedRecordIndices.clear());
+                  setState(() => selectedRecords.clear());
                 },
               ),
               PopupMenuItem(
@@ -681,19 +679,19 @@ class DataPageState extends State<DataPage> with WidgetsBindingObserver {
         ],
       ),
       body: ListView.builder(
-        itemCount: records.length,
+        itemCount: _records.length,
         padding: EdgeInsets.all(AppSpacing.md),
         itemBuilder: (context, index) {
-          final record = records[index];
+          final record = _records[index];
           return ScoutingRecordCard(
             record: record,
-            isSelected: selectedRecordIndices.contains(index),
+            isSelected: selectedRecords.contains(index),
             onSelected: (selected) {
               setState(() {
                 if (selected ?? false) {
-                  selectedRecordIndices.add(index);
+                  selectedRecords.add(index);
                 } else {
-                  selectedRecordIndices.remove(index);
+                  selectedRecords.remove(index);
                 }
               });
             },
@@ -705,259 +703,63 @@ class DataPageState extends State<DataPage> with WidgetsBindingObserver {
   }
 
   void _showQRCodeDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Generate QR Code'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('What data would you like to include?'),
-            SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _generateQRCode(selectedRecordsOnly: true);
-                  },
-                  child: Text('Selected Only'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _generateQRCode(selectedRecordsOnly: false);
-                  },
-                  child: Text('All Data'),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
+    // TODO: Implement QR Code dialog
   }
 
-  void _generateQRCode({required bool selectedRecordsOnly}) {
-    final dataToEncode = selectedRecordsOnly
-        ? selectedRecordIndices.map((i) => records[i]).toList()
-        : records;
-
-    final jsonData = jsonEncode(dataToEncode.map((r) => r.toCompressedJson()).toList());
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(selectedRecordsOnly ? 'Selected Records QR' : 'All Records QR'),
-        content: Container(
-          width: 300,
-          height: 300,
-          child: QrImageView(
-            data: jsonData,
-            version: QrVersions.auto,
-            size: 300.0,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
-          ),
-        ],
-      ),
-    );
+  void _showTeamAnalysis(BuildContext context) {
+    // TODO: Implement Team Analysis view
   }
 
-  void _showTeamAnalysis(BuildContext context) async {
-    final records = await DataManager.getRecords();
-    if (!context.mounted) return;
+  void _importData() {
+    // TODO: Implement data import logic
+  }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TeamAnalysisPage(allRecords: records),
-      ),
-    );
+  void _exportData() {
+    // TODO: Implement data export logic
   }
 
   void _showDeleteConfirmation(BuildContext context, [int? index]) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(index != null ? 'Delete Record' : 'Delete All Data'),
-        content: Text(
-          index != null
-              ? 'Are you sure you want to delete this record? This cannot be undone.'
-              : 'Are you sure you want to delete all data? This cannot be undone.'
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
-          ),
-          TextButton(
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            onPressed: () async {
-              Navigator.pop(context);
-              if (index != null) {
-                await DataManager.deleteRecord(index);
-                await loadRecords();
-              } else {
-                await DataManager.deleteAllRecords();
-              }
-              if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(
-                  index != null ? 'Record deleted' : 'All data deleted'
-                )),
-              );
-            },
-            child: Text(index != null ? 'Delete' : 'Delete All'),
-          ),
-        ],
-      ),
-    );
+    // TODO: Implement delete confirmation dialog
   }
 
-  Future<void> _importData() async {
-    // Use file_picker to let the user choose a file and load CSV data.
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['csv'],
-      );
-      if (result != null && result.files.single.path != null) {
-        final file = File(result.files.single.path!);
-        final csvData = await file.readAsString();
-        // Parse CSV data (assuming same format as exported)
-        final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(csvData);
-        // Skip header and create ScoutingRecords.
-        final newRecords = rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
-        // Save the new records (this example replaces existing data).
-        await DatabaseHelper.instance.saveRecords(newRecords);
-        setState(() {
-          records = newRecords;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Data imported successfully')));
-      }
-    } catch (e) {
-      print('Error importing data: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error importing data')));
-    }
-  }
-
-  Future<void> _exportData() async {
-    try {
-      // Convert current records to CSV.
-      final csvData = [
-        ScoutingRecord.getCsvHeaders(),
-        ...records.map((r) => r.toCsvRow()),
-      ];
-      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
-      // (Here, you can write the CSV data to a file or share it.)
-      // For demonstration, we copy it to the clipboard.
-      await Clipboard.setData(ClipboardData(text: csv));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('CSV data copied to clipboard')));
-    } catch (e) {
-      print('Error exporting data: $e');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error exporting data')));
-    }
-  }
-}
-
-class ScoutingRecordCard extends StatelessWidget {
-  final ScoutingRecord record;
-  final VoidCallback onDelete;
-  final bool isSelected;
-  final Function(bool?) onSelected;
-
-  const ScoutingRecordCard({
-    required this.record,
-    required this.onDelete,
-    required this.isSelected,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => RecordDetailPage(record: record)),
-        );
-      },
-      child: Card(
-        margin: EdgeInsets.only(bottom: AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: EdgeInsets.all(AppSpacing.md),
-              decoration: BoxDecoration(
-                color: (record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance)
-                    .withOpacity(isSelected ? 0.3 : 0.1),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
-              ),
-              child: Row(
-                children: [
-                  Checkbox(
-                    value: isSelected,
-                    onChanged: onSelected,
-                  ),
-                  Expanded(
-                    child: Text(
-                      'Team ${record.teamNumber}, Match ${record.matchNumber}',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ),
-                  Icon(Icons.arrow_forward_ios, size: 16),
-                ],
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildMetricRow('Auto Algae', record.algaeRemoved.toString()),
-                  _buildMetricRow('Teleop Algae', record.algaeScoredInNet.toString()),
-                  _buildMetricRow('Processed', record.algaeProcessed.toString()),
-                  if (record.comments.isNotEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(top: AppSpacing.sm),
-                      child: Text(
-                        record.comments,
-                        style: TextStyle(
-                          fontStyle: FontStyle.italic,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetricRow(String label, String value) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildDetailSection(String title, List<Widget> children) {
+    return Card(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label),
-          Text(
-            value,
-            style: TextStyle(fontWeight: FontWeight.bold),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
           ),
+          ...children,
         ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return ListTile(
+      title: Text(label),
+      subtitle: Text(value),
+    );
+  }
+
+  Widget ScoutingRecordCard({
+    required ScoutingRecord record,
+    required bool isSelected,
+    required ValueChanged<bool?> onSelected,
+    required VoidCallback onDelete,
+  }) {
+    return Card(
+      child: ListTile(
+        title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
+        subtitle: Text(record.matchType),
+        selected: isSelected,
+        onTap: () => onSelected(!isSelected),
+        trailing: IconButton(
+          icon: Icon(Icons.delete),
+          onPressed: onDelete,
+        ),
       ),
     );
   }
