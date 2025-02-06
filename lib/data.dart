@@ -20,7 +20,7 @@ class ScoutingRecord {
   final String matchType;
   final int teamNumber;
   final bool isRedAlliance;
-  
+
   // auto
   final String cageType;
   final bool coralPreloaded;
@@ -31,7 +31,7 @@ class ScoutingRecord {
   final bool canPickupCoral;
   final bool canPickupAlgae;
   final String coralPickupMethod;
-  
+
   // teleop
   final int algaeScoredInNet;
   final bool coralRankingPoint;
@@ -39,23 +39,31 @@ class ScoutingRecord {
   final int processedAlgaeScored;
   final int processorCycles;
   final bool coOpPoint;
-  
+
   // endgame
   final bool returnedToBarge;
   final String cageHang;
   final bool bargeRankingPoint;
-  
+
   // other
   final bool breakdown;
   final String comments;
 
   final int autoAlgaeInNet;
   final int autoAlgaeInProcessor;
-  
+
   final List<Map<String, dynamic>>? robotPath;
-  
+
   String? telemetry;
-  
+
+  final String feederStation;
+
+  // Add coral height fields
+  final int coralOnReefHeight1;
+  final int coralOnReefHeight2;
+  final int coralOnReefHeight3;
+  final int coralOnReefHeight4;
+
   ScoutingRecord({
     required this.timestamp,
     required this.matchNumber,
@@ -84,8 +92,13 @@ class ScoutingRecord {
     required this.autoAlgaeInNet,
     required this.autoAlgaeInProcessor,
     required this.coralPickupMethod,
+    required this.coralOnReefHeight1,
+    required this.coralOnReefHeight2,
+    required this.coralOnReefHeight3,
+    required this.coralOnReefHeight4,
     this.robotPath,
     this.telemetry,
+    required this.feederStation,
   }) : assert(coralPreloaded != null),
        assert(taxis != null),
        assert(rankingPoint != null),
@@ -97,37 +110,54 @@ class ScoutingRecord {
        assert(bargeRankingPoint != null),
        assert(breakdown != null);
 
-  Map<String, dynamic> toJson() => {
-    'timestamp': timestamp,
-    'matchNumber': matchNumber,
-    'matchType': matchType,
-    'teamNumber': teamNumber,
-    'isRedAlliance': isRedAlliance,
-    'cageType': cageType,
-    'coralPreloaded': coralPreloaded,
-    'taxis': taxis,
-    'algaeRemoved': algaeRemoved,
-    'coralPlaced': coralPlaced,
-    'rankingPoint': rankingPoint,
-    'canPickupCoral': canPickupCoral,
-    'canPickupAlgae': canPickupAlgae,
-    'algaeScoredInNet': algaeScoredInNet,
-    'coralRankingPoint': coralRankingPoint,
-    'algaeProcessed': algaeProcessed,
-    'processedAlgaeScored': processedAlgaeScored,
-    'processorCycles': processorCycles,
-    'coOpPoint': coOpPoint,
-    'returnedToBarge': returnedToBarge,
-    'cageHang': cageHang,
-    'bargeRankingPoint': bargeRankingPoint,
-    'breakdown': breakdown,
-    'comments': comments,
-    'autoAlgaeInNet': autoAlgaeInNet,
-    'autoAlgaeInProcessor': autoAlgaeInProcessor,
-    'coralPickupMethod': coralPickupMethod,
-    'robotPath': robotPath,
-    'telemetry': telemetry,
-  };
+
+  Map<String, dynamic> toJson() {
+    return {
+      // Match info
+      'matchNumber': matchNumber,
+      'matchType': matchType,
+      'timestamp': timestamp,
+      'teamNumber': teamNumber,
+      'isRedAlliance': isRedAlliance,
+
+      // Auto
+      'cageType': cageType,
+      'coralPreloaded': coralPreloaded,
+      'taxis': taxis,
+      'algaeRemoved': algaeRemoved,
+      'coralPlaced': coralPlaced,
+      'rankingPoint': rankingPoint,
+      'canPickupCoral': canPickupCoral,
+      'canPickupAlgae': canPickupAlgae,
+      'autoAlgaeInNet': autoAlgaeInNet,
+      'autoAlgaeInProcessor': autoAlgaeInProcessor,
+      'coralPickupMethod': coralPickupMethod,
+
+      // Teleop
+      'coralOnReefHeight1': coralOnReefHeight1,
+      'coralOnReefHeight2': coralOnReefHeight2,
+      'coralOnReefHeight3': coralOnReefHeight3,
+      'coralOnReefHeight4': coralOnReefHeight4,
+      'feederStation': feederStation,
+      'algaeScoredInNet': algaeScoredInNet,
+      'coralRankingPoint': coralRankingPoint,
+      'algaeProcessed': algaeProcessed,
+      'processedAlgaeScored': processedAlgaeScored,
+      'processorCycles': processorCycles,
+      'coOpPoint': coOpPoint,
+
+      // Endgame
+      'returnedToBarge': returnedToBarge,
+      'cageHang': cageHang,
+      'bargeRankingPoint': bargeRankingPoint,
+
+      // Other
+      'breakdown': breakdown,
+      'comments': comments,
+      'robotPath': robotPath,
+      'telemetry': telemetry,
+    };
+  }
 
   factory ScoutingRecord.fromJson(Map<String, dynamic> json) {
     return ScoutingRecord(
@@ -158,6 +188,10 @@ class ScoutingRecord {
       autoAlgaeInNet: json['autoAlgaeInNet'] ?? 0,
       autoAlgaeInProcessor: json['autoAlgaeInProcessor'] ?? 0,
       coralPickupMethod: json['coralPickupMethod'] ?? 'None',
+      coralOnReefHeight1: json['coralOnReefHeight1'] ?? 0,
+      coralOnReefHeight2: json['coralOnReefHeight2'] ?? 0,
+      coralOnReefHeight3: json['coralOnReefHeight3'] ?? 0,
+      coralOnReefHeight4: json['coralOnReefHeight4'] ?? 0,
       robotPath: json['robotPath'] != null
           ? (json['robotPath'] as List).map((line) {
               final Map<String, dynamic> lineMap = Map<String, dynamic>.from(line);
@@ -169,16 +203,20 @@ class ScoutingRecord {
             }).toList()
           : null,
       telemetry: json['telemetry'] as String?,
+      feederStation: json['feederStation'] ?? 'None',
     );
   }
 
   Map<String, dynamic> toCompressedJson() {
-    final Map<String, dynamic> json = {
-      't': teamNumber,
+    return {
+      // Match info
       'm': matchNumber,
-      'ts': timestamp,
       'mt': matchType,
+      'ts': timestamp,
+      't': teamNumber,
       'ra': isRedAlliance ? 1 : 0,
+
+      // Auto
       'ct': cageType,
       'cp': coralPreloaded ? 1 : 0,
       'tx': taxis ? 1 : 0,
@@ -187,36 +225,34 @@ class ScoutingRecord {
       'rp': rankingPoint ? 1 : 0,
       'cpc': canPickupCoral ? 1 : 0,
       'cpa': canPickupAlgae ? 1 : 0,
+      'aan': autoAlgaeInNet,
+      'aap': autoAlgaeInProcessor,
+      'cpm': coralPickupMethod,
+
+      // Teleop
+      'ch1': coralOnReefHeight1,
+      'ch2': coralOnReefHeight2,
+      'ch3': coralOnReefHeight3,
+      'ch4': coralOnReefHeight4,
+      'fs': feederStation,
       'asn': algaeScoredInNet,
       'crp': coralRankingPoint ? 1 : 0,
       'ap': algaeProcessed,
       'pas': processedAlgaeScored,
       'pc': processorCycles,
       'cop': coOpPoint ? 1 : 0,
+
+      // Endgame
       'rtb': returnedToBarge ? 1 : 0,
       'ch': cageHang,
       'brp': bargeRankingPoint ? 1 : 0,
+
+      // Other
       'bd': breakdown ? 1 : 0,
       'cm': comments,
-      'aan': autoAlgaeInNet,
-      'aap': autoAlgaeInProcessor,
-      'cpm': coralPickupMethod,
+      'rp': robotPath,
+      'tel': telemetry,
     };
-
-    // Only include robot path if it exists
-    if (robotPath != null) {
-      // Convert drawing lines to compressed format
-      json['rp'] = robotPath!.map((line) => {
-        'p': (line['points'] as List).map((p) => {
-          'x': ((p['x'] as num).toDouble() * 10).round() / 10,
-          'y': ((p['y'] as num).toDouble() * 10).round() / 10,
-        }).toList(),
-        'c': line['color'],
-        'w': ((line['strokeWidth'] as num).toDouble() * 10).round() / 10,
-      }).toList();
-    }
-
-    return json;
   }
 
   static ScoutingRecord fromCompressedJson(Map<String, dynamic> json) {
@@ -248,6 +284,10 @@ class ScoutingRecord {
       autoAlgaeInNet: json['aan'] as int,
       autoAlgaeInProcessor: json['aap'] as int,
       coralPickupMethod: json['cpm'] as String,
+      coralOnReefHeight1: json['ch1'] as int,
+      coralOnReefHeight2: json['ch2'] as int,
+      coralOnReefHeight3: json['ch3'] as int,
+      coralOnReefHeight4: json['ch4'] as int,
       robotPath: json['rp'] != null ? (json['rp'] as List).map((line) {
         return {
           'points': (line['p'] as List).map((p) => {
@@ -258,6 +298,8 @@ class ScoutingRecord {
           'strokeWidth': line['w'],
         };
       }).toList() : null,
+      feederStation: json['fs'] as String,
+      telemetry: json['tel'] as String?,
     );
   }
 
@@ -265,7 +307,6 @@ class ScoutingRecord {
     String robotPathStr = '';
     if (robotPath != null) {
       try {
-        // Escape any pipe characters in the JSON string
         robotPathStr = jsonEncode(robotPath).replaceAll('|', '\\|');
       } catch (e) {
         print('Error encoding robotPath: $e');
@@ -273,11 +314,14 @@ class ScoutingRecord {
     }
 
     return [
-      timestamp,
+      // Match info
       matchNumber,
       matchType,
+      timestamp,
       teamNumber,
       isRedAlliance ? 1 : 0,
+
+      // Auto
       cageType,
       coralPreloaded ? 1 : 0,
       taxis ? 1 : 0,
@@ -286,31 +330,45 @@ class ScoutingRecord {
       rankingPoint ? 1 : 0,
       canPickupCoral ? 1 : 0,
       canPickupAlgae ? 1 : 0,
+      autoAlgaeInNet,
+      autoAlgaeInProcessor,
+      coralPickupMethod,
+
+      // Teleop
+      coralOnReefHeight1,
+      coralOnReefHeight2,
+      coralOnReefHeight3,
+      coralOnReefHeight4,
+      feederStation,
       algaeScoredInNet,
       coralRankingPoint ? 1 : 0,
       algaeProcessed,
       processedAlgaeScored,
       processorCycles,
       coOpPoint ? 1 : 0,
+
+      // Endgame
       returnedToBarge ? 1 : 0,
       cageHang,
       bargeRankingPoint ? 1 : 0,
+
+      // Other
       breakdown ? 1 : 0,
-      comments.replaceAll('|', '\\|'), // Escape pipes in comments
-      autoAlgaeInNet,
-      autoAlgaeInProcessor,
-      coralPickupMethod,
+      comments.replaceAll('|', '\\|'),
       robotPathStr,
     ];
   }
 
   static List<String> getCsvHeaders() {
     return [
-      'timestamp',
+      // Match info
       'matchNumber',
-      'matchType', 
+      'matchType',
+      'timestamp',
       'teamNumber',
       'isRedAlliance',
+
+      // Auto
       'cageType',
       'coralPreloaded',
       'taxis',
@@ -319,30 +377,40 @@ class ScoutingRecord {
       'rankingPoint',
       'canPickupCoral',
       'canPickupAlgae',
+      'autoAlgaeInNet',
+      'autoAlgaeInProcessor',
+      'coralPickupMethod',
+
+      // Teleop
+      'coralOnReefHeight1',
+      'coralOnReefHeight2',
+      'coralOnReefHeight3',
+      'coralOnReefHeight4',
+      'feederStation',
       'algaeScoredInNet',
       'coralRankingPoint',
       'algaeProcessed',
       'processedAlgaeScored',
       'processorCycles',
       'coOpPoint',
+
+      // Endgame
       'returnedToBarge',
       'cageHang',
       'bargeRankingPoint',
+
+      // Other
       'breakdown',
       'comments',
-      'autoAlgaeInNet',
-      'autoAlgaeInProcessor',
-      'coralPickupMethod',
       'robotPath',
     ];
   }
 
   factory ScoutingRecord.fromCsvRow(List<dynamic> row) {
     List<Map<String, dynamic>>? pathData;
-    if (row[27].toString().isNotEmpty) {
+    if (row[32].toString().isNotEmpty) {
       try {
-        // Unescape pipe characters before parsing JSON
-        String robotPathStr = row[27].toString().replaceAll('\\|', '|');
+        String robotPathStr = row[32].toString().replaceAll('\\|', '|');
         final decoded = jsonDecode(robotPathStr);
         if (decoded is List) {
           pathData = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
@@ -353,11 +421,14 @@ class ScoutingRecord {
     }
 
     return ScoutingRecord(
-      timestamp: row[0].toString(),
-      matchNumber: int.parse(row[1].toString()),
-      matchType: row[2].toString(),
+      // Match info
+      matchNumber: int.parse(row[0].toString()),
+      matchType: row[1].toString(),
+      timestamp: row[2].toString(),
       teamNumber: int.parse(row[3].toString()),
       isRedAlliance: row[4].toString() == '1',
+
+      // Auto
       cageType: row[5].toString(),
       coralPreloaded: row[6].toString() == '1',
       taxis: row[7].toString() == '1',
@@ -366,20 +437,31 @@ class ScoutingRecord {
       rankingPoint: row[10].toString() == '1',
       canPickupCoral: row[11].toString() == '1',
       canPickupAlgae: row[12].toString() == '1',
-      algaeScoredInNet: int.parse(row[13].toString()),
-      coralRankingPoint: row[14].toString() == '1',
-      algaeProcessed: int.parse(row[15].toString()),
-      processedAlgaeScored: int.parse(row[16].toString()),
-      processorCycles: int.parse(row[17].toString()),
-      coOpPoint: row[18].toString() == '1',
-      returnedToBarge: row[19].toString() == '1',
-      cageHang: row[20].toString(),
-      bargeRankingPoint: row[21].toString() == '1',
-      breakdown: row[22].toString() == '1',
-      comments: row[23].toString().replaceAll('\\|', '|'), // Unescape pipes in comments
-      autoAlgaeInNet: int.parse(row[24].toString()),
-      autoAlgaeInProcessor: int.parse(row[25].toString()),
-      coralPickupMethod: row[26].toString(),
+      autoAlgaeInNet: int.parse(row[13].toString()),
+      autoAlgaeInProcessor: int.parse(row[14].toString()),
+      coralPickupMethod: row[15].toString(),
+
+      // Teleop
+      coralOnReefHeight1: int.parse(row[16].toString()),
+      coralOnReefHeight2: int.parse(row[17].toString()),
+      coralOnReefHeight3: int.parse(row[18].toString()),
+      coralOnReefHeight4: int.parse(row[19].toString()),
+      feederStation: row[20].toString(),
+      algaeScoredInNet: int.parse(row[21].toString()),
+      coralRankingPoint: row[22].toString() == '1',
+      algaeProcessed: int.parse(row[23].toString()),
+      processedAlgaeScored: int.parse(row[24].toString()),
+      processorCycles: int.parse(row[25].toString()),
+      coOpPoint: row[26].toString() == '1',
+
+      // Endgame
+      returnedToBarge: row[27].toString() == '1',
+      cageHang: row[28].toString(),
+      bargeRankingPoint: row[29].toString() == '1',
+
+      // Other
+      breakdown: row[30].toString() == '1',
+      comments: row[31].toString().replaceAll('\\|', '|'),
       robotPath: pathData,
     );
   }
@@ -391,7 +473,7 @@ class DataManager {
   DataManager._internal();
 
   List<ScoutingRecord> _records = [];
-  
+
   // Add back the static methods that were removed
   static Future<void> saveRecord(ScoutingRecord record) async {
     try {
@@ -661,13 +743,8 @@ class DataPageState extends State<DataPage> with WidgetsBindingObserver {
     final dataToEncode = selectedRecordsOnly
         ? selectedRecordIndices.map((i) => records[i]).toList()
         : records;
-        
-    final jsonData = jsonEncode(dataToEncode.map((r) => {
-      'teamNumber': r.teamNumber,
-      'matchNumber': r.matchNumber,
-      'matchType': r.matchType,
-      // ... add other fields you want to include
-    }).toList());
+
+    final jsonData = jsonEncode(dataToEncode.map((r) => r.toCompressedJson()).toList());
 
     showDialog(
       context: context,
@@ -695,7 +772,7 @@ class DataPageState extends State<DataPage> with WidgetsBindingObserver {
   void _showTeamAnalysis(BuildContext context) async {
     final records = await DataManager.getRecords();
     if (!context.mounted) return;
-    
+
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -710,7 +787,7 @@ class DataPageState extends State<DataPage> with WidgetsBindingObserver {
       builder: (context) => AlertDialog(
         title: Text(index != null ? 'Delete Record' : 'Delete All Data'),
         content: Text(
-          index != null 
+          index != null
               ? 'Are you sure you want to delete this record? This cannot be undone.'
               : 'Are you sure you want to delete all data? This cannot be undone.'
         ),
@@ -769,7 +846,7 @@ class DataPageState extends State<DataPage> with WidgetsBindingObserver {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error importing data')));
     }
   }
-  
+
   Future<void> _exportData() async {
     try {
       // Convert current records to CSV.

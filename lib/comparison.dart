@@ -6,12 +6,14 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:convert';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+import 'drawing_page.dart';
+import 'widgets/telemetry_overlay.dart';
 
 // Fallback implementation for LinkedScrollControllerGroup in case it's not available in your Flutter version.
 class LinkedScrollControllerGroup {
   final List<ScrollController> _controllers = [];
   bool _isJumping = false;
-  
+
   ScrollController addAndGetController() {
     final controller = ScrollController();
     _controllers.add(controller);
@@ -30,7 +32,7 @@ class LinkedScrollControllerGroup {
     });
     return controller;
   }
-  
+
   void dispose() {
     for (final controller in _controllers) {
       controller.dispose();
@@ -119,6 +121,9 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
   late ScrollController _headerScrollController;
   // We'll store each tab's horizontal controller here once created.
   final Map<int, ScrollController> _tabScrollControllers = {};
+  late ScrollController _horizontalController;
+  late ScrollController _verticalController;
+  List<ScoutingRecord> records = [];
 
   @override
   void initState() {
@@ -126,6 +131,16 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
     _tabController = TabController(length: 4, vsync: this);
     _headerScrollController = _linkedScrollControllerGroup.addAndGetController();
     _processTeamStats();
+    _horizontalController = ScrollController();
+    _verticalController = ScrollController();
+    _loadRecords();
+  }
+
+  Future<void> _loadRecords() async {
+    final loadedRecords = await DatabaseHelper.instance.getAllRecords();
+    setState(() {
+      records = loadedRecords;
+    });
   }
 
   void _processTeamStats() {
@@ -153,6 +168,8 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
     _headerScrollController.dispose();
     _tabScrollControllers.forEach((_, controller) => controller.dispose());
     _tabController.dispose();
+    _horizontalController.dispose();
+    _verticalController.dispose();
     super.dispose();
   }
 
@@ -188,12 +205,12 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
                             margin: EdgeInsets.symmetric(horizontal: 6),
                             padding: EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: stats.isRedAlliance 
+                              color: stats.isRedAlliance
                                   ? AppColors.redAlliance.withOpacity(0.1)
                                   : AppColors.blueAlliance.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
-                                color: stats.isRedAlliance 
+                                color: stats.isRedAlliance
                                     ? AppColors.redAlliance.withOpacity(0.3)
                                     : AppColors.blueAlliance.withOpacity(0.3),
                               ),
@@ -206,7 +223,7 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
                                   style: TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: stats.isRedAlliance 
+                                    color: stats.isRedAlliance
                                         ? AppColors.redAlliance
                                         : AppColors.blueAlliance,
                                   ),
@@ -353,7 +370,7 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildMetricRow(
-                'Algae Removed', 
+                'Algae Removed',
                 teamStats.map((stats) => stats.formatAverage((r) => r.algaeRemoved)).toList(),
                 icon: Icons.grass,
               ),
@@ -373,7 +390,7 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
                 icon: Icons.build,
               ),
               _buildMetricRow(
-                'Coral Placed', 
+                'Coral Placed',
                 teamStats.map((stats) => stats.getCoralPlacedStats()).toList(),
                 icon: Icons.sports_score,
               ),

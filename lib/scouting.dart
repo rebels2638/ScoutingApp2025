@@ -17,6 +17,104 @@ import 'theme/app_theme.dart';  // Add this import
 import 'database_helper.dart';
 import 'widgets/telemetry_overlay.dart';
 import 'dart:math';
+import 'dart:convert';
+import 'comparison.dart';
+import 'package:qr_flutter/qr_flutter.dart'; // for QR generation
+
+// Fallback implementation for LinkedScrollControllerGroup in case it's not available in your Flutter version.
+class LinkedScrollControllerGroup {
+  final List<ScrollController> _controllers = [];
+  bool _isJumping = false;
+
+  ScrollController addAndGetController() {
+    final controller = ScrollController();
+    _controllers.add(controller);
+    controller.addListener(() {
+      if (_isJumping) return;
+      _isJumping = true;
+      for (final other in _controllers) {
+        // Do not update the same controller or controllers without clients.
+        if (other == controller || !other.hasClients) continue;
+        // If the difference is significant update.
+        if ((other.offset - controller.offset).abs() > 1.0) {
+          other.jumpTo(controller.offset);
+        }
+      }
+      _isJumping = false;
+    });
+    return controller;
+  }
+
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    _controllers.clear();
+  }
+}
+
+class TeamStats {
+  final int teamNumber;
+  final bool isRedAlliance;
+  final List<ScoutingRecord> records;
+
+  TeamStats({
+    required this.teamNumber,
+    required this.isRedAlliance,
+    required this.records,
+  });
+
+  double getAverage(num Function(ScoutingRecord) selector) {
+    if (records.isEmpty) return 0;
+    return records.map(selector).reduce((a, b) => a + b) / records.length;
+  }
+
+  double getSuccessRate(bool Function(ScoutingRecord) selector) {
+    if (records.isEmpty) return 0;
+    return records.where(selector).length / records.length * 100;
+  }
+
+  double getCageHangRate() {
+    if (records.isEmpty) return 0;
+    return records.where((r) => r.cageHang != 'None').length / records.length * 100;
+  }
+
+  String getCoralPlacedStats() {
+    if (records.isEmpty) return '0/0 - 0%';
+    int successful = records.where((r) => r.coralPlaced != 'No').length;
+    return '${successful}/${records.length} - ${(successful/records.length * 100).round()}%';
+  }
+
+  String getRankingPointStats() {
+    if (records.isEmpty) return '0/0 - 0%';
+    int successful = records.where((r) => r.rankingPoint).length;
+    return '${successful}/${records.length} - ${(successful/records.length * 100).round()}%';
+  }
+
+  String formatAverage(num Function(ScoutingRecord) selector) {
+    double avg = getAverage(selector);
+    if (avg == 0) return '0.0';
+    return '${avg.toStringAsFixed(1)}${records.length > 1 ? ' avg' : ''}';
+  }
+
+  String formatSuccessRate(bool Function(ScoutingRecord) selector) {
+    if (records.isEmpty) return '0/0 - 0%';
+    int successful = records.where(selector).length;
+    return '${successful}/${records.length} - ${(successful/records.length * 100).round()}%';
+  }
+
+  String formatCageHangStats() {
+    if (records.isEmpty) return '0/0 - 0%';
+    int successful = records.where((r) => r.cageHang != 'None').length;
+    return '${successful}/${records.length} - ${(successful/records.length * 100).round()}%';
+  }
+
+  String formatBreakdownRate() {
+    if (records.isEmpty) return '0/0 - 0%';
+    int breakdowns = records.where((r) => r.breakdown).length;
+    return '${breakdowns}/${records.length} - ${(breakdowns/records.length * 100).round()}%';
+  }
+}
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -86,8 +184,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // Update the type to match the new DrawingLine format
   List<Map<String, dynamic>>? drawingData;
 
-  // Add a key to access the DrawingButton state
-  final GlobalKey<_DrawingButtonState> _drawingButtonKey = GlobalKey<_DrawingButtonState>();
+  // Add state variable
+  String feederStation = 'None';
 
   @override
   void initState() {
@@ -95,7 +193,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
     updateTime();
     _loadDevMode();
     TelemetryService().logInfo('ScoutingPage initialized');
-    
+
     // listen to dev mode changes
     _devModeSubscription = TelemetryService().devModeStream.listen((enabled) {
       if (mounted && enabled != _isDevMode) {
@@ -131,13 +229,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
     TelemetryService().logAction('navigation_changed', 'to index $index');
     setState(() {
       _currentIndex = index;
-      // Refresh DataPage when switching to it
-      if (index == 1) {
-        final dataPage = context.findAncestorStateOfType<DataPageState>();
-        if (dataPage != null) {
-          dataPage.loadRecords();
-        }
-      }
     });
   }
 
@@ -221,14 +312,40 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // Reset form fields
   void _resetForm() {
     setState(() {
+      final nextMatch = matchNumber + 1;
+      matchNumber = nextMatch;
+      matchType = 'Practice';
       teamNumber = 0;
-      matchNumber = 0;
-      matchType = 'Qualification';
-      // ... other field resets ...
+      isRedAlliance = true;
+      cageType = 'Shallow';
+      coralPreloaded = false;
+      taxis = false;
+      algaeRemoved = 0;
+      coralPlaced = 'No';
+      rankingPoint = false;
+      algaeScoredInNet = 0;
+      coralOnReefHeight1 = 0;
+      coralOnReefHeight2 = 0;
+      coralOnReefHeight3 = 0;
+      coralOnReefHeight4 = 0;
+      coralRankingPoint = false;
+      algaeProcessed = 0;
+      processedAlgaeScored = 0;
+      processorCycles = 0;
+      coOpPoint = false;
+      returnedToBarge = false;
+      cageHang = 'None';
+      bargeRankingPoint = false;
+      breakdown = false;
+      comments = '';
+      canPickupAlgae = false;
+      canPickupCoral = false;
+      autoAlgaeInNet = 0;
+      autoAlgaeInProcessor = 0;
+      coralPickupMethod = 'None';
       drawingData = null;
-      if (_drawingButtonKey.currentState != null) {
-        _drawingButtonKey.currentState!.resetPath();
-      }
+      feederStation = 'None';
+      updateTime();
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -309,7 +426,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
             ],
           ),
           SizedBox(height: AppSpacing.md),
-          
+
           // Team selection
           TeamSelector(
             teamNumber: teamNumber,
@@ -352,9 +469,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
             },
           ),
           DrawingButton(
-            key: _drawingButtonKey,
             isRedAlliance: isRedAlliance,
-            initialHasPath: drawingData?.isNotEmpty ?? false,
+            hasPath: drawingData != null,
             onPathSaved: (path) {
               setState(() {
                 drawingData = path;
@@ -368,7 +484,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
               );
             },
           ),
-          
+
           // Scoring section
           SectionHeader(
             title: 'Scoring',
@@ -404,7 +520,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
               });
             },
           ),
-          
+
           // Coral section
           SectionHeader(
             title: 'Coral',
@@ -446,7 +562,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
               }
             },
           ),
-          
+
           // Ranking point
           SwitchCard(
             label: 'Ranking Point',
@@ -516,7 +632,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
               });
             },
           ),
-          
+
           // Coral scoring section
           SectionHeader(
             title: 'Coral Scoring',
@@ -562,7 +678,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
               });
             },
           ),
-          
+
           // Robot capabilities section
           SectionHeader(
             title: 'Capabilities',
@@ -583,7 +699,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
               ),
               SizedBox(height: 8),
               SwitchCard(
-                label: 'Pickup Coral', 
+                label: 'Pickup Coral',
                 value: canPickupCoral,
                 onChanged: (value) {
                   setState(() {
@@ -606,9 +722,22 @@ class _ScoutingPageState extends State<ScoutingPage> {
                   }
                 },
               ),
+              DropdownCard(
+                label: 'Feeder Station',
+                value: feederStation,
+                items: const ['None', 'Yes'],
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      feederStation = value;
+                      _logStateChange('feederStation', feederStation, value);
+                    });
+                  }
+                },
+              ),
             ],
           ),
-          
+
           // Points section
           SectionHeader(
             title: 'Points',
@@ -662,7 +791,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
               });
             },
           ),
-          
+
           // Hanging section
           SectionHeader(
             title: 'Hanging',
@@ -719,7 +848,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
               });
             },
           ),
-          
+
           // Comments section
           SectionHeader(
             title: 'Notes',
@@ -760,13 +889,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
   }
 
   Future<void> _saveRecord() async {
-    if (teamNumber == 0 || matchNumber == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Team number and match number are required')),
-      );
-      return;
-    }
-
     TelemetryService().logAction('save_button_pressed');
     try {
       // Log all values before saving
@@ -784,6 +906,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
         'autoAlgaeInNet': autoAlgaeInNet,
         'autoAlgaeInProcessor': autoAlgaeInProcessor,
         'coralPickupMethod': coralPickupMethod,
+        'feederStation': feederStation,
+        'coralOnReefHeight1': coralOnReefHeight1,
+        'coralOnReefHeight2': coralOnReefHeight2,
+        'coralOnReefHeight3': coralOnReefHeight3,
+        'coralOnReefHeight4': coralOnReefHeight4,
       }.toString());
 
       final record = ScoutingRecord(
@@ -814,33 +941,55 @@ class _ScoutingPageState extends State<ScoutingPage> {
         autoAlgaeInNet: autoAlgaeInNet,
         autoAlgaeInProcessor: autoAlgaeInProcessor,
         coralPickupMethod: coralPickupMethod,
+        feederStation: feederStation,
+        coralOnReefHeight1: coralOnReefHeight1,
+        coralOnReefHeight2: coralOnReefHeight2,
+        coralOnReefHeight3: coralOnReefHeight3,
+        coralOnReefHeight4: coralOnReefHeight4,
         robotPath: drawingData,
+        telemetryData: {},
       );
 
       await DataManager.saveRecord(record);
-      
-      // Ensure DataPage is refreshed
-      final dataPage = context.findAncestorStateOfType<DataPageState>();
-      if (dataPage != null) {
-        await dataPage.loadRecords();
-      }
-      
-      // Switch to Data tab
-      setState(() {
-        _currentIndex = 1;
-      });
 
-      // Show success message
+      // show success message
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Record saved successfully'),
+          content: Text('Match data saved successfully'),
           backgroundColor: Colors.green,
         ),
       );
 
-      // Reset form
-      _resetForm();
+      // reset form
+      setState(() {
+        matchNumber = matchNumber + 1; // increment match number
+        algaeRemoved = 0;
+        algaeScoredInNet = 0;
+        coralOnReefHeight1 = 0;
+        coralOnReefHeight2 = 0;
+        coralOnReefHeight3 = 0;
+        coralOnReefHeight4 = 0;
+        algaeProcessed = 0;
+        processedAlgaeScored = 0;
+        processorCycles = 0;
+        coralPlaced = 'No';
+        cageHang = 'None';
+        comments = '';
+        taxis = false;
+        rankingPoint = false;
+        coralRankingPoint = false;
+        coOpPoint = false;
+        returnedToBarge = false;
+        bargeRankingPoint = false;
+        breakdown = false;
+        autoAlgaeInNet = 0;
+        autoAlgaeInProcessor = 0;
+        coralPickupMethod = 'None';
+        drawingData = null;
+        feederStation = 'None';
+        updateTime();
+      });
 
       TelemetryService().logInfo('record_saved_successfully', 'Match $matchNumber');
     } catch (e, stackTrace) {
@@ -849,7 +998,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving record'),
+          content: Text('Error saving match data'),
           backgroundColor: Colors.red,
         ),
       );
@@ -881,7 +1030,7 @@ class TeamNumberSelector extends StatefulWidget {
 class _TeamNumberSelectorState extends State<TeamNumberSelector> {
   late List<int> selectedDigits;
   bool isOpen = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -900,126 +1049,114 @@ class _TeamNumberSelectorState extends State<TeamNumberSelector> {
 
   void _toggleSelector() {
     setState(() {
-      isOpen = !isOpen;
+      isOpen = true;
     });
-    if (isOpen) {
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        isDismissible: true,
-        enableDrag: true,
-        backgroundColor: Colors.transparent,
-        builder: (context) => DraggableScrollableSheet(
-          initialChildSize: 0.4,
-          minChildSize: 0.2,
-          maxChildSize: 0.8,
-          builder: (context, scrollController) => Container(
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 40,
-                  height: 5,
-                  margin: EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2.5),
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          maxChildSize: 0.9,
+          minChildSize: 0.4,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Theme.of(context).cardColor,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              child: Column(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 5,
+                    margin: EdgeInsets.symmetric(vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2.5),
+                    ),
                   ),
-                ),
-                Text(
-                  'Select Team Number',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                  Text(
+                    'Select Team Number',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(5, (columnIndex) {
-                      return SizedBox(
-                        width: 60,
-                        child: ListWheelScrollView(
-                          controller: FixedExtentScrollController(
-                            initialItem: selectedDigits[columnIndex],
-                          ),
-                          itemExtent: 40,
-                          physics: FixedExtentScrollPhysics(),
-                          onSelectedItemChanged: (index) {
-                            setState(() {
-                              selectedDigits[columnIndex] = index;
-                              _updateTeamNumber();
-                            });
-                          },
-                          children: List.generate(
-                            10,
-                            (index) => Container(
-                              alignment: Alignment.center,
-                              child: Text(
-                                index.toString(),
-                                style: TextStyle(
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                  Expanded(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(5, (columnIndex) {
+                        return SizedBox(
+                          width: 60,
+                          child: ListWheelScrollView(
+                            controller: FixedExtentScrollController(
+                              initialItem: selectedDigits[columnIndex],
+                            ),
+                            itemExtent: 40,
+                            physics: FixedExtentScrollPhysics(),
+                            onSelectedItemChanged: (index) {
+                              setState(() {
+                                selectedDigits[columnIndex] = index;
+                                _updateTeamNumber();
+                              });
+                            },
+                            children: List.generate(
+                              10,
+                              (index) => Container(
+                                alignment: Alignment.center,
+                                child: Text(
+                                  index.toString(),
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(16),
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Done'),
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: Size(double.infinity, 50),
+                        );
+                      }),
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ).then((_) => setState(() => isOpen = false));
-    }
+                  Padding(
+                    padding: EdgeInsets.all(16),
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('Done'),
+                      style: ElevatedButton.styleFrom(
+                        minimumSize: Size(double.infinity, 50),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).then((_) => setState(() => isOpen = false));
   }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('Number', style: TextStyle(fontSize: 16)),
-          InkWell(
-            onTap: _toggleSelector,
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    selectedDigits.fold('', (prev, digit) => prev + digit.toString()),
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_drop_down),
-                ],
-              ),
+      padding: EdgeInsets.all(8.0),
+      child: GestureDetector(
+        onTap: _toggleSelector,
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          child: Text(
+            selectedDigits.join(""),
+            style: TextStyle(
+              fontSize: 20,
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -1101,21 +1238,24 @@ class ToggleRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           selectedBorderColor: Colors.transparent,
           borderWidth: 1,
-          fillColor: selectedIndex == 0 
+          fillColor: selectedIndex == 0
               ? (isDark ? Colors.blue.shade900 : Colors.green.shade300)
               : (isDark ? Colors.red.shade900 : Colors.red.shade300),
           color: Theme.of(context).textTheme.bodyLarge?.color,
           selectedColor: Theme.of(context).textTheme.bodyLarge?.color,
           constraints: BoxConstraints(minWidth: 100, minHeight: 40),
-          isSelected: List.generate(
-            options.length,
-            (index) => index == selectedIndex,
-          ),
+          isSelected: options.asMap().keys.map((i) => i == selectedIndex).toList(),
+          onPressed: (index) => onSelected(index),
           children: options.map((option) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(option),
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              option,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           )).toList(),
-          onPressed: onSelected,
         ),
       ],
     );
@@ -1259,36 +1399,17 @@ class SectionCard extends StatelessWidget {
   }
 }
 
-class DrawingButton extends StatefulWidget {
+class DrawingButton extends StatelessWidget {
   final bool isRedAlliance;
+  final bool hasPath;
   final Function(List<Map<String, dynamic>>) onPathSaved;
-  final bool initialHasPath;
 
   const DrawingButton({
     Key? key,
     required this.isRedAlliance,
+    required this.hasPath,
     required this.onPathSaved,
-    this.initialHasPath = false,
   }) : super(key: key);
-
-  @override
-  State<DrawingButton> createState() => _DrawingButtonState();
-}
-
-class _DrawingButtonState extends State<DrawingButton> {
-  late bool hasPath;
-
-  @override
-  void initState() {
-    super.initState();
-    hasPath = widget.initialHasPath;
-  }
-
-  void resetPath() {
-    setState(() {
-      hasPath = false;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1299,29 +1420,24 @@ class _DrawingButtonState extends State<DrawingButton> {
         children: [
           ElevatedButton.icon(
             onPressed: () async {
-              final drawingData = await Navigator.push(
+              final result = await Navigator.push<List<Map<String, dynamic>>>(
                 context,
                 MaterialPageRoute(
                   builder: (context) => DrawingPage(
-                    isRedAlliance: widget.isRedAlliance,
-                    readOnly: false,
-                    initialDrawing: null,
+                    isRedAlliance: isRedAlliance,
                   ),
                 ),
               );
-              
-              if (drawingData != null) {
-                widget.onPathSaved(drawingData);
-                setState(() {
-                  hasPath = true;
-                });
+
+              if (result != null) {
+                onPathSaved(result);
               }
             },
             icon: Icon(hasPath ? Icons.edit : Icons.draw),
             label: Text(hasPath ? 'Edit Auto Path' : 'Draw Auto Path'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
-              backgroundColor: hasPath ? 
+              backgroundColor: hasPath ?
                 Theme.of(context).colorScheme.primaryContainer :
                 null,
             ),
@@ -1610,6 +1726,178 @@ class _AllianceButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class DataPage extends StatefulWidget {
+  const DataPage({Key? key}) : super(key: key);
+
+  @override
+  _DataPageState createState() => _DataPageState();
+}
+
+class _DataPageState extends State<DataPage> {
+  List<ScoutingRecord> records = [];
+  List<ScoutingRecord> selectedRecords = [];
+  bool isSelecting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecords();
+  }
+
+  Future<void> _loadRecords() async {
+    final loadedRecords = await DatabaseHelper.instance.getAllRecords();
+    setState(() {
+      records = loadedRecords;
+    });
+  }
+
+  void _toggleSelection(ScoutingRecord record) {
+    setState(() {
+      if (selectedRecords.contains(record)) {
+        selectedRecords.remove(record);
+        if (selectedRecords.isEmpty) {
+          isSelecting = false;
+        }
+      } else {
+        selectedRecords.add(record);
+        isSelecting = true;
+      }
+    });
+  }
+
+  void _deleteRecord(ScoutingRecord record) async {
+    // Implement actual delete functionality if needed.
+    // For now, simply remove it from our local list.
+    setState(() {
+      records.remove(record);
+      selectedRecords.remove(record);
+      if (selectedRecords.isEmpty) {
+        isSelecting = false;
+      }
+    });
+    // Optionally, update persistent storage here.
+  }
+
+  void _showQRDialog(List<ScoutingRecord> records) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'QR Codes',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 400,
+                child: ListView.builder(
+                  itemCount: records.length,
+                  itemBuilder: (context, index) {
+                    final record = records[index];
+                    return Column(
+                      children: [
+                        Text('Team ${record.teamNumber} - Match ${record.matchNumber}'),
+                        const SizedBox(height: 8),
+                        QrImageView(
+                          data: jsonEncode(record.toJson()),
+                          size: 200,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Scouting Data'),
+        actions: isSelecting
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.compare),
+                  onPressed: () {
+                    // Navigate to ComparisonPage with selected records.
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ComparisonPage(records: selectedRecords),
+                      ),
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.qr_code),
+                  onPressed: () {
+                    _showQRDialog(selectedRecords);
+                  },
+                )
+              ]
+            : null,
+      ),
+      body: records.isEmpty
+          ? const Center(child: Text('No records found'))
+          : ListView.builder(
+              padding: const EdgeInsets.all(8.0),
+              itemCount: records.length,
+              itemBuilder: (context, index) {
+                final record = records[index];
+                return ScoutingRecordCard(
+                  record: record,
+                  isSelected: selectedRecords.contains(record),
+                  onTap: () {
+                    if (isSelecting) {
+                      _toggleSelection(record);
+                    } else {
+                      // Optionally, view record details.
+                    }
+                  },
+                  onLongPress: () {
+                    _toggleSelection(record);
+                  },
+                  onCompare: () {
+                    // Navigate to ComparisonPage for a single record.
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ComparisonPage(records: [record]),
+                      ),
+                    );
+                  },
+                  onDelete: () {
+                    _deleteRecord(record);
+                  },
+                );
+              },
+            ),
+      floatingActionButton: isSelecting
+          ? FloatingActionButton(
+              onPressed: () {
+                _showQRDialog(selectedRecords);
+              },
+              child: const Icon(Icons.qr_code),
+            )
+          : null,
     );
   }
 }

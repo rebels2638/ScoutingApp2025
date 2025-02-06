@@ -64,7 +64,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
     try {
       final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(csvData);
       if (rows.isEmpty) throw Exception('Invalid QR code data');
-      
+
       final row = rows[0];
       return ScoutingRecord(
         timestamp: row[0].toString(),
@@ -99,8 +99,8 @@ class _QrScannerPageState extends State<QrScannerPage> {
         coralOnReefHeight3: int.tryParse(row[29].toString()) ?? 0,
         coralOnReefHeight4: int.tryParse(row[30].toString()) ?? 0,
         feederStation: row[31].toString(),
-        robotPath: row[32].toString().isNotEmpty ? 
-          jsonDecode(row[32].toString()) as List<Map<String, dynamic>> : 
+        robotPath: row[32].toString().isNotEmpty ?
+          jsonDecode(row[32].toString()) as List<Map<String, dynamic>> :
           null,
       );
     } catch (e) {
