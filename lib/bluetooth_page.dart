@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'services/ble_service.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'services/telemetry_service.dart';
 
 class BluetoothPage extends StatefulWidget {
   @override
@@ -42,6 +43,80 @@ class _BluetoothPageState extends State<BluetoothPage> {
         }
       });
     });
+
+    // Add listener for permission rationale
+    _bleService.permissionRationaleStream.listen((request) {
+      _showPermissionRationale(request.title, request.message);
+    });
+  }
+
+  Future<void> _showPermissionRationale(String title, String message) async {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _toggleAdvertising() async {
+    try {
+      if (_bleService.isAdvertising) {
+        await _bleService.stopAdvertising();
+        _showSnackBar('Stopped advertising');
+      } else {
+        // Check permissions before advertising
+        await _bleService._checkPermissions();
+        await _bleService.startAdvertising();
+        _showSnackBar('Device is now discoverable');
+      }
+      setState(() {});
+    } catch (e) {
+      _showSnackBar(e.toString(), isError: true);
+    }
+  }
+
+  Future<void> _toggleScanning() async {
+    try {
+      if (_bleService.isScanning) {
+        await _bleService.stopScanning();
+        _showSnackBar('Stopped scanning');
+      } else {
+        // Check permissions before scanning
+        await _bleService._checkPermissions();
+        await _bleService.startScanning();
+        _showSnackBar('Started scanning for devices');
+      }
+      setState(() {});
+    } catch (e) {
+      _showSnackBar(e.toString(), isError: true);
+    }
+  }
+
+  Future<void> _connectToDevice(DiscoveredDevice device) async {
+    try {
+      await _bleService.connectToDevice(device);
+      _showSnackBar('Connecting to ${device.name}...');
+    } catch (e) {
+      _showSnackBar('Failed to connect: $e', isError: true);
+    }
   }
 
   @override
@@ -94,14 +169,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
         ),
         if (_isCentral) ...[
           ElevatedButton(
-            onPressed: () {
-              if (_bleService.isScanning) {
-                _bleService.stopScanning();
-              } else {
-                _bleService.startScanning();
-              }
-              setState(() {});
-            },
+            onPressed: _toggleScanning,
             child: Text(_bleService.isScanning ? 'Stop Scanning' : 'Start Scanning'),
           ),
           Expanded(
@@ -116,7 +184,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
                         title: Text(device.name.isEmpty ? 'Unknown Scouter' : device.name),
                         subtitle: Text(device.id),
                         trailing: ElevatedButton(
-                          onPressed: () => _bleService.connectToDevice(device),
+                          onPressed: () => _connectToDevice(device),
                           child: Text('Connect'),
                         ),
                       );
@@ -125,14 +193,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
           ),
         ] else ...[
           ElevatedButton(
-            onPressed: () {
-              if (_bleService.isAdvertising) {
-                _bleService.stopAdvertising();
-              } else {
-                _bleService.startAdvertising();
-              }
-              setState(() {});
-            },
+            onPressed: _toggleAdvertising,
             child: Text(_bleService.isAdvertising ? 'Stop Advertising' : 'Make Discoverable'),
           ),
           if (_bleService.isConnected)
@@ -152,4 +213,18 @@ class _BluetoothPageState extends State<BluetoothPage> {
       ],
     );
   }
+
+  @override
+  void dispose() {
+    _bleService.dispose();
+    super.dispose();
+  }
+}
+
+// Add this class to handle permission rationale requests
+class PermissionRationaleRequest {
+  final String title;
+  final String message;
+
+  PermissionRationaleRequest(this.title, this.message);
 } 
