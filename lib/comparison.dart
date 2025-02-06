@@ -7,6 +7,38 @@ import 'dart:convert';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 
+// Fallback implementation for LinkedScrollControllerGroup in case it's not available in your Flutter version.
+class LinkedScrollControllerGroup {
+  final List<ScrollController> _controllers = [];
+  bool _isJumping = false;
+  
+  ScrollController addAndGetController() {
+    final controller = ScrollController();
+    _controllers.add(controller);
+    controller.addListener(() {
+      if (_isJumping) return;
+      _isJumping = true;
+      for (final other in _controllers) {
+        // Do not update the same controller or controllers without clients.
+        if (other == controller || !other.hasClients) continue;
+        // If the difference is significant update.
+        if ((other.offset - controller.offset).abs() > 1.0) {
+          other.jumpTo(controller.offset);
+        }
+      }
+      _isJumping = false;
+    });
+    return controller;
+  }
+  
+  void dispose() {
+    for (final controller in _controllers) {
+      controller.dispose();
+    }
+    _controllers.clear();
+  }
+}
+
 class TeamStats {
   final int teamNumber;
   final bool isRedAlliance;
@@ -132,109 +164,113 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
         title: Text('Team Comparison'),
         elevation: 0,
       ),
-      // Wrap the entire body horizontally so the header and metrics scroll together.
-      body: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minWidth: 600), // Adjust minimum width as needed.
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Team stats header with synchronized horizontal scrolling
-              Container(
-                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  controller: _headerScrollController,
-                  child: Row(
-                    children: teamStats.map((stats) {
-                      return Container(
-                        margin: EdgeInsets.symmetric(horizontal: 6),
-                        padding: EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: stats.isRedAlliance 
-                              ? AppColors.redAlliance.withOpacity(0.1)
-                              : AppColors.blueAlliance.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: stats.isRedAlliance 
-                                ? AppColors.redAlliance.withOpacity(0.3)
-                                : AppColors.blueAlliance.withOpacity(0.3),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '${stats.teamNumber}',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
+      // Use LayoutBuilder to enforce a definite width.
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Ensure content has at least 600 width.
+          double contentWidth = constraints.maxWidth < 600 ? 600 : constraints.maxWidth;
+          return SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: contentWidth,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Team stats header with synchronized horizontal scrolling
+                  Container(
+                    padding: EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      controller: _headerScrollController,
+                      child: Row(
+                        children: teamStats.map((stats) {
+                          return Container(
+                            margin: EdgeInsets.symmetric(horizontal: 6),
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: stats.isRedAlliance 
+                                  ? AppColors.redAlliance.withOpacity(0.1)
+                                  : AppColors.blueAlliance.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
                                 color: stats.isRedAlliance 
-                                    ? AppColors.redAlliance
-                                    : AppColors.blueAlliance,
+                                    ? AppColors.redAlliance.withOpacity(0.3)
+                                    : AppColors.blueAlliance.withOpacity(0.3),
                               ),
                             ),
-                            SizedBox(height: 4),
-                            Text(
-                              '${stats.records.length} matches${stats.records.length > 1 ? ' (avg)' : ''}',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Theme.of(context).textTheme.bodySmall?.color,
-                              ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '${stats.teamNumber}',
+                                  style: TextStyle(
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
+                                    color: stats.isRedAlliance 
+                                        ? AppColors.redAlliance
+                                        : AppColors.blueAlliance,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  '${stats.records.length} matches${stats.records.length > 1 ? ' (avg)' : ''}',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Theme.of(context).textTheme.bodySmall?.color,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-              // Tab bar (remains unmodified)
-              Container(
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(
-                      color: Theme.of(context).dividerColor,
-                      width: 1,
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  labelColor: Theme.of(context).colorScheme.primary,
-                  unselectedLabelColor: Theme.of(context).textTheme.bodySmall?.color,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  labelStyle: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+                  // Tab bar
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Theme.of(context).dividerColor,
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      labelColor: Theme.of(context).colorScheme.primary,
+                      unselectedLabelColor: Theme.of(context).textTheme.bodySmall?.color,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      labelStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      tabs: [
+                        Tab(icon: Icon(Icons.auto_awesome), text: 'Auto'),
+                        Tab(icon: Icon(Icons.sports_esports), text: 'Teleop'),
+                        Tab(icon: Icon(Icons.flag), text: 'Endgame'),
+                        Tab(icon: Icon(Icons.analytics), text: 'Overview'),
+                      ],
+                    ),
                   ),
-                  tabs: [
-                    Tab(icon: Icon(Icons.auto_awesome), text: 'Auto'),
-                    Tab(icon: Icon(Icons.sports_esports), text: 'Teleop'),
-                    Tab(icon: Icon(Icons.flag), text: 'Endgame'),
-                    Tab(icon: Icon(Icons.analytics), text: 'Overview'),
-                  ],
-                ),
-              ),
-              // Metrics area: fixed height with vertical scrolling.
-              Container(
-                height: 400, // Adjust height as needed.
-                child: Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildAutoTab(),
-                      _buildTeleopTab(),
-                      _buildEndgameTab(),
-                      _buildOverviewTab(),
-                    ],
+                  // Metrics area: fixed height with vertical scrolling.
+                  Container(
+                    height: 400, // Adjust height as needed.
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildAutoTab(),
+                        _buildTeleopTab(),
+                        _buildEndgameTab(),
+                        _buildOverviewTab(),
+                      ],
+                    ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -310,43 +346,44 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
       scrollDirection: Axis.horizontal,
       controller: _tabScrollControllers[tabIndex],
       child: ConstrainedBox(
-        constraints: BoxConstraints(minWidth: 600),
-        child: ListView(
-          padding: EdgeInsets.all(16),
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          children: [
-            _buildMetricRow(
-              'Algae Removed', 
-              teamStats.map((stats) => stats.formatAverage((r) => r.algaeRemoved)).toList(),
-              icon: Icons.grass,
-            ),
-            _buildMetricRow(
-              'Algae In Net',
-              teamStats.map((stats) => stats.formatAverage((r) => r.autoAlgaeInNet)).toList(),
-              icon: Icons.sports_hockey,
-            ),
-            _buildMetricRow(
-              'Taxis',
-              teamStats.map((stats) => stats.formatSuccessRate((r) => r.taxis)).toList(),
-              icon: Icons.directions_car,
-            ),
-            _buildMetricRow(
-              'Algae In Processor',
-              teamStats.map((stats) => stats.formatAverage((r) => r.autoAlgaeInProcessor)).toList(),
-              icon: Icons.build,
-            ),
-            _buildMetricRow(
-              'Coral Placed', 
-              teamStats.map((stats) => stats.getCoralPlacedStats()).toList(),
-              icon: Icons.sports_score,
-            ),
-            _buildMetricRow(
-              'Ranking Point',
-              teamStats.map((stats) => stats.getRankingPointStats()).toList(),
-              icon: Icons.star,
-            ),
-          ],
+        constraints: BoxConstraints(minWidth: 600, minHeight: 400),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildMetricRow(
+                'Algae Removed', 
+                teamStats.map((stats) => stats.formatAverage((r) => r.algaeRemoved)).toList(),
+                icon: Icons.grass,
+              ),
+              _buildMetricRow(
+                'Algae In Net',
+                teamStats.map((stats) => stats.formatAverage((r) => r.autoAlgaeInNet)).toList(),
+                icon: Icons.sports_hockey,
+              ),
+              _buildMetricRow(
+                'Taxis',
+                teamStats.map((stats) => stats.formatSuccessRate((r) => r.taxis)).toList(),
+                icon: Icons.directions_car,
+              ),
+              _buildMetricRow(
+                'Algae In Processor',
+                teamStats.map((stats) => stats.formatAverage((r) => r.autoAlgaeInProcessor)).toList(),
+                icon: Icons.build,
+              ),
+              _buildMetricRow(
+                'Coral Placed', 
+                teamStats.map((stats) => stats.getCoralPlacedStats()).toList(),
+                icon: Icons.sports_score,
+              ),
+              _buildMetricRow(
+                'Ranking Point',
+                teamStats.map((stats) => stats.getRankingPointStats()).toList(),
+                icon: Icons.star,
+              ),
+            ],
+          ),
         ),
       ),
     );

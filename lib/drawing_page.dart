@@ -74,12 +74,14 @@ class DrawingPage extends StatefulWidget {
   final bool isRedAlliance;
   final List<Map<String, dynamic>>? initialDrawing;
   final bool readOnly;
+  final List<DrawingLine>? initialLines;
 
   const DrawingPage({
     Key? key,
     required this.isRedAlliance,
     this.initialDrawing,
     this.readOnly = false,
+    this.initialLines,
   }) : super(key: key);
 
   @override
@@ -87,7 +89,7 @@ class DrawingPage extends StatefulWidget {
 }
 
 class _DrawingPageState extends State<DrawingPage> {
-  List<DrawingLine> lines = [];
+  late List<DrawingLine> lines;
   List<DrawingLine> redoHistory = [];
   Color currentColor = Colors.black;
   bool isErasing = false;
@@ -98,6 +100,7 @@ class _DrawingPageState extends State<DrawingPage> {
   void initState() {
     super.initState();
     currentColor = widget.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance;
+    lines = widget.initialLines ?? [];
     _initializeDrawing();
   }
 
@@ -235,38 +238,42 @@ class _DrawingPageState extends State<DrawingPage> {
   void _onPanStart(DragStartDetails details) {
     setState(() {
       currentLine = [details.localPosition];
-      if (!isErasing) {
-        lines.add(DrawingLine(
-          points: currentLine!,
-          color: currentColor,
-          strokeWidth: strokeWidth,
-        ));
-        redoHistory.clear();
-      }
     });
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
     setState(() {
-      if (isErasing) {
-        lines.removeWhere((line) {
-          return line.points.any((point) =>
-              (point - details.localPosition).distance < 20.0);
-        });
-      } else if (currentLine != null) {
+      if (currentLine != null) {
         currentLine!.add(details.localPosition);
-        // Update the points of the last line
-        lines.last = DrawingLine(
-          points: currentLine!,
-          color: currentColor,
-          strokeWidth: strokeWidth,
-        );
+        // If we're not erasing, update the current line
+        if (!isErasing) {
+          if (lines.isNotEmpty) {
+            lines.removeLast(); // Remove the "preview" line
+          }
+          lines.add(DrawingLine(
+            points: List.from(currentLine!), // Create a new list from current points
+            color: currentColor,
+            strokeWidth: strokeWidth,
+          ));
+        } else {
+          // Handle erasing by removing lines that are close to the current position
+          lines.removeWhere((line) {
+            return line.points.any((point) =>
+                (point - details.localPosition).distance < 20.0);
+          });
+        }
       }
     });
   }
 
   void _onPanEnd(DragEndDetails details) {
-    currentLine = null;
+    setState(() {
+      if (!isErasing && currentLine != null && currentLine!.length > 1) {
+        // The final line is already in the lines list from onPanUpdate
+        redoHistory.clear(); // Clear redo history when a new line is drawn
+      }
+      currentLine = null;
+    });
   }
 }
 

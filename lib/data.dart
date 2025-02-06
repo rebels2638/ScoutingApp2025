@@ -12,6 +12,7 @@ import 'theme/app_theme.dart';
 import 'database_helper.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'record_detail.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -491,24 +492,46 @@ class DataManager {
 
 class DataPage extends StatefulWidget {
   @override
-  _DataPageState createState() => _DataPageState();
+  DataPageState createState() => DataPageState();
 }
 
-class _DataPageState extends State<DataPage> {
+class DataPageState extends State<DataPage> with WidgetsBindingObserver {
   List<ScoutingRecord> records = [];
   Set<int> selectedRecordIndices = {};
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    WidgetsBinding.instance.addObserver(this);
+    loadRecords();
   }
 
-  Future<void> _loadData() async {
-    final loadedRecords = await DataManager.getRecords();
-    setState(() {
-      records = loadedRecords;
-    });
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      loadRecords();
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    loadRecords();
+  }
+
+  Future<void> loadRecords() async {
+    List<ScoutingRecord> recs = await DatabaseHelper.instance.getAllRecords();
+    if (mounted) {
+      setState(() {
+        records = recs;
+      });
+    }
   }
 
   @override
@@ -702,7 +725,7 @@ class _DataPageState extends State<DataPage> {
               Navigator.pop(context);
               if (index != null) {
                 await DataManager.deleteRecord(index);
-                await _loadData(); // Reload the data
+                await loadRecords();
               } else {
                 await DataManager.deleteAllRecords();
               }
@@ -781,111 +804,67 @@ class ScoutingRecordCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.only(bottom: AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: EdgeInsets.all(AppSpacing.md),
-            decoration: BoxDecoration(
-              color: (record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance)
-                  .withOpacity(isSelected ? 0.3 : 0.1),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
-            ),
-            child: Row(
-              children: [
-                Checkbox(
-                  value: isSelected,
-                  onChanged: onSelected,
-                  activeColor: record.isRedAlliance ? 
-                    AppColors.redAlliance : 
-                    AppColors.blueAlliance,
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Team ${record.teamNumber}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance,
-                        ),
-                      ),
-                      Text(
-                        '${record.matchType} Match ${record.matchNumber}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                        ),
-                      ),
-                    ],
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RecordDetailPage(record: record)),
+        );
+      },
+      child: Card(
+        margin: EdgeInsets.only(bottom: AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: EdgeInsets.all(AppSpacing.md),
+              decoration: BoxDecoration(
+                color: (record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance)
+                    .withOpacity(isSelected ? 0.3 : 0.1),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
+              ),
+              child: Row(
+                children: [
+                  Checkbox(
+                    value: isSelected,
+                    onChanged: onSelected,
                   ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.qr_code),
-                  onPressed: () => _showSingleRecordQR(context, record),
-                  tooltip: 'Generate QR for this record',
-                ),
-                IconButton(
-                  icon: Icon(Icons.delete_outline),
-                  onPressed: onDelete,
-                  color: AppColors.error,
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildMetricRow('Auto Algae', record.algaeRemoved.toString()),
-                _buildMetricRow('Teleop Algae', record.algaeScoredInNet.toString()),
-                _buildMetricRow('Processed', record.algaeProcessed.toString()),
-                if (record.comments.isNotEmpty)
-                  Padding(
-                    padding: EdgeInsets.only(top: AppSpacing.sm),
+                  Expanded(
                     child: Text(
-                      record.comments,
-                      style: TextStyle(
-                        fontStyle: FontStyle.italic,
-                        color: Theme.of(context).textTheme.bodySmall?.color,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      'Team ${record.teamNumber}, Match ${record.matchNumber}',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
-              ],
+                  Icon(Icons.arrow_forward_ios, size: 16),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showSingleRecordQR(BuildContext context, ScoutingRecord record) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Record QR Code'),
-        content: Container(
-          width: 300,
-          height: 300,
-          child: QrImageView(
-            data: jsonEncode(record.toJson()),
-            version: QrVersions.auto,
-            size: 300.0,
-          ),
+            Padding(
+              padding: EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildMetricRow('Auto Algae', record.algaeRemoved.toString()),
+                  _buildMetricRow('Teleop Algae', record.algaeScoredInNet.toString()),
+                  _buildMetricRow('Processed', record.algaeProcessed.toString()),
+                  if (record.comments.isNotEmpty)
+                    Padding(
+                      padding: EdgeInsets.only(top: AppSpacing.sm),
+                      child: Text(
+                        record.comments,
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
-          ),
-        ],
       ),
     );
   }

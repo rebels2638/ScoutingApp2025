@@ -86,6 +86,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // Update the type to match the new DrawingLine format
   List<Map<String, dynamic>>? drawingData;
 
+  // Add a key to access the DrawingButton state
+  final GlobalKey<_DrawingButtonState> _drawingButtonKey = GlobalKey<_DrawingButtonState>();
+
   @override
   void initState() {
     super.initState();
@@ -128,6 +131,13 @@ class _ScoutingPageState extends State<ScoutingPage> {
     TelemetryService().logAction('navigation_changed', 'to index $index');
     setState(() {
       _currentIndex = index;
+      // Refresh DataPage when switching to it
+      if (index == 1) {
+        final dataPage = context.findAncestorStateOfType<DataPageState>();
+        if (dataPage != null) {
+          dataPage.loadRecords();
+        }
+      }
     });
   }
 
@@ -211,39 +221,14 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // Reset form fields
   void _resetForm() {
     setState(() {
-      final nextMatch = matchNumber + 1;
-      matchNumber = nextMatch;
-      matchType = 'Practice';
       teamNumber = 0;
-      isRedAlliance = true;
-      cageType = 'Shallow';
-      coralPreloaded = false;
-      taxis = false;
-      algaeRemoved = 0;
-      coralPlaced = 'No';
-      rankingPoint = false;
-      algaeScoredInNet = 0;
-      coralOnReefHeight1 = 0;
-      coralOnReefHeight2 = 0;
-      coralOnReefHeight3 = 0;
-      coralOnReefHeight4 = 0;
-      coralRankingPoint = false;
-      algaeProcessed = 0;
-      processedAlgaeScored = 0;
-      processorCycles = 0;
-      coOpPoint = false;
-      returnedToBarge = false;
-      cageHang = 'None';
-      bargeRankingPoint = false;
-      breakdown = false;
-      comments = '';
-      canPickupAlgae = false;
-      canPickupCoral = false;
-      autoAlgaeInNet = 0;
-      autoAlgaeInProcessor = 0;
-      coralPickupMethod = 'None';
+      matchNumber = 0;
+      matchType = 'Qualification';
+      // ... other field resets ...
       drawingData = null;
-      updateTime();
+      if (_drawingButtonKey.currentState != null) {
+        _drawingButtonKey.currentState!.resetPath();
+      }
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -367,8 +352,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             },
           ),
           DrawingButton(
+            key: _drawingButtonKey,
             isRedAlliance: isRedAlliance,
-            hasPath: drawingData != null,
+            initialHasPath: drawingData?.isNotEmpty ?? false,
             onPathSaved: (path) {
               setState(() {
                 drawingData = path;
@@ -774,6 +760,13 @@ class _ScoutingPageState extends State<ScoutingPage> {
   }
 
   Future<void> _saveRecord() async {
+    if (teamNumber == 0 || matchNumber == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Team number and match number are required')),
+      );
+      return;
+    }
+
     TelemetryService().logAction('save_button_pressed');
     try {
       // Log all values before saving
@@ -826,43 +819,28 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
       await DataManager.saveRecord(record);
       
-      // show success message
+      // Ensure DataPage is refreshed
+      final dataPage = context.findAncestorStateOfType<DataPageState>();
+      if (dataPage != null) {
+        await dataPage.loadRecords();
+      }
+      
+      // Switch to Data tab
+      setState(() {
+        _currentIndex = 1;
+      });
+
+      // Show success message
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Match data saved successfully'),
+          content: Text('Record saved successfully'),
           backgroundColor: Colors.green,
         ),
       );
-      
-      // reset form
-      setState(() {
-        matchNumber = matchNumber + 1; // increment match number
-        algaeRemoved = 0;
-        algaeScoredInNet = 0;
-        coralOnReefHeight1 = 0;
-        coralOnReefHeight2 = 0;
-        coralOnReefHeight3 = 0;
-        coralOnReefHeight4 = 0;
-        algaeProcessed = 0;
-        processedAlgaeScored = 0;
-        processorCycles = 0;
-        coralPlaced = 'No';
-        cageHang = 'None';
-        comments = '';
-        taxis = false;
-        rankingPoint = false;
-        coralRankingPoint = false;
-        coOpPoint = false;
-        returnedToBarge = false;
-        bargeRankingPoint = false;
-        breakdown = false;
-        autoAlgaeInNet = 0;
-        autoAlgaeInProcessor = 0;
-        coralPickupMethod = 'None';
-        drawingData = null;
-        updateTime();
-      });
+
+      // Reset form
+      _resetForm();
 
       TelemetryService().logInfo('record_saved_successfully', 'Match $matchNumber');
     } catch (e, stackTrace) {
@@ -871,7 +849,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving match data'),
+          content: Text('Error saving record'),
           backgroundColor: Colors.red,
         ),
       );
@@ -1281,17 +1259,36 @@ class SectionCard extends StatelessWidget {
   }
 }
 
-class DrawingButton extends StatelessWidget {
+class DrawingButton extends StatefulWidget {
   final bool isRedAlliance;
-  final bool hasPath;
   final Function(List<Map<String, dynamic>>) onPathSaved;
+  final bool initialHasPath;
 
   const DrawingButton({
     Key? key,
     required this.isRedAlliance,
-    required this.hasPath,
     required this.onPathSaved,
+    this.initialHasPath = false,
   }) : super(key: key);
+
+  @override
+  State<DrawingButton> createState() => _DrawingButtonState();
+}
+
+class _DrawingButtonState extends State<DrawingButton> {
+  late bool hasPath;
+
+  @override
+  void initState() {
+    super.initState();
+    hasPath = widget.initialHasPath;
+  }
+
+  void resetPath() {
+    setState(() {
+      hasPath = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1302,17 +1299,22 @@ class DrawingButton extends StatelessWidget {
         children: [
           ElevatedButton.icon(
             onPressed: () async {
-              final result = await Navigator.push<List<Map<String, dynamic>>>(
+              final drawingData = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => DrawingPage(
-                    isRedAlliance: isRedAlliance,
+                    isRedAlliance: widget.isRedAlliance,
+                    readOnly: false,
+                    initialDrawing: null,
                   ),
                 ),
               );
               
-              if (result != null) {
-                onPathSaved(result);
+              if (drawingData != null) {
+                widget.onPathSaved(drawingData);
+                setState(() {
+                  hasPath = true;
+                });
               }
             },
             icon: Icon(hasPath ? Icons.edit : Icons.draw),
