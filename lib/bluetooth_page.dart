@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'services/ble_service.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'services/telemetry_service.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:app_settings/app_settings.dart';
 
 class BluetoothPage extends StatefulWidget {
   @override
@@ -43,27 +45,6 @@ class _BluetoothPageState extends State<BluetoothPage> {
         }
       });
     });
-
-    // Add listener for permission rationale
-    _bleService.permissionRationaleStream.listen((request) {
-      _showPermissionRationale(request.title, request.message);
-    });
-  }
-
-  Future<void> _showPermissionRationale(String title, String message) async {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -76,6 +57,39 @@ class _BluetoothPageState extends State<BluetoothPage> {
     );
   }
 
+  Future<void> _checkAndRequestPermissions() async {
+    if (!await _bleService.hasRequiredPermissions()) {
+      if (_bleService.needsLocationPermission) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Location Permission Required'),
+            content: Text(
+              'This app needs location permission to scan for nearby Bluetooth devices. ' +
+              'This is required by Android for Bluetooth scanning to work.\n\n' +
+              'The app does not track or store your location.',
+            ),
+            actions: [
+              TextButton(
+                child: Text('Cancel'),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              TextButton(
+                child: Text('Open Settings'),
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await openAppSettings();
+                },
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+      await _bleService.initialize();
+    }
+  }
+
   Future<void> _toggleAdvertising() async {
     try {
       if (_bleService.isAdvertising) {
@@ -83,13 +97,17 @@ class _BluetoothPageState extends State<BluetoothPage> {
         _showSnackBar('Stopped advertising');
       } else {
         // Check permissions before advertising
-        await _bleService._checkPermissions();
-        await _bleService.startAdvertising();
-        _showSnackBar('Device is now discoverable');
+        await _checkAndRequestPermissions();
+        if (await _bleService.hasRequiredPermissions()) {
+          await _bleService.startAdvertising();
+          _showSnackBar('Device is now discoverable');
+        } else {
+          _showSnackBar('Required permissions not granted', isError: true);
+        }
       }
       setState(() {});
     } catch (e) {
-      _showSnackBar(e.toString(), isError: true);
+      _showSnackBar('Failed to toggle advertising: $e', isError: true);
     }
   }
 
@@ -100,13 +118,17 @@ class _BluetoothPageState extends State<BluetoothPage> {
         _showSnackBar('Stopped scanning');
       } else {
         // Check permissions before scanning
-        await _bleService._checkPermissions();
-        await _bleService.startScanning();
-        _showSnackBar('Started scanning for devices');
+        await _checkAndRequestPermissions();
+        if (await _bleService.hasRequiredPermissions()) {
+          await _bleService.startScanning();
+          _showSnackBar('Started scanning for devices');
+        } else {
+          _showSnackBar('Required permissions not granted', isError: true);
+        }
       }
       setState(() {});
     } catch (e) {
-      _showSnackBar(e.toString(), isError: true);
+      _showSnackBar('Failed to toggle scanning: $e', isError: true);
     }
   }
 
@@ -219,12 +241,4 @@ class _BluetoothPageState extends State<BluetoothPage> {
     _bleService.dispose();
     super.dispose();
   }
-}
-
-// Add this class to handle permission rationale requests
-class PermissionRationaleRequest {
-  final String title;
-  final String message;
-
-  PermissionRationaleRequest(this.title, this.message);
 } 

@@ -3,6 +3,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:async';
 import '../data.dart';
 import '../services/telemetry_service.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 
 class BleService {
   static final BleService _instance = BleService._internal();
@@ -41,38 +43,57 @@ class BleService {
   }
 
   Future<void> _checkPermissions() async {
-    // Check location permission first
-    var locationStatus = await Permission.location.status;
-    if (locationStatus.isDenied) {
-      // Show rationale before requesting
-      await showPermissionRationale(
-        'Location Permission Required',
-        'Location permission is required for Bluetooth scanning. This app does not track your location.',
-      );
-      locationStatus = await Permission.location.request();
+    // Check platform
+    if (Platform.isAndroid) {
+      // Android needs location permission for BLE scanning
+      final locationStatus = await Permission.location.status;
       if (locationStatus.isDenied) {
-        throw Exception('Location permission is required for Bluetooth functionality');
+        // Show rationale before requesting
+        bool shouldShowRationale = await Permission.location.shouldShowRequestRationale;
+        if (shouldShowRationale) {
+          // Store this in a field so the UI can show an explanation
+          _needsLocationPermission = true;
+          return;
+        }
+        await Permission.location.request();
       }
     }
 
-    // Then check Bluetooth permissions
-    await Permission.bluetooth.request();
-    await Permission.bluetoothScan.request();
-    await Permission.bluetoothConnect.request();
-    await Permission.bluetoothAdvertise.request();
+    // Request Bluetooth permissions for both platforms
+    if (Platform.isAndroid) {
+      await Permission.bluetooth.request();
+      await Permission.bluetoothScan.request();
+      await Permission.bluetoothConnect.request();
+      await Permission.bluetoothAdvertise.request();
+    } else if (Platform.isIOS) {
+      await Permission.bluetooth.request();
+    }
   }
 
-  // Helper method to show permission rationale
-  Future<void> showPermissionRationale(String title, String message) async {
-    // We'll implement this in the Bluetooth page since it needs context
-    _permissionRationaleController.add(PermissionRationaleRequest(title, message));
+  // Add this method to check if all required permissions are granted
+  Future<bool> hasRequiredPermissions() async {
+    if (Platform.isAndroid) {
+      final location = await Permission.location.status;
+      final bluetooth = await Permission.bluetooth.status;
+      final bluetoothScan = await Permission.bluetoothScan.status;
+      final bluetoothConnect = await Permission.bluetoothConnect.status;
+      final bluetoothAdvertise = await Permission.bluetoothAdvertise.status;
+
+      return location.isGranted && 
+             bluetooth.isGranted && 
+             bluetoothScan.isGranted && 
+             bluetoothConnect.isGranted && 
+             bluetoothAdvertise.isGranted;
+    } else if (Platform.isIOS) {
+      final bluetooth = await Permission.bluetooth.status;
+      return bluetooth.isGranted;
+    }
+    return false;
   }
 
-  // Add a stream controller for permission rationale
-  final _permissionRationaleController = 
-      StreamController<PermissionRationaleRequest>.broadcast();
-  Stream<PermissionRationaleRequest> get permissionRationaleStream => 
-      _permissionRationaleController.stream;
+  // Add field to track if we need to show location permission rationale
+  bool _needsLocationPermission = false;
+  bool get needsLocationPermission => _needsLocationPermission;
 
   void setCentralMode(bool isCentral) {
     _isCentral = isCentral;
