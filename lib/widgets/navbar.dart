@@ -16,6 +16,7 @@ class NavBar extends StatelessWidget {
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Scouting'),
         BottomNavigationBarItem(icon: Icon(Icons.data_usage), label: 'Data'),
+        BottomNavigationBarItem(icon: Icon(Icons.bluetooth), label: 'Bluetooth'),
         BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         BottomNavigationBarItem(icon: Icon(Icons.info), label: 'About'),
       ],

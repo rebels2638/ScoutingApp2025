@@ -13,6 +13,7 @@ import 'widgets/topbar.dart';
 import 'services/telemetry_service.dart';
 import 'dart:async';
 import 'drawing_page.dart';
+import 'bluetooth_page.dart';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -138,8 +139,10 @@ class _ScoutingPageState extends State<ScoutingPage> {
       case 1:
         return DataPage();
       case 2:
-        return SettingsPage();
+        return BluetoothPage();
       case 3:
+        return SettingsPage();
+      case 4:
         return AboutPage();
       default:
         return _buildScoutingPage();
@@ -914,14 +917,28 @@ class _ScoutingPageState extends State<ScoutingPage> {
     }
   }
 
+  String _getPageTitle(int index) {
+    switch (index) {
+      case 0:
+        return 'Scouting';
+      case 1:
+        return 'Data';
+      case 2:
+        return 'Bluetooth';
+      case 3:
+        return 'Settings';
+      case 4:
+        return 'About';
+      default:
+        return 'Scouting';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: TopBar(
-        title: _currentIndex == 0 ? 'Scouting' :
-               _currentIndex == 1 ? 'Data' :
-               _currentIndex == 2 ? 'Settings' :
-               'About',
+        title: _getPageTitle(_currentIndex),
         actions: _currentIndex == 0 ? [
           if (_isDevMode)
             IconButton(

@@ -9,6 +9,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:csv/csv.dart';
 import 'drawing_page.dart';
 import 'qr_scanner_page.dart';
+import 'services/ble_service.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -1045,12 +1046,33 @@ class _DataPageState extends State<DataPage> {
                                   Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
                                 ],
                               ),
-                              trailing: IconButton(
-                                icon: Icon(Icons.qr_code),
-                                onPressed: () {
-                                  _showQrCodeForRecord(record);
-                                },
-                                tooltip: 'Show QR Code',
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.bluetooth),
+                                    onPressed: () async {
+                                      try {
+                                        await BleService().sendMatchData(record);
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Data sent successfully')),
+                                        );
+                                      } catch (e) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Failed to send data: $e')),
+                                        );
+                                      }
+                                    },
+                                    tooltip: 'Send via Bluetooth',
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.qr_code),
+                                    onPressed: () {
+                                      _showQrCodeForRecord(record);
+                                    },
+                                    tooltip: 'Show QR Code',
+                                  ),
+                                ],
                               ),
                               onTap: () {
                                 _showRecordDetails(record);
@@ -1315,7 +1337,7 @@ void _showQrCodeForRecord(ScoutingRecord record) {
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Text(
+      child: Text(
             title,
             style: TextStyle(
               fontSize: 16,
