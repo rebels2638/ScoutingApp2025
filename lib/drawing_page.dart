@@ -74,12 +74,14 @@ class DrawingPage extends StatefulWidget {
   final bool isRedAlliance;
   final List<Map<String, dynamic>>? initialDrawing;
   final bool readOnly;
+  final List<DrawingLine>? initialLines;
 
   const DrawingPage({
     Key? key,
     required this.isRedAlliance,
     this.initialDrawing,
     this.readOnly = false,
+    this.initialLines,
   }) : super(key: key);
 
   @override
@@ -87,7 +89,7 @@ class DrawingPage extends StatefulWidget {
 }
 
 class _DrawingPageState extends State<DrawingPage> {
-  List<DrawingLine> lines = [];
+  late List<DrawingLine> lines;
   List<DrawingLine> redoHistory = [];
   Color currentColor = Colors.black;
   bool isErasing = false;
@@ -98,6 +100,7 @@ class _DrawingPageState extends State<DrawingPage> {
   void initState() {
     super.initState();
     currentColor = widget.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance;
+    lines = widget.initialLines ?? [];
     _initializeDrawing();
   }
 
@@ -105,61 +108,95 @@ class _DrawingPageState extends State<DrawingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Draw Auto Path'),
-        actions: widget.readOnly ? null : [
+        title: Text('Auto Path Drawing'),
+        actions: widget.readOnly ? [] : [
           IconButton(
             icon: Icon(Icons.undo),
-            onPressed: lines.isEmpty ? null : _undo,
+            onPressed: lines.isEmpty ? null : undo,
+            tooltip: 'Undo',
           ),
           IconButton(
             icon: Icon(Icons.redo),
-            onPressed: redoHistory.isEmpty ? null : _redo,
+            onPressed: redoHistory.isEmpty ? null : redo,
+            tooltip: 'Redo',
           ),
           IconButton(
-            icon: Icon(isErasing ? Icons.edit : Icons.cleaning_services),
+            icon: Icon(isErasing ? Icons.edit : Icons.auto_fix_high),
             onPressed: () {
               setState(() {
                 isErasing = !isErasing;
               });
             },
+            tooltip: isErasing ? 'Draw Mode' : 'Erase Mode',
           ),
+          if (!widget.readOnly)
+            IconButton(
+              icon: Icon(Icons.save),
+              onPressed: () {
+                Navigator.pop(context, lines.map((line) => line.toMap()).toList());
+              },
+              tooltip: 'Save Drawing',
+            ),
         ],
       ),
       body: Stack(
         children: [
           // Background field image
-          Image.asset(
-            'assets/field_image.png',
-            width: double.infinity,
-            height: double.infinity,
-            fit: BoxFit.contain,
+          Positioned.fill(
+            child: Image.asset(
+              'assets/field_image.png',
+              fit: BoxFit.contain,
+            ),
           ),
-          // Drawing canvas
-          GestureDetector(
-            onPanStart: widget.readOnly ? null : _onPanStart,
-            onPanUpdate: widget.readOnly ? null : _onPanUpdate,
-            onPanEnd: widget.readOnly ? null : _onPanEnd,
+          // Drawing area
+          Container(
+            // You can remove the hard-coded color if desired.
             child: CustomPaint(
               painter: DrawingPainter(
                 lines: lines,
                 currentColor: currentColor,
                 strokeWidth: strokeWidth,
               ),
-              size: Size.infinite,
+              child: GestureDetector(
+                onPanStart: widget.readOnly ? null : _onPanStart,
+                onPanUpdate: widget.readOnly ? null : _onPanUpdate,
+                onPanEnd: widget.readOnly ? null : _onPanEnd,
+              ),
             ),
           ),
+          if (!widget.readOnly)
+            Positioned(
+              left: AppSpacing.md,
+              bottom: AppSpacing.md,
+              child: Card(
+                elevation: 4,
+                child: Padding(
+                  padding: EdgeInsets.all(AppSpacing.sm),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('Stroke Width'),
+                      Slider(
+                        value: strokeWidth,
+                        min: 1.0,
+                        max: 20.0,
+                        onChanged: (value) {
+                          setState(() {
+                            strokeWidth = value;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
         ],
-      ),
-      floatingActionButton: widget.readOnly ? null : FloatingActionButton(
-        onPressed: () {
-          Navigator.pop(context, lines.map((line) => line.toCompressedJson()).toList());
-        },
-        child: Icon(Icons.save),
       ),
     );
   }
 
-  void _undo() {
+  void undo() {
     if (lines.isNotEmpty) {
       setState(() {
         redoHistory.add(lines.removeLast());
@@ -167,7 +204,7 @@ class _DrawingPageState extends State<DrawingPage> {
     }
   }
 
-  void _redo() {
+  void redo() {
     if (redoHistory.isNotEmpty) {
       setState(() {
         lines.add(redoHistory.removeLast());
@@ -201,38 +238,42 @@ class _DrawingPageState extends State<DrawingPage> {
   void _onPanStart(DragStartDetails details) {
     setState(() {
       currentLine = [details.localPosition];
-      if (!isErasing) {
-        lines.add(DrawingLine(
-          points: currentLine!,
-          color: currentColor,
-          strokeWidth: strokeWidth,
-        ));
-        redoHistory.clear();
-      }
     });
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
     setState(() {
-      if (isErasing) {
-        lines.removeWhere((line) {
-          return line.points.any((point) =>
-              (point - details.localPosition).distance < 20.0);
-        });
-      } else if (currentLine != null) {
+      if (currentLine != null) {
         currentLine!.add(details.localPosition);
-        // Update the points of the last line
-        lines.last = DrawingLine(
-          points: currentLine!,
-          color: currentColor,
-          strokeWidth: strokeWidth,
-        );
+        // If we're not erasing, update the current line
+        if (!isErasing) {
+          if (lines.isNotEmpty) {
+            lines.removeLast(); // Remove the "preview" line
+          }
+          lines.add(DrawingLine(
+            points: List.from(currentLine!), // Create a new list from current points
+            color: currentColor,
+            strokeWidth: strokeWidth,
+          ));
+        } else {
+          // Handle erasing by removing lines that are close to the current position
+          lines.removeWhere((line) {
+            return line.points.any((point) =>
+                (point - details.localPosition).distance < 20.0);
+          });
+        }
       }
     });
   }
 
   void _onPanEnd(DragEndDetails details) {
-    currentLine = null;
+    setState(() {
+      if (!isErasing && currentLine != null && currentLine!.length > 1) {
+        // The final line is already in the lines list from onPanUpdate
+        redoHistory.clear(); // Clear redo history when a new line is drawn
+      }
+      currentLine = null;
+    });
   }
 }
 

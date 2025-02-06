@@ -61,57 +61,52 @@ class _QrScannerPageState extends State<QrScannerPage> {
   }
 
   ScoutingRecord _parseCsvToScoutingRecord(String csvData) {
-    final rows = RegExp(r'(?:\"([^\"]*)\")|([^",]+)')
-      .allMatches(csvData)
-      .map((match) => match.group(1) ?? match.group(2) ?? '')
-      .toList();
-    if (rows.length < 5) {
-      throw Exception('Invalid CSV format');
+    try {
+      final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(csvData);
+      if (rows.isEmpty) throw Exception('Invalid QR code data');
+
+      final row = rows[0];
+      return ScoutingRecord(
+        timestamp: row[0].toString(),
+        matchNumber: int.tryParse(row[1].toString()) ?? 0,
+        matchType: row[2].toString(),
+        teamNumber: int.tryParse(row[3].toString()) ?? 0,
+        isRedAlliance: row[4].toString() == '1',
+        cageType: row[5].toString(),
+        coralPreloaded: row[6].toString() == '1',
+        taxis: row[7].toString() == '1',
+        algaeRemoved: int.tryParse(row[8].toString()) ?? 0,
+        coralPlaced: row[9].toString(),
+        rankingPoint: row[10].toString() == '1',
+        canPickupCoral: row[11].toString() == '1',
+        canPickupAlgae: row[12].toString() == '1',
+        algaeScoredInNet: int.tryParse(row[13].toString()) ?? 0,
+        coralRankingPoint: row[14].toString() == '1',
+        algaeProcessed: int.tryParse(row[15].toString()) ?? 0,
+        processedAlgaeScored: int.tryParse(row[16].toString()) ?? 0,
+        processorCycles: int.tryParse(row[17].toString()) ?? 0,
+        coOpPoint: row[18].toString() == '1',
+        returnedToBarge: row[19].toString() == '1',
+        cageHang: row[20].toString(),
+        bargeRankingPoint: row[21].toString() == '1',
+        breakdown: row[22].toString() == '1',
+        comments: row[23].toString(),
+        autoAlgaeInNet: int.tryParse(row[24].toString()) ?? 0,
+        autoAlgaeInProcessor: int.tryParse(row[25].toString()) ?? 0,
+        coralPickupMethod: row[26].toString(),
+        coralOnReefHeight1: int.tryParse(row[27].toString()) ?? 0,
+        coralOnReefHeight2: int.tryParse(row[28].toString()) ?? 0,
+        coralOnReefHeight3: int.tryParse(row[29].toString()) ?? 0,
+        coralOnReefHeight4: int.tryParse(row[30].toString()) ?? 0,
+        feederStation: row[31].toString(),
+        robotPath: row[32].toString().isNotEmpty ?
+          jsonDecode(row[32].toString()) as List<Map<String, dynamic>> :
+          null,
+      );
+    } catch (e) {
+      print('Error parsing QR data: $e');
+      throw Exception('Invalid QR code format');
     }
-
-    return ScoutingRecord(
-      // Match info
-      matchNumber: int.tryParse(rows[0]) ?? 0,
-      matchType: rows[1],
-      timestamp: rows[2],
-      teamNumber: int.tryParse(rows[3]) ?? 0,
-      isRedAlliance: rows[4].toLowerCase() == 'true',
-
-      // Auto
-      cageType: rows[5],
-      coralPreloaded: rows[6].toLowerCase() == 'true',
-      taxis: rows[7].toLowerCase() == 'true',
-      algaeRemoved: int.tryParse(rows[8]) ?? 0,
-      coralPlaced: rows[9],
-      rankingPoint: rows[10].toLowerCase() == 'true',
-      canPickupCoral: rows[11].toLowerCase() == 'true',
-      canPickupAlgae: rows[12].toLowerCase() == 'true',
-      autoAlgaeInNet: int.tryParse(rows[13]) ?? 0,
-      autoAlgaeInProcessor: int.tryParse(rows[14]) ?? 0,
-      coralPickupMethod: rows.length > 26 ? rows[15] : 'None',
-
-      // Teleop
-      coralOnReefHeight1: rows.length > 28 ? int.tryParse(rows[16]) ?? 0 : 0,
-      coralOnReefHeight2: rows.length > 29 ? int.tryParse(rows[17]) ?? 0 : 0,
-      coralOnReefHeight3: rows.length > 30 ? int.tryParse(rows[18]) ?? 0 : 0,
-      coralOnReefHeight4: rows.length > 31 ? int.tryParse(rows[19]) ?? 0 : 0,
-      feederStation: rows.length > 27 ? rows[20] : 'Unknown',
-      algaeScoredInNet: int.tryParse(rows[21]) ?? 0,
-      coralRankingPoint: rows[22].toLowerCase() == 'true',
-      algaeProcessed: int.tryParse(rows[23]) ?? 0,
-      processedAlgaeScored: int.tryParse(rows[24]) ?? 0,
-      processorCycles: int.tryParse(rows[25]) ?? 0,
-      coOpPoint: rows[26].toLowerCase() == 'true',
-
-      // Endgame
-      returnedToBarge: rows[27].toLowerCase() == 'true',
-      cageHang: rows[28],
-      bargeRankingPoint: rows[29].toLowerCase() == 'true',
-
-      // Other
-      breakdown: rows[30].toLowerCase() == 'true',
-      comments: rows[31],
-    );
   }
 
   @override

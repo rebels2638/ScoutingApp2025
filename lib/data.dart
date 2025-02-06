@@ -9,6 +9,10 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:csv/csv.dart';
 import 'drawing_page.dart';
 import 'theme/app_theme.dart';
+import 'database_helper.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'record_detail.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -16,7 +20,7 @@ class ScoutingRecord {
   final String matchType;
   final int teamNumber;
   final bool isRedAlliance;
-  
+
   // auto
   final String cageType;
   final bool coralPreloaded;
@@ -27,7 +31,7 @@ class ScoutingRecord {
   final bool canPickupCoral;
   final bool canPickupAlgae;
   final String coralPickupMethod;
-  
+
   // teleop
   final int algaeScoredInNet;
   final bool coralRankingPoint;
@@ -35,31 +39,31 @@ class ScoutingRecord {
   final int processedAlgaeScored;
   final int processorCycles;
   final bool coOpPoint;
-  
+
   // endgame
   final bool returnedToBarge;
   final String cageHang;
   final bool bargeRankingPoint;
-  
+
   // other
   final bool breakdown;
   final String comments;
 
   final int autoAlgaeInNet;
   final int autoAlgaeInProcessor;
-  
+
   final List<Map<String, dynamic>>? robotPath;
-  
+
   String? telemetry;
-  
+
   final String feederStation;
-  
+
   // Add coral height fields
   final int coralOnReefHeight1;
   final int coralOnReefHeight2;
   final int coralOnReefHeight3;
   final int coralOnReefHeight4;
-  
+
   ScoutingRecord({
     required this.timestamp,
     required this.matchNumber,
@@ -106,6 +110,7 @@ class ScoutingRecord {
        assert(bargeRankingPoint != null),
        assert(breakdown != null);
 
+
   Map<String, dynamic> toJson() {
     return {
       // Match info
@@ -114,7 +119,7 @@ class ScoutingRecord {
       'timestamp': timestamp,
       'teamNumber': teamNumber,
       'isRedAlliance': isRedAlliance,
-      
+
       // Auto
       'cageType': cageType,
       'coralPreloaded': coralPreloaded,
@@ -127,7 +132,7 @@ class ScoutingRecord {
       'autoAlgaeInNet': autoAlgaeInNet,
       'autoAlgaeInProcessor': autoAlgaeInProcessor,
       'coralPickupMethod': coralPickupMethod,
-      
+
       // Teleop
       'coralOnReefHeight1': coralOnReefHeight1,
       'coralOnReefHeight2': coralOnReefHeight2,
@@ -140,12 +145,12 @@ class ScoutingRecord {
       'processedAlgaeScored': processedAlgaeScored,
       'processorCycles': processorCycles,
       'coOpPoint': coOpPoint,
-      
+
       // Endgame
       'returnedToBarge': returnedToBarge,
       'cageHang': cageHang,
       'bargeRankingPoint': bargeRankingPoint,
-      
+
       // Other
       'breakdown': breakdown,
       'comments': comments,
@@ -210,7 +215,7 @@ class ScoutingRecord {
       'ts': timestamp,
       't': teamNumber,
       'ra': isRedAlliance ? 1 : 0,
-      
+
       // Auto
       'ct': cageType,
       'cp': coralPreloaded ? 1 : 0,
@@ -223,7 +228,7 @@ class ScoutingRecord {
       'aan': autoAlgaeInNet,
       'aap': autoAlgaeInProcessor,
       'cpm': coralPickupMethod,
-      
+
       // Teleop
       'ch1': coralOnReefHeight1,
       'ch2': coralOnReefHeight2,
@@ -236,12 +241,12 @@ class ScoutingRecord {
       'pas': processedAlgaeScored,
       'pc': processorCycles,
       'cop': coOpPoint ? 1 : 0,
-      
+
       // Endgame
       'rtb': returnedToBarge ? 1 : 0,
       'ch': cageHang,
       'brp': bargeRankingPoint ? 1 : 0,
-      
+
       // Other
       'bd': breakdown ? 1 : 0,
       'cm': comments,
@@ -315,7 +320,7 @@ class ScoutingRecord {
       timestamp,
       teamNumber,
       isRedAlliance ? 1 : 0,
-      
+
       // Auto
       cageType,
       coralPreloaded ? 1 : 0,
@@ -328,7 +333,7 @@ class ScoutingRecord {
       autoAlgaeInNet,
       autoAlgaeInProcessor,
       coralPickupMethod,
-      
+
       // Teleop
       coralOnReefHeight1,
       coralOnReefHeight2,
@@ -341,12 +346,12 @@ class ScoutingRecord {
       processedAlgaeScored,
       processorCycles,
       coOpPoint ? 1 : 0,
-      
+
       // Endgame
       returnedToBarge ? 1 : 0,
       cageHang,
       bargeRankingPoint ? 1 : 0,
-      
+
       // Other
       breakdown ? 1 : 0,
       comments.replaceAll('|', '\\|'),
@@ -362,7 +367,7 @@ class ScoutingRecord {
       'timestamp',
       'teamNumber',
       'isRedAlliance',
-      
+
       // Auto
       'cageType',
       'coralPreloaded',
@@ -375,7 +380,7 @@ class ScoutingRecord {
       'autoAlgaeInNet',
       'autoAlgaeInProcessor',
       'coralPickupMethod',
-      
+
       // Teleop
       'coralOnReefHeight1',
       'coralOnReefHeight2',
@@ -388,12 +393,12 @@ class ScoutingRecord {
       'processedAlgaeScored',
       'processorCycles',
       'coOpPoint',
-      
+
       // Endgame
       'returnedToBarge',
       'cageHang',
       'bargeRankingPoint',
-      
+
       // Other
       'breakdown',
       'comments',
@@ -422,7 +427,7 @@ class ScoutingRecord {
       timestamp: row[2].toString(),
       teamNumber: int.parse(row[3].toString()),
       isRedAlliance: row[4].toString() == '1',
-      
+
       // Auto
       cageType: row[5].toString(),
       coralPreloaded: row[6].toString() == '1',
@@ -435,7 +440,7 @@ class ScoutingRecord {
       autoAlgaeInNet: int.parse(row[13].toString()),
       autoAlgaeInProcessor: int.parse(row[14].toString()),
       coralPickupMethod: row[15].toString(),
-      
+
       // Teleop
       coralOnReefHeight1: int.parse(row[16].toString()),
       coralOnReefHeight2: int.parse(row[17].toString()),
@@ -448,12 +453,12 @@ class ScoutingRecord {
       processedAlgaeScored: int.parse(row[24].toString()),
       processorCycles: int.parse(row[25].toString()),
       coOpPoint: row[26].toString() == '1',
-      
+
       // Endgame
       returnedToBarge: row[27].toString() == '1',
       cageHang: row[28].toString(),
       bargeRankingPoint: row[29].toString() == '1',
-      
+
       // Other
       breakdown: row[30].toString() == '1',
       comments: row[31].toString().replaceAll('\\|', '|'),
@@ -463,378 +468,451 @@ class ScoutingRecord {
 }
 
 class DataManager {
-  static const String _storageKey = 'scouting_records';
-  
+  static final DataManager _instance = DataManager._internal();
+  factory DataManager() => _instance;
+  DataManager._internal();
+
+  List<ScoutingRecord> _records = [];
+
+  // Add back the static methods that were removed
   static Future<void> saveRecord(ScoutingRecord record) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final records = await getRecords();
+      final records = await DatabaseHelper.instance.getAllRecords();
       records.add(record);
-      
-      final csvData = [
-        ScoutingRecord.getCsvHeaders(),
-        ...records.map((r) => r.toCsvRow()),
-      ];
-      
-      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
-      await prefs.setString(_storageKey, csv);
-      
-      print('Record saved successfully. Total records: ${records.length}');
-      print('CSV data: $csv');
-    } catch (e, stackTrace) {
+      await DatabaseHelper.instance.saveRecords(records);
+    } catch (e) {
       print('Error saving record: $e');
-      print(stackTrace);
-      throw Exception('Failed to save record: $e');
+      throw e;
     }
   }
-  
+
   static Future<List<ScoutingRecord>> getRecords() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final String? csvData = prefs.getString(_storageKey);
-      if (csvData == null || csvData.isEmpty) return [];
-      
-      final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(csvData);
-      if (rows.isEmpty || rows.length <= 1) return [];
-      
-      // Skip header row and convert remaining rows
-      return rows.skip(1).map((row) {
-        try {
-          return ScoutingRecord.fromCsvRow(row);
-        } catch (e) {
-          print('Error parsing row: $e');
-          print('Row data: $row');
-          return null;
-        }
-      }).where((record) => record != null).cast<ScoutingRecord>().toList();
-    } catch (e, stackTrace) {
+      return await DatabaseHelper.instance.getAllRecords();
+    } catch (e) {
       print('Error getting records: $e');
-      print(stackTrace);
       return [];
     }
   }
 
   static Future<void> deleteRecord(int index) async {
-    final prefs = await SharedPreferences.getInstance();
-    final records = await getRecords();
-    records.removeAt(index);
-    await prefs.setString(_storageKey, const ListToCsvConverter(fieldDelimiter: '|').convert([
-      ScoutingRecord.getCsvHeaders(),
-      ...records.map((r) => r.toCsvRow()),
-    ]));
-  }
-
-  static Future<void> deleteMultipleRecords(List<int> indices) async {
-    final prefs = await SharedPreferences.getInstance();
-    final records = await getRecords();
-    indices.sort((a, b) => b.compareTo(a)); // sort descending order
-    for (int index in indices) {
-      if (index >= 0 && index < records.length) {
-        records.removeAt(index);
-      }
-    }
-    await prefs.setString(_storageKey, const ListToCsvConverter(fieldDelimiter: '|').convert([
-      ScoutingRecord.getCsvHeaders(),
-      ...records.map((r) => r.toCsvRow()),
-    ]));
-  }
-
-  static Future<void> exportToJson() async {
     try {
-      final records = await getRecords();
-      if (records.isEmpty) {
-        throw Exception('No records to export');
-      }
-
-      final csvData = [
-        ScoutingRecord.getCsvHeaders(),
-        ...records.map((r) => r.toCsvRow()),
-      ];
-      
-      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
-      
-      String? outputFile = await FilePicker.platform.saveFile(
-        dialogTitle: 'Export Scouting Records',
-        fileName: 'scouting_records.csv',
-        type: FileType.custom,
-        allowedExtensions: ['csv'],
-      );
-      
-      if (outputFile == null) {
-        throw Exception('Export cancelled');
-      }
-
-      if (!outputFile.toLowerCase().endsWith('.csv')) {
-        outputFile += '.csv';
-      }
-
-      await File(outputFile).writeAsString(csv, flush: true);
+      final records = await DatabaseHelper.instance.getAllRecords();
+      records.removeAt(index);
+      await DatabaseHelper.instance.saveRecords(records);
     } catch (e) {
-      throw Exception('Failed to export: ${e.toString()}');
-    }
-  }
-
-  static Future<void> importFromJson() async {
-    try {
-      FilePickerResult? result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['csv'],
-      );
-      
-      if (result == null || result.files.isEmpty) {
-        throw Exception('No file selected');
-      }
-
-      if (result.files.single.path == null) {
-        throw Exception('Invalid file path');
-      }
-
-      final file = File(result.files.single.path!);
-      if (!await file.exists()) {
-        throw Exception('File does not exist');
-      }
-
-      final csvStr = await file.readAsString();
-      if (csvStr.isEmpty) {
-        throw Exception('File is empty');
-      }
-      
-      final List<List<dynamic>> rows = const CsvToListConverter().convert(csvStr);
-      if (rows.length <= 1) {
-        throw Exception('No records found in file');
-      }
-
-      // Skip header row and convert remaining rows to records
-      final records = rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
-      
-      final prefs = await SharedPreferences.getInstance();
-      final csvData = const ListToCsvConverter().convert([
-        ScoutingRecord.getCsvHeaders(),
-        ...records.map((r) => r.toCsvRow()),
-      ]);
-      await prefs.setString(_storageKey, csvData);
-    } catch (e) {
-      throw Exception('Failed to import: ${e.toString()}');
+      print('Error deleting record: $e');
+      throw e;
     }
   }
 
   static Future<void> deleteAllRecords() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_storageKey);
+    try {
+      await DatabaseHelper.instance.deleteAllRecords();
+    } catch (e) {
+      print('Error deleting all records: $e');
+      throw e;
+    }
+  }
+
+  // Instance methods
+  Future<void> loadRecords() async {
+    _records = await DatabaseHelper.instance.getAllRecords();
+  }
+
+  List<ScoutingRecord> getRecordsForTeams(Set<int> teamNumbers) {
+    if (teamNumbers.isEmpty) return _records;
+    return _records.where((r) => teamNumbers.contains(r.teamNumber)).toList();
+  }
+
+  List<int> getAllTeamNumbers() {
+    return _records.map((r) => r.teamNumber).toSet().toList()..sort();
+  }
+
+  // Keep existing statistics and history methods
+  Map<String, dynamic> getTeamStats(int teamNumber) {
+    final teamRecords = _records.where((r) => r.teamNumber == teamNumber).toList();
+    if (teamRecords.isEmpty) return {};
+
+    return {
+      'matches': teamRecords.length,
+      'avgAutoAlgae': _average(teamRecords.map((r) => r.algaeRemoved)),
+      'avgTeleopAlgae': _average(teamRecords.map((r) => r.algaeScoredInNet)),
+      'avgProcessed': _average(teamRecords.map((r) => r.algaeProcessed)),
+      'avgCycles': _average(teamRecords.map((r) => r.processorCycles)),
+      'taxisSuccess': _percentSuccess(teamRecords.map((r) => r.taxis)),
+      'hangSuccess': _percentSuccess(teamRecords.map((r) => r.cageHang != 'None')),
+      'breakdowns': teamRecords.where((r) => r.breakdown).length,
+    };
+  }
+
+  double _average(Iterable<num> values) {
+    if (values.isEmpty) return 0;
+    return values.reduce((a, b) => a + b) / values.length;
+  }
+
+  double _percentSuccess(Iterable<bool> values) {
+    if (values.isEmpty) return 0;
+    return values.where((v) => v).length / values.length * 100;
+  }
+
+  List<Map<String, dynamic>> getTeamMatchHistory(int teamNumber) {
+    return _records
+        .where((r) => r.teamNumber == teamNumber)
+        .map((r) => {
+              'matchNumber': r.matchNumber,
+              'matchType': r.matchType,
+              'autoAlgae': r.algaeRemoved,
+              'teleopAlgae': r.algaeScoredInNet,
+              'processed': r.algaeProcessed,
+              'hang': r.cageHang,
+              'breakdown': r.breakdown,
+            })
+        .toList();
   }
 }
 
 class DataPage extends StatefulWidget {
   @override
-  _DataPageState createState() => _DataPageState();
+  DataPageState createState() => DataPageState();
 }
 
-class _DataPageState extends State<DataPage> {
+class DataPageState extends State<DataPage> with WidgetsBindingObserver {
   List<ScoutingRecord> records = [];
-  List<ScoutingRecord> selectedRecords = [];
-  bool isSelecting = false;
+  Set<int> selectedRecordIndices = {};
 
   @override
   void initState() {
     super.initState();
-    _loadRecords();
+    WidgetsBinding.instance.addObserver(this);
+    loadRecords();
   }
 
-  Future<void> _loadRecords() async {
-    final loadedRecords = await DataManager.getRecords();
-    setState(() {
-      records = loadedRecords;
-    });
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
-  void _toggleSelection(ScoutingRecord record) {
-    setState(() {
-      if (selectedRecords.contains(record)) {
-        selectedRecords.remove(record);
-        if (selectedRecords.isEmpty) {
-          isSelecting = false;
-        }
-      } else {
-        selectedRecords.add(record);
-      }
-    });
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      loadRecords();
+    }
   }
 
-  void _showQRDialog(List<ScoutingRecord> records) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'QR Codes',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 16),
-              Container(
-                height: 400,
-                child: ListView.builder(
-                  itemCount: records.length,
-                  itemBuilder: (context, index) {
-                    final record = records[index];
-                    return Column(
-                      children: [
-                        Text('Team ${record.teamNumber} - Match ${record.matchNumber}'),
-                        SizedBox(height: 8),
-                        QrImageView(
-                          data: jsonEncode(record.toJson()),
-                          size: 200,
-                        ),
-                        SizedBox(height: 16),
-                      ],
-                    );
-                  },
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Close'),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    loadRecords();
+  }
+
+  Future<void> loadRecords() async {
+    List<ScoutingRecord> recs = await DatabaseHelper.instance.getAllRecords();
+    if (mounted) {
+      setState(() {
+        records = recs;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(isSelecting ? '${selectedRecords.length} selected' : 'Data'),
+        title: Text('Match Data'),
         actions: [
-          if (isSelecting) ...[
-            IconButton(
-              icon: Icon(Icons.qr_code),
-              onPressed: () => _showQRDialog(selectedRecords),
-            ),
-            IconButton(
-              icon: Icon(Icons.compare),
-              onPressed: selectedRecords.length >= 2 
-                ? () => Navigator.push(
+          if (selectedRecordIndices.isNotEmpty)
+            Container(
+              margin: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              child: FilledButton.icon(
+                icon: Icon(Icons.compare_arrows),
+                label: Text('Compare (${selectedRecordIndices.length})'),
+                onPressed: () {
+                  final selectedRecords = selectedRecordIndices
+                      .map((i) => records[i])
+                      .toList();
+                  Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ComparisonPage(records: selectedRecords),
                     ),
-                  )
-                : null,
+                  );
+                },
+              ),
             ),
-          ],
+          IconButton(
+            icon: Icon(Icons.qr_code),
+            onPressed: () => _showQRCodeDialog(context),
+            tooltip: 'Generate QR Code',
+          ),
+          IconButton(
+            icon: Icon(Icons.analytics),
+            onPressed: () => _showTeamAnalysis(context),
+          ),
+          PopupMenuButton(
+            icon: Icon(Icons.more_vert),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                child: Text('Clear Selection'),
+                enabled: selectedRecordIndices.isNotEmpty,
+                onTap: () {
+                  setState(() => selectedRecordIndices.clear());
+                },
+              ),
+              PopupMenuItem(
+                child: Text('Import Data'),
+                onTap: () {
+                  Future.delayed(Duration.zero, () => _importData());
+                },
+              ),
+              PopupMenuItem(
+                child: Text('Export Data'),
+                onTap: () {
+                  Future.delayed(Duration.zero, () => _exportData());
+                },
+              ),
+              PopupMenuItem(
+                child: Text('Delete All Data'),
+                onTap: () => _showDeleteConfirmation(context),
+              ),
+            ],
+          ),
         ],
       ),
       body: ListView.builder(
         itemCount: records.length,
+        padding: EdgeInsets.all(AppSpacing.md),
         itemBuilder: (context, index) {
           final record = records[index];
           return ScoutingRecordCard(
             record: record,
-            isSelected: selectedRecords.contains(record),
-            onTap: () {
-              if (isSelecting) {
-                _toggleSelection(record);
-              }
+            isSelected: selectedRecordIndices.contains(index),
+            onSelected: (selected) {
+              setState(() {
+                if (selected ?? false) {
+                  selectedRecordIndices.add(index);
+                } else {
+                  selectedRecordIndices.remove(index);
+                }
+              });
             },
-            onLongPress: () {
-              if (!isSelecting) {
-                setState(() {
-                  isSelecting = true;
-                  selectedRecords.add(record);
-                });
-              }
-            },
-            onCompare: () {
-              if (!isSelecting) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ComparisonPage(
-                      records: [record],
-                    ),
-                  ),
-                );
-              }
-            },
-            onDelete: () async {
-              // ... existing delete functionality ...
-            },
+            onDelete: () => _showDeleteConfirmation(context, index),
           );
         },
       ),
     );
   }
+
+  void _showQRCodeDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Generate QR Code'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('What data would you like to include?'),
+            SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _generateQRCode(selectedRecordsOnly: true);
+                  },
+                  child: Text('Selected Only'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _generateQRCode(selectedRecordsOnly: false);
+                  },
+                  child: Text('All Data'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _generateQRCode({required bool selectedRecordsOnly}) {
+    final dataToEncode = selectedRecordsOnly
+        ? selectedRecordIndices.map((i) => records[i]).toList()
+        : records;
+
+    final jsonData = jsonEncode(dataToEncode.map((r) => r.toCompressedJson()).toList());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(selectedRecordsOnly ? 'Selected Records QR' : 'All Records QR'),
+        content: Container(
+          width: 300,
+          height: 300,
+          child: QrImageView(
+            data: jsonData,
+            version: QrVersions.auto,
+            size: 300.0,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showTeamAnalysis(BuildContext context) async {
+    final records = await DataManager.getRecords();
+    if (!context.mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TeamAnalysisPage(allRecords: records),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context, [int? index]) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(index != null ? 'Delete Record' : 'Delete All Data'),
+        content: Text(
+          index != null
+              ? 'Are you sure you want to delete this record? This cannot be undone.'
+              : 'Are you sure you want to delete all data? This cannot be undone.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context);
+              if (index != null) {
+                await DataManager.deleteRecord(index);
+                await loadRecords();
+              } else {
+                await DataManager.deleteAllRecords();
+              }
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(
+                  index != null ? 'Record deleted' : 'All data deleted'
+                )),
+              );
+            },
+            child: Text(index != null ? 'Delete' : 'Delete All'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _importData() async {
+    // Use file_picker to let the user choose a file and load CSV data.
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['csv'],
+      );
+      if (result != null && result.files.single.path != null) {
+        final file = File(result.files.single.path!);
+        final csvData = await file.readAsString();
+        // Parse CSV data (assuming same format as exported)
+        final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(csvData);
+        // Skip header and create ScoutingRecords.
+        final newRecords = rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
+        // Save the new records (this example replaces existing data).
+        await DatabaseHelper.instance.saveRecords(newRecords);
+        setState(() {
+          records = newRecords;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Data imported successfully')));
+      }
+    } catch (e) {
+      print('Error importing data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error importing data')));
+    }
+  }
+
+  Future<void> _exportData() async {
+    try {
+      // Convert current records to CSV.
+      final csvData = [
+        ScoutingRecord.getCsvHeaders(),
+        ...records.map((r) => r.toCsvRow()),
+      ];
+      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
+      // (Here, you can write the CSV data to a file or share it.)
+      // For demonstration, we copy it to the clipboard.
+      await Clipboard.setData(ClipboardData(text: csv));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('CSV data copied to clipboard')));
+    } catch (e) {
+      print('Error exporting data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error exporting data')));
+    }
+  }
 }
 
 class ScoutingRecordCard extends StatelessWidget {
   final ScoutingRecord record;
-  final bool isSelected;
-  final VoidCallback onTap;
-  final VoidCallback onLongPress;
-  final VoidCallback onCompare;
   final VoidCallback onDelete;
+  final bool isSelected;
+  final Function(bool?) onSelected;
 
   const ScoutingRecordCard({
     required this.record,
-    required this.isSelected,
-    required this.onTap,
-    required this.onLongPress,
-    required this.onCompare,
     required this.onDelete,
+    required this.isSelected,
+    required this.onSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.only(bottom: AppSpacing.md),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        onTap: onTap,
-        onLongPress: onLongPress,
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => RecordDetailPage(record: record)),
+        );
+      },
+      child: Card(
+        margin: EdgeInsets.only(bottom: AppSpacing.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               padding: EdgeInsets.all(AppSpacing.md),
               decoration: BoxDecoration(
-                color: (record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).withOpacity(0.1),
+                color: (record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance)
+                    .withOpacity(isSelected ? 0.3 : 0.1),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.md)),
               ),
               child: Row(
                 children: [
+                  Checkbox(
+                    value: isSelected,
+                    onChanged: onSelected,
+                  ),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Team ${record.teamNumber}',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance,
-                          ),
-                        ),
-                        Text(
-                          '${record.matchType} Match ${record.matchNumber}',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Theme.of(context).textTheme.bodySmall?.color,
-                          ),
-                        ),
-                      ],
+                    child: Text(
+                      'Team ${record.teamNumber}, Match ${record.matchNumber}',
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.delete_outline),
-                    onPressed: onDelete,
-                    color: AppColors.error,
-                  ),
+                  Icon(Icons.arrow_forward_ios, size: 16),
                 ],
               ),
             ),
@@ -882,5 +960,18 @@ class ScoutingRecordCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+// Add this extension for median calculation
+extension ListNumberExtension on List<num> {
+  double median() {
+    if (isEmpty) return 0;
+    final sorted = List<num>.from(this)..sort();
+    final middle = length ~/ 2;
+    if (length % 2 == 0) {
+      return (sorted[middle - 1] + sorted[middle]) / 2;
+    }
+    return sorted[middle].toDouble();
   }
 }
