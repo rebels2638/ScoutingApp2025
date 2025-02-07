@@ -135,6 +135,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
             if (barcode.rawValue != null) {
               controller.stop();
               _processScannedData(barcode.rawValue);
+              break;
             }
           }
         },

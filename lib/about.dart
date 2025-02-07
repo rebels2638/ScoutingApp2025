@@ -11,7 +11,7 @@ class AboutPage extends StatelessWidget {
         children: [
           Card(
             child: Padding(
-              padding: EdgeInsets.all(AppSpacing.md),
+              padding: const EdgeInsets.all(AppSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -23,7 +23,7 @@ class AboutPage extends StatelessWidget {
                       color: AppColors.primary,
                     ),
                   ),
-                  SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.sm),
                   Text(
                     'Version 1.0.0',
                     style: TextStyle(

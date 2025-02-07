@@ -161,16 +161,16 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
                 // Team cards
                 Container(
                   height: 100,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   child: ListView.builder(
                     controller: _headerScrollController,
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: recordsByTeam.length,
                     itemBuilder: (context, index) {
                       final entry = recordsByTeam.entries.elementAt(index);
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                      return Container(
+                        width: 150,
+                        margin: const EdgeInsets.only(right: 16),
                         child: _buildTeamCard(
                           teamNumber: entry.key,
                           matches: entry.value,
@@ -291,7 +291,7 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
   }) {
     final record = matches.first;
     return SizedBox(
-      width: 130,
+      width: 150,
       child: Card(
         elevation: 2,
         shape: RoundedRectangleBorder(
@@ -354,11 +354,8 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       controller: _contentScrollController,
-      child: SizedBox(
-        width: max(
-          MediaQuery.of(context).size.width,
-          teamCount * 150.0,
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         child: content,
       ),
     );
@@ -372,14 +369,10 @@ class AutoTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(
-            title: 'Scoring',
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          const SizedBox(height: 16),
           ComparisonMetric(
             label: 'Algae Removed',
             values: records.map((r) => r.algaeRemoved.toString()).toList(),
@@ -390,14 +383,10 @@ class AutoTab extends StatelessWidget {
             values: records.map((r) => r.autoAlgaeInNet.toString()).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
-          SectionHeader(
-            title: 'Mobility',
-            color: Theme.of(context).colorScheme.primary,
-          ),
           ComparisonMetric(
             label: 'Taxis',
             values: records.map((r) => r.taxis ? 'Yes' : 'No').toList(),
-            colors: records.map((r) => r.taxis ? AppColors.success : Theme.of(context).colorScheme.error).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
         ],
       ),
@@ -425,33 +414,47 @@ class ComparisonMetric extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(left: 8, bottom: 8),
+            padding: const EdgeInsets.only(left: 16, bottom: 8),
             child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
           ),
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: values.asMap().entries.map((entry) {
-              return SizedBox(
-                width: 150, // Fixed width to match team cards
+              return Container(
+                width: 150,
+                margin: const EdgeInsets.only(right: 16),
                 child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: colors[entry.key].withOpacity(0.1),
+                    color: values[entry.key].isEmpty 
+                        ? Colors.black12 
+                        : colors[entry.key].withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: colors[entry.key].withOpacity(0.3),
-                    ),
+                    border: values[entry.key].isEmpty 
+                        ? null 
+                        : Border.all(
+                            color: colors[entry.key].withOpacity(0.3),
+                          ),
+                    image: values[entry.key].isEmpty 
+                        ? const DecorationImage(
+                            image: AssetImage('assets/hazard_stripes.png'),
+                            repeat: ImageRepeat.repeat,
+                            opacity: 0.2,
+                          )
+                        : null,
                   ),
-                  child: Text(
-                    entry.value,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: colors[entry.key],
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  child: values[entry.key].isEmpty 
+                      ? null
+                      : Text(
+                          values[entry.key],
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: colors[entry.key],
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                 ),
               );
             }).toList(),

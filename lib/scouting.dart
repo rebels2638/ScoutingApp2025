@@ -208,23 +208,23 @@ class _ScoutingPageState extends State<ScoutingPage> {
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.warning, color: Colors.orange),
-            SizedBox(width: AppSpacing.sm),
-            Text('Reset Form'),
+            const Icon(Icons.warning, color: Colors.orange),
+            const SizedBox(width: AppSpacing.sm),
+            const Text('Reset Form'),
           ],
         ),
-        content: Text('Are you sure you want to reset all fields? This cannot be undone.'),
+        content: const Text('Are you sure you want to reset all fields? This cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
               Navigator.pop(context);
               _resetForm();
             },
-            child: Text('Reset'),
+            child: const Text('Reset'),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
           ),
         ],
@@ -249,9 +249,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.white),
-            SizedBox(width: AppSpacing.sm),
-            Text('Form reset successfully'),
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: AppSpacing.sm),
+            const Text('Form reset successfully'),
           ],
         ),
         backgroundColor: Colors.green,

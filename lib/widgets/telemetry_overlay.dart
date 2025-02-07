@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../theme/app_theme.dart';
 
 class TelemetryOverlay extends StatefulWidget {
   final List<String> telemetryData;
@@ -89,7 +90,7 @@ class _TelemetryOverlayState extends State<TelemetryOverlay> {
         child: Card(
           elevation: 8,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
