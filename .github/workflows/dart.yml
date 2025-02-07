@@ -1,5 +1,4 @@
-name: Build iPadOS (iOS)
-
+name: build ipadOS (iOS)
 on:
   workflow_dispatch:
     inputs:
@@ -8,12 +7,10 @@ on:
         required: false
         default: "Nothing"
         type: string
-
 permissions:
   contents: read
   pages: write
   id-token: write
-
 jobs:
   build_info:
     runs-on: ubuntu-latest
@@ -25,51 +22,17 @@ jobs:
   build_ios:
     runs-on: macos-latest
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-        
-      - name: Setup Xcode
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: latest-stable
-
-      - name: Setup Flutter
+      - name: "setup flutter"
         uses: subosito/flutter-action@v2
         with:
           flutter-version: "3.x"
           channel: "stable"
-          cache: true
-      
-      - name: Check Flutter Version
-        run: flutter --version
-      
-      - name: Clean and Get Dependencies
-        run: |
-          flutter clean
-          flutter pub get
-        
-      - name: Update iOS Deployment Target
-        run: |
-          sed -i '' "s/platform :ios, '.*'/platform :ios, '12.0'/" ios/Podfile
-          echo "Updated iOS Deployment Target to 12.0"
-        
-      - name: Setup CocoaPods
-        run: |
-          cd ios
-          pod install
-          cd ..
-        
-      - name: Build iOS
-        run: flutter build ios --release --no-codesign --no-tree-shake-icons --verbose
-        
-      - name: Build IPA
-        run: flutter build ipa --release --no-codesign --no-tree-shake-icons --verbose
-        
-      - name: Upload iOS Build Artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/checkout@v3
+      - run: flutter --version
+      - run: flutter pub get
+      - run: flutter build ios --release --no-codesign --no-tree-shake-icons
+      - run: flutter build ipa --release --no-codesign --no-tree-shake-icons
+      - uses: actions/upload-artifact@v3
         with:
           name: iOS_Build
-          path: |
-            build/ios/iphoneos
-            build/ios/archive/Runner.xcarchive
-          retention-days: 5
+          path: ./build/ios
