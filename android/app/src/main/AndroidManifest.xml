@@ -1,30 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.rebelrobotics.scoutingapp2025">
 
-    <!-- Bluetooth permissions for Android 11 and below -->
+    <!-- Legacy Bluetooth permissions -->
     <uses-permission android:name="android.permission.BLUETOOTH" 
+        tools:replace="android:maxSdkVersion"
         android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" 
+        tools:replace="android:maxSdkVersion"
         android:maxSdkVersion="30" />
 
-    <!-- Bluetooth permissions for Android 12 and above -->
+    <!-- New Bluetooth permissions -->
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" 
         android:usesPermissionFlags="neverForLocation"
         tools:targetApi="s" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" />
 
     <!-- Location permissions -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
-    <!-- Feature requirements -->
-    <uses-feature 
-        android:name="android.hardware.bluetooth_le" 
-        android:required="true" />
+    <!-- Feature declarations -->
     <uses-feature 
         android:name="android.hardware.bluetooth" 
+        android:required="true" />
+    <uses-feature 
+        android:name="android.hardware.bluetooth_le" 
         android:required="true" />
 
     <application

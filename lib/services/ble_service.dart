@@ -5,6 +5,7 @@ import '../data.dart';
 import '../services/telemetry_service.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:io' show Platform;
+import 'package:device_info_plus/device_info_plus.dart';
 
 class BleService {
   static final BleService _instance = BleService._internal();
@@ -42,43 +43,73 @@ class BleService {
     TelemetryService().logInfo('bluetooth', 'Initializing BLE service');
     try {
       if (Platform.isAndroid) {
-        // First check if permissions are already granted
-        final hasPermissions = await hasRequiredPermissions();
-        if (!hasPermissions) {
-          TelemetryService().logInfo('bluetooth', 'Requesting Android permissions');
-          
-          // Request location first
-          final locationStatus = await Permission.location.request();
-          TelemetryService().logInfo('bluetooth', 'Location permission result: ${locationStatus.name}');
-          
-          // Request Bluetooth permissions one by one
-          final bluetoothStatus = await Permission.bluetooth.request();
-          TelemetryService().logInfo('bluetooth', 'Bluetooth permission result: ${bluetoothStatus.name}');
-          
-          final bluetoothScanStatus = await Permission.bluetoothScan.request();
-          TelemetryService().logInfo('bluetooth', 'BluetoothScan permission result: ${bluetoothScanStatus.name}');
-          
-          final bluetoothConnectStatus = await Permission.bluetoothConnect.request();
-          TelemetryService().logInfo('bluetooth', 'BluetoothConnect permission result: ${bluetoothConnectStatus.name}');
-          
-          final bluetoothAdvertiseStatus = await Permission.bluetoothAdvertise.request();
-          TelemetryService().logInfo('bluetooth', 'BluetoothAdvertise permission result: ${bluetoothAdvertiseStatus.name}');
+        // Get Android version
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        final sdkInt = androidInfo.version.sdkInt;
+        TelemetryService().logInfo('bluetooth', 'Android SDK version: $sdkInt');
 
-          // Check if any permission was denied
-          if ([locationStatus, bluetoothStatus, bluetoothScanStatus, 
-               bluetoothConnectStatus, bluetoothAdvertiseStatus]
-              .any((status) => status.isDenied || status.isPermanentlyDenied)) {
-            TelemetryService().logError('bluetooth', 'Some permissions were denied');
-            throw Exception('Required permissions were denied');
+        // For Android 12 (SDK 31) and above, we only need the new permissions
+        if (sdkInt >= 31) {
+          TelemetryService().logInfo('bluetooth', 'Using new Bluetooth permissions for Android 12+');
+          
+          // Request location first (still required for scanning)
+          var locationStatus = await Permission.location.status;
+          if (!locationStatus.isGranted) {
+            locationStatus = await Permission.location.request();
+            TelemetryService().logInfo('bluetooth', 'Location permission result: ${locationStatus.name}');
+            if (!locationStatus.isGranted) {
+              throw Exception('Location permission denied');
+            }
+          }
+
+          // Request new Bluetooth permissions
+          final permissions = [
+            Permission.bluetoothScan,
+            Permission.bluetoothConnect,
+            Permission.bluetoothAdvertise,
+          ];
+
+          for (var permission in permissions) {
+            var status = await permission.status;
+            if (!status.isGranted) {
+              status = await permission.request();
+              TelemetryService().logInfo('bluetooth', '${permission.toString()} result: ${status.name}');
+              if (!status.isGranted) {
+                throw Exception('${permission.toString()} denied');
+              }
+            }
           }
         } else {
-          TelemetryService().logInfo('bluetooth', 'All permissions already granted');
+          // For older Android versions, we need the legacy permissions
+          TelemetryService().logInfo('bluetooth', 'Using legacy Bluetooth permissions');
+          
+          final permissions = [
+            Permission.location,
+            Permission.bluetooth,
+            Permission.bluetoothScan,
+            Permission.bluetoothConnect,
+            Permission.bluetoothAdvertise,
+          ];
+
+          for (var permission in permissions) {
+            var status = await permission.status;
+            if (!status.isGranted) {
+              status = await permission.request();
+              TelemetryService().logInfo('bluetooth', '${permission.toString()} result: ${status.name}');
+              if (!status.isGranted) {
+                throw Exception('${permission.toString()} denied');
+              }
+            }
+          }
         }
+
+        TelemetryService().logInfo('bluetooth', 'All permissions successfully granted');
       } else if (Platform.isIOS) {
+        // iOS Bluetooth permission handling
         final bluetoothStatus = await Permission.bluetooth.request();
         TelemetryService().logInfo('bluetooth', 'iOS Bluetooth permission result: ${bluetoothStatus.name}');
         
-        if (bluetoothStatus.isDenied || bluetoothStatus.isPermanentlyDenied) {
+        if (!bluetoothStatus.isGranted) {
           TelemetryService().logError('bluetooth', 'Bluetooth permission denied on iOS');
           throw Exception('Bluetooth permission denied');
         }
@@ -93,26 +124,52 @@ class BleService {
     try {
       TelemetryService().logInfo('bluetooth_permissions', 'Checking required permissions');
       if (Platform.isAndroid) {
-        final location = await Permission.location.status;
-        final bluetooth = await Permission.bluetooth.status;
-        final bluetoothScan = await Permission.bluetoothScan.status;
-        final bluetoothConnect = await Permission.bluetoothConnect.status;
-        final bluetoothAdvertise = await Permission.bluetoothAdvertise.status;
+        // Get Android version
+        final androidInfo = await DeviceInfoPlugin().androidInfo;
+        final sdkInt = androidInfo.version.sdkInt;
+        
+        if (sdkInt >= 31) {
+          // For Android 12+, we only check new permissions
+          final location = await Permission.location.status;
+          final bluetoothScan = await Permission.bluetoothScan.status;
+          final bluetoothConnect = await Permission.bluetoothConnect.status;
+          final bluetoothAdvertise = await Permission.bluetoothAdvertise.status;
 
-        TelemetryService().logInfo('bluetooth_permissions', 
-          'Android Permissions Status:\n' +
-          'Location: ${location.name}\n' +
-          'Bluetooth: ${bluetooth.name}\n' +
-          'BluetoothScan: ${bluetoothScan.name}\n' +
-          'BluetoothConnect: ${bluetoothConnect.name}\n' +
-          'BluetoothAdvertise: ${bluetoothAdvertise.name}'
-        );
+          TelemetryService().logInfo('bluetooth_permissions', 
+            'Android 12+ Permissions Status:\n' +
+            'Location: ${location.name}\n' +
+            'BluetoothScan: ${bluetoothScan.name}\n' +
+            'BluetoothConnect: ${bluetoothConnect.name}\n' +
+            'BluetoothAdvertise: ${bluetoothAdvertise.name}'
+          );
 
-        return location.isGranted && 
-               bluetooth.isGranted && 
-               bluetoothScan.isGranted && 
-               bluetoothConnect.isGranted && 
-               bluetoothAdvertise.isGranted;
+          return location.isGranted && 
+                 bluetoothScan.isGranted && 
+                 bluetoothConnect.isGranted && 
+                 bluetoothAdvertise.isGranted;
+        } else {
+          // For older versions, check all permissions
+          final location = await Permission.location.status;
+          final bluetooth = await Permission.bluetooth.status;
+          final bluetoothScan = await Permission.bluetoothScan.status;
+          final bluetoothConnect = await Permission.bluetoothConnect.status;
+          final bluetoothAdvertise = await Permission.bluetoothAdvertise.status;
+
+          TelemetryService().logInfo('bluetooth_permissions', 
+            'Legacy Android Permissions Status:\n' +
+            'Location: ${location.name}\n' +
+            'Bluetooth: ${bluetooth.name}\n' +
+            'BluetoothScan: ${bluetoothScan.name}\n' +
+            'BluetoothConnect: ${bluetoothConnect.name}\n' +
+            'BluetoothAdvertise: ${bluetoothAdvertise.name}'
+          );
+
+          return location.isGranted && 
+                 bluetooth.isGranted && 
+                 bluetoothScan.isGranted && 
+                 bluetoothConnect.isGranted && 
+                 bluetoothAdvertise.isGranted;
+        }
       } else if (Platform.isIOS) {
         final bluetooth = await Permission.bluetooth.status;
         TelemetryService().logInfo('bluetooth_permissions', 'iOS Bluetooth Permission: ${bluetooth.name}');
