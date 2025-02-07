@@ -16,31 +16,41 @@ class BleService {
   bool _isCentral = false;
   StreamSubscription? _scanSubscription;
   StreamSubscription? _connectionSubscription;
-  final _deviceController = StreamController<DiscoveredDevice>.broadcast();
+  StreamController<DiscoveredDevice>? _deviceController;
+  StreamController<void>? _clearController;
+  StreamController<ConnectionStateUpdate>? _connectionStateController;
   
   // service and characteristic UUIDs
   static const String serviceUuid = "26380000-1000-8000-0000-805F9B34FB00";
   static const String characteristicUuid = "26380001-1000-8000-0000-805F9B34FB00";
   
-  Stream<DiscoveredDevice> get deviceStream => _deviceController.stream;
+  Stream<DiscoveredDevice> get deviceStream {
+    _deviceController ??= StreamController<DiscoveredDevice>.broadcast();
+    return _deviceController!.stream;
+  }
+  
+  Stream<void> get clearStream {
+    _clearController ??= StreamController<void>.broadcast();
+    return _clearController!.stream;
+  }
+  
+  Stream<ConnectionStateUpdate> get connectionStateStream {
+    _connectionStateController ??= StreamController<ConnectionStateUpdate>.broadcast();
+    return _connectionStateController!.stream;
+  }
+  
   bool get isScanning => _isScanning;
   bool get isCentral => _isCentral;
 
   String? _connectedDeviceId;
   bool _isAdvertising = false;
-  StreamController<ConnectionStateUpdate> _connectionStateController = 
-      StreamController<ConnectionStateUpdate>.broadcast();
-  
-  Stream<ConnectionStateUpdate> get connectionStateStream => 
-      _connectionStateController.stream;
   
   bool get isConnected => _connectedDeviceId != null;
   bool get isAdvertising => _isAdvertising;
 
-  // Add a separate stream controller for clear signals
-  final _clearController = StreamController<void>.broadcast();
-  Stream<void> get clearStream => _clearController.stream;
-
+  // Add a constant for identifying our app's devices
+  static const String deviceNamePrefix = "2638Scout";
+  
   BleService._internal();
 
   Future<void> initialize() async {
@@ -194,28 +204,47 @@ class BleService {
     _isCentral = isCentral;
   }
 
+  // Add method to reset streams
+  void _resetStreams() {
+    // Close existing controllers
+    _deviceController?.close();
+    _clearController?.close();
+    _connectionStateController?.close();
+    
+    // Create new controllers
+    _deviceController = StreamController<DiscoveredDevice>.broadcast();
+    _clearController = StreamController<void>.broadcast();
+    _connectionStateController = StreamController<ConnectionStateUpdate>.broadcast();
+  }
+
   Future<void> startScanning() async {
     if (!_isScanning && _isCentral) {
       try {
+        // Reset streams before starting new scan
+        _resetStreams();
+        
         TelemetryService().logInfo('bluetooth', 'Starting central scanning');
         _isScanning = true;
         
         // Signal to clear existing devices
-        _clearController.add(null);
+        _clearController?.add(null);
+        
+        // Create unique identifier for this central device
+        final deviceId = DateTime.now().millisecondsSinceEpoch.toString();
+        final deviceName = "${deviceNamePrefix}_C_$deviceId"; // C for Central
         
         _scanSubscription = _ble.scanForDevices(
-          withServices: [], // Remove service filter to see all devices
+          withServices: [],
           scanMode: ScanMode.lowLatency,
         ).listen(
           (device) {
-            TelemetryService().logInfo('bluetooth', 
-              'Central found device: ${device.name} (${device.id})\n' +
-              'RSSI: ${device.rssi}\n' +
-              'Services: ${device.serviceUuids}'
-            );
-            
-            // Add discovered device
-            _deviceController.add(device);
+            if (device.name.startsWith('${deviceNamePrefix}_P_')) {
+              TelemetryService().logInfo('bluetooth', 
+                'Central found peripheral device: ${device.name}\n' +
+                'RSSI: ${device.rssi}'
+              );
+              _deviceController?.add(device);
+            }
           },
           onError: (error) {
             TelemetryService().logError('bluetooth', 'Central scanning error: $error');
@@ -236,37 +265,38 @@ class BleService {
       await _scanSubscription?.cancel();
       _scanSubscription = null;
       // Signal to clear the device list
-      _clearController.add(null);
+      _clearController?.add(null);
     }
   }
 
   Future<void> startAdvertising() async {
     if (!_isCentral && !_isAdvertising) {
       try {
+        // Reset streams before starting advertising
+        _resetStreams();
+        
         TelemetryService().logInfo('bluetooth', 'Starting peripheral advertising');
         
         // Create unique identifier for this device
         final deviceId = DateTime.now().millisecondsSinceEpoch.toString();
+        final deviceName = "${deviceNamePrefix}_P_$deviceId"; // P for Peripheral
         
-        // Note: The flutter_reactive_ble package doesn't directly support advertising
-        // We need to scan for central devices instead
         _isAdvertising = true;
-        TelemetryService().logInfo('bluetooth', 'Peripheral mode active, deviceId: $deviceId');
+        TelemetryService().logInfo('bluetooth', 'Peripheral mode active, deviceId: $deviceName');
         
         // Start scanning for central devices
         _scanSubscription = _ble.scanForDevices(
-          withServices: [], // Remove service filter to see all devices
+          withServices: [], 
           scanMode: ScanMode.lowLatency,
         ).listen(
           (device) {
-            TelemetryService().logInfo('bluetooth', 
-              'Peripheral detected device: ${device.name} (${device.id})\n' +
-              'RSSI: ${device.rssi}\n' +
-              'Services: ${device.serviceUuids}'
-            );
-            
-            if (device.name.contains('Central')) {
-              _deviceController.add(device);
+            // Only add devices with our app's prefix and central identifier
+            if (device.name.startsWith('${deviceNamePrefix}_C_')) {
+              TelemetryService().logInfo('bluetooth', 
+                'Peripheral detected central device: ${device.name}\n' +
+                'RSSI: ${device.rssi}'
+              );
+              _deviceController?.add(device);
             }
           },
           onError: (error) {
@@ -301,7 +331,7 @@ class BleService {
       connectionTimeout: const Duration(seconds: 5),
     ).listen(
       (connectionState) {
-        _connectionStateController.add(connectionState);
+        _connectionStateController?.add(connectionState);
         
         if (connectionState.connectionState == DeviceConnectionState.connected) {
           _connectedDeviceId = device.id;
@@ -373,7 +403,12 @@ class BleService {
   void dispose() {
     _scanSubscription?.cancel();
     _connectionSubscription?.cancel();
-    _deviceController.close();
-    _clearController.close();
+    _deviceController?.close();
+    _clearController?.close();
+    _connectionStateController?.close();
+    
+    _deviceController = null;
+    _clearController = null;
+    _connectionStateController = null;
   }
 } 

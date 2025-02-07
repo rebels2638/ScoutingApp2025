@@ -288,15 +288,26 @@ class _BluetoothPageState extends State<BluetoothPage> {
                     itemCount: _discoveredDevices.length,
                     itemBuilder: (context, index) {
                       final device = _discoveredDevices[index];
+                      // Extract device role and ID from name
+                      final nameParts = device.name.split('_');
+                      final isValidDevice = device.name.startsWith(BleService.deviceNamePrefix);
+                      final role = nameParts.length > 1 ? nameParts[1] : 'Unknown';
+                      final deviceId = nameParts.length > 2 ? nameParts[2] : 'Unknown';
+                      
                       return ListTile(
-                        leading: Icon(Icons.bluetooth),
-                        title: Text(device.name.isEmpty ? 'Unknown Device' : device.name),
+                        leading: Icon(
+                          Icons.bluetooth,
+                          color: isValidDevice ? Colors.blue : Colors.grey,
+                        ),
+                        title: Text(isValidDevice 
+                          ? 'Scouting Device ${deviceId.substring(deviceId.length - 4)}' 
+                          : device.name.isEmpty ? 'Unknown Device' : device.name
+                        ),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('ID: ${device.id}'),
-                            Text('RSSI: ${device.rssi}'),
-                            Text('Services: ${device.serviceUuids.join(", ")}'),
+                            Text('Role: ${role == "P" ? "Peripheral (Scouter)" : "Central (Leader)"}'),
+                            Text('Signal Strength: ${device.rssi} dBm'),
                           ],
                         ),
                         trailing: ElevatedButton(
