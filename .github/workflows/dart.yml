@@ -22,7 +22,6 @@ jobs:
           echo "Worker Comments: $BUILD_CMTS"
         env:
           BUILD_CMTS: ${{ inputs.comments }}
-
   build_ios:
     runs-on: macos-latest
     steps:
@@ -48,6 +47,11 @@ jobs:
         run: |
           flutter clean
           flutter pub get
+        
+      - name: Update iOS Deployment Target
+        run: |
+          sed -i '' "s/platform :ios, '.*'/platform :ios, '12.0'/" ios/Podfile
+          echo "Updated iOS Deployment Target to 12.0"
         
       - name: Setup CocoaPods
         run: |
