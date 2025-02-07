@@ -19,11 +19,20 @@ class _BluetoothPageState extends State<BluetoothPage> {
   @override
   void initState() {
     super.initState();
+    
+    // Listen for discovered devices
     _bleService.deviceStream.listen((device) {
       setState(() {
         if (!_discoveredDevices.any((d) => d.id == device.id)) {
           _discoveredDevices.add(device);
         }
+      });
+    });
+
+    // Listen for clear signals
+    _bleService.clearStream.listen((_) {
+      setState(() {
+        _discoveredDevices.clear();
       });
     });
 

@@ -37,6 +37,10 @@ class BleService {
   bool get isConnected => _connectedDeviceId != null;
   bool get isAdvertising => _isAdvertising;
 
+  // Add a separate stream controller for clear signals
+  final _clearController = StreamController<void>.broadcast();
+  Stream<void> get clearStream => _clearController.stream;
+
   BleService._internal();
 
   Future<void> initialize() async {
@@ -196,6 +200,9 @@ class BleService {
         TelemetryService().logInfo('bluetooth', 'Starting central scanning');
         _isScanning = true;
         
+        // Signal to clear existing devices
+        _clearController.add(null);
+        
         _scanSubscription = _ble.scanForDevices(
           withServices: [], // Remove service filter to see all devices
           scanMode: ScanMode.lowLatency,
@@ -207,7 +214,7 @@ class BleService {
               'Services: ${device.serviceUuids}'
             );
             
-            // Add all discovered devices for debugging
+            // Add discovered device
             _deviceController.add(device);
           },
           onError: (error) {
@@ -228,6 +235,8 @@ class BleService {
       _isScanning = false;
       await _scanSubscription?.cancel();
       _scanSubscription = null;
+      // Signal to clear the device list
+      _clearController.add(null);
     }
   }
 
@@ -365,5 +374,6 @@ class BleService {
     _scanSubscription?.cancel();
     _connectionSubscription?.cancel();
     _deviceController.close();
+    _clearController.close();
   }
 } 
