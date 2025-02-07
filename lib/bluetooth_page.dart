@@ -58,40 +58,61 @@ class _BluetoothPageState extends State<BluetoothPage> {
   }
 
   Future<void> _checkAndRequestPermissions() async {
-    if (!await _bleService.hasRequiredPermissions()) {
-      if (_bleService.needsLocationPermission) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Location Permission Required'),
-            content: Text(
-              'This app needs location permission to scan for nearby Bluetooth devices. ' +
-              'This is required by Android for Bluetooth scanning to work.\n\n' +
-              'The app does not track or store your location.',
+    TelemetryService().logInfo('bluetooth_page', 'Checking and requesting permissions');
+    try {
+      if (!await _bleService.hasRequiredPermissions()) {
+        if (_bleService.needsLocationPermission) {
+          TelemetryService().logInfo('bluetooth_page', 'Showing location permission dialog');
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Location Permission Required'),
+              content: Text(
+                'This app needs location permission to scan for nearby Bluetooth devices. ' +
+                'This is required by Android for Bluetooth scanning to work.\n\n' +
+                'The app does not track or store your location.',
+              ),
+              actions: [
+                TextButton(
+                  child: Text('Cancel'),
+                  onPressed: () {
+                    TelemetryService().logAction('bluetooth_permissions', 'User cancelled permission request');
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: Text('Open Settings'),
+                  onPressed: () async {
+                    TelemetryService().logAction('bluetooth_permissions', 'User opened settings');
+                    Navigator.of(context).pop();
+                    await openAppSettings();
+                  },
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                child: Text('Cancel'),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              TextButton(
-                child: Text('Open Settings'),
-                onPressed: () async {
-                  Navigator.of(context).pop();
-                  await openAppSettings();
-                },
-              ),
-            ],
-          ),
-        );
-        return;
+          );
+          return;
+        }
+        TelemetryService().logInfo('bluetooth_page', 'Initializing BLE service and requesting permissions');
+        await _bleService.initialize();
+        
+        // Check permissions again after initialization
+        if (!await _bleService.hasRequiredPermissions()) {
+          TelemetryService().logError('bluetooth_page', 'Permissions still not granted after initialization');
+          _showSnackBar('Please grant all required permissions in Settings', isError: true);
+          return;
+        }
       }
-      await _bleService.initialize();
+      TelemetryService().logInfo('bluetooth_page', 'All required permissions granted');
+    } catch (e) {
+      TelemetryService().logError('bluetooth_page', 'Error checking permissions: $e');
+      _showSnackBar('Error checking permissions: $e', isError: true);
     }
   }
 
   Future<void> _toggleAdvertising() async {
     try {
+      TelemetryService().logAction('bluetooth_page', 'Toggle advertising requested');
       if (_bleService.isAdvertising) {
         await _bleService.stopAdvertising();
         _showSnackBar('Stopped advertising');
@@ -102,11 +123,13 @@ class _BluetoothPageState extends State<BluetoothPage> {
           await _bleService.startAdvertising();
           _showSnackBar('Device is now discoverable');
         } else {
+          TelemetryService().logError('bluetooth_page', 'Required permissions not granted for advertising');
           _showSnackBar('Required permissions not granted', isError: true);
         }
       }
       setState(() {});
     } catch (e) {
+      TelemetryService().logError('bluetooth_page', 'Failed to toggle advertising: $e');
       _showSnackBar('Failed to toggle advertising: $e', isError: true);
     }
   }
@@ -149,6 +172,56 @@ class _BluetoothPageState extends State<BluetoothPage> {
           padding: const EdgeInsets.all(16.0),
           child: Column(
             children: [
+              ElevatedButton.icon(
+                onPressed: () async {
+                  TelemetryService().logAction('bluetooth_page', 'Manual permission request initiated');
+                  await _bleService.initialize();
+                  // Check if permissions were granted
+                  if (await _bleService.hasRequiredPermissions()) {
+                    _showSnackBar('All permissions granted');
+                  } else {
+                    _showSnackBar('Some permissions are still missing. Please check Settings.', isError: true);
+                    // Show settings dialog
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: Text('Permissions Required'),
+                        content: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('The following permissions are required:'),
+                            SizedBox(height: 8),
+                            Text('• Bluetooth'),
+                            Text('• Bluetooth Scan'),
+                            Text('• Bluetooth Connect'),
+                            Text('• Bluetooth Advertise'),
+                            Text('• Location (for Bluetooth scanning)'),
+                            SizedBox(height: 16),
+                            Text('Please enable all permissions in Settings.'),
+                          ],
+                        ),
+                        actions: [
+                          TextButton(
+                            child: Text('Cancel'),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+                          TextButton(
+                            child: Text('Open Settings'),
+                            onPressed: () {
+                              Navigator.pop(context);
+                              openAppSettings();
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                },
+                icon: Icon(Icons.security),
+                label: Text('Request Permissions'),
+              ),
+              SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

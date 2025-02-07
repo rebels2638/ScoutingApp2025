@@ -39,56 +39,90 @@ class BleService {
   BleService._internal();
 
   Future<void> initialize() async {
-    await _checkPermissions();
-  }
+    TelemetryService().logInfo('bluetooth', 'Initializing BLE service');
+    try {
+      if (Platform.isAndroid) {
+        // First check if permissions are already granted
+        final hasPermissions = await hasRequiredPermissions();
+        if (!hasPermissions) {
+          TelemetryService().logInfo('bluetooth', 'Requesting Android permissions');
+          
+          // Request location first
+          final locationStatus = await Permission.location.request();
+          TelemetryService().logInfo('bluetooth', 'Location permission result: ${locationStatus.name}');
+          
+          // Request Bluetooth permissions one by one
+          final bluetoothStatus = await Permission.bluetooth.request();
+          TelemetryService().logInfo('bluetooth', 'Bluetooth permission result: ${bluetoothStatus.name}');
+          
+          final bluetoothScanStatus = await Permission.bluetoothScan.request();
+          TelemetryService().logInfo('bluetooth', 'BluetoothScan permission result: ${bluetoothScanStatus.name}');
+          
+          final bluetoothConnectStatus = await Permission.bluetoothConnect.request();
+          TelemetryService().logInfo('bluetooth', 'BluetoothConnect permission result: ${bluetoothConnectStatus.name}');
+          
+          final bluetoothAdvertiseStatus = await Permission.bluetoothAdvertise.request();
+          TelemetryService().logInfo('bluetooth', 'BluetoothAdvertise permission result: ${bluetoothAdvertiseStatus.name}');
 
-  Future<void> _checkPermissions() async {
-    // Check platform
-    if (Platform.isAndroid) {
-      // Android needs location permission for BLE scanning
-      final locationStatus = await Permission.location.status;
-      if (locationStatus.isDenied) {
-        // Show rationale before requesting
-        bool shouldShowRationale = await Permission.location.shouldShowRequestRationale;
-        if (shouldShowRationale) {
-          // Store this in a field so the UI can show an explanation
-          _needsLocationPermission = true;
-          return;
+          // Check if any permission was denied
+          if ([locationStatus, bluetoothStatus, bluetoothScanStatus, 
+               bluetoothConnectStatus, bluetoothAdvertiseStatus]
+              .any((status) => status.isDenied || status.isPermanentlyDenied)) {
+            TelemetryService().logError('bluetooth', 'Some permissions were denied');
+            throw Exception('Required permissions were denied');
+          }
+        } else {
+          TelemetryService().logInfo('bluetooth', 'All permissions already granted');
         }
-        await Permission.location.request();
+      } else if (Platform.isIOS) {
+        final bluetoothStatus = await Permission.bluetooth.request();
+        TelemetryService().logInfo('bluetooth', 'iOS Bluetooth permission result: ${bluetoothStatus.name}');
+        
+        if (bluetoothStatus.isDenied || bluetoothStatus.isPermanentlyDenied) {
+          TelemetryService().logError('bluetooth', 'Bluetooth permission denied on iOS');
+          throw Exception('Bluetooth permission denied');
+        }
       }
-    }
-
-    // Request Bluetooth permissions for both platforms
-    if (Platform.isAndroid) {
-      await Permission.bluetooth.request();
-      await Permission.bluetoothScan.request();
-      await Permission.bluetoothConnect.request();
-      await Permission.bluetoothAdvertise.request();
-    } else if (Platform.isIOS) {
-      await Permission.bluetooth.request();
+    } catch (e) {
+      TelemetryService().logError('bluetooth', 'Error initializing BLE service: $e');
+      rethrow;
     }
   }
 
-  // Add this method to check if all required permissions are granted
   Future<bool> hasRequiredPermissions() async {
-    if (Platform.isAndroid) {
-      final location = await Permission.location.status;
-      final bluetooth = await Permission.bluetooth.status;
-      final bluetoothScan = await Permission.bluetoothScan.status;
-      final bluetoothConnect = await Permission.bluetoothConnect.status;
-      final bluetoothAdvertise = await Permission.bluetoothAdvertise.status;
+    try {
+      TelemetryService().logInfo('bluetooth_permissions', 'Checking required permissions');
+      if (Platform.isAndroid) {
+        final location = await Permission.location.status;
+        final bluetooth = await Permission.bluetooth.status;
+        final bluetoothScan = await Permission.bluetoothScan.status;
+        final bluetoothConnect = await Permission.bluetoothConnect.status;
+        final bluetoothAdvertise = await Permission.bluetoothAdvertise.status;
 
-      return location.isGranted && 
-             bluetooth.isGranted && 
-             bluetoothScan.isGranted && 
-             bluetoothConnect.isGranted && 
-             bluetoothAdvertise.isGranted;
-    } else if (Platform.isIOS) {
-      final bluetooth = await Permission.bluetooth.status;
-      return bluetooth.isGranted;
+        TelemetryService().logInfo('bluetooth_permissions', 
+          'Android Permissions Status:\n' +
+          'Location: ${location.name}\n' +
+          'Bluetooth: ${bluetooth.name}\n' +
+          'BluetoothScan: ${bluetoothScan.name}\n' +
+          'BluetoothConnect: ${bluetoothConnect.name}\n' +
+          'BluetoothAdvertise: ${bluetoothAdvertise.name}'
+        );
+
+        return location.isGranted && 
+               bluetooth.isGranted && 
+               bluetoothScan.isGranted && 
+               bluetoothConnect.isGranted && 
+               bluetoothAdvertise.isGranted;
+      } else if (Platform.isIOS) {
+        final bluetooth = await Permission.bluetooth.status;
+        TelemetryService().logInfo('bluetooth_permissions', 'iOS Bluetooth Permission: ${bluetooth.name}');
+        return bluetooth.isGranted;
+      }
+      return false;
+    } catch (e) {
+      TelemetryService().logError('bluetooth_permissions', 'Error checking permissions: $e');
+      return false;
     }
-    return false;
   }
 
   // Add field to track if we need to show location permission rationale
