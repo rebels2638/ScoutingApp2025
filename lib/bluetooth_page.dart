@@ -117,7 +117,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
         await _bleService.stopAdvertising();
         _showSnackBar('Stopped advertising');
       } else {
-        // Check permissions before advertising
+        // check permissions before advertising
         await _checkAndRequestPermissions();
         if (await _bleService.hasRequiredPermissions()) {
           await _bleService.startAdvertising();
@@ -140,7 +140,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
         await _bleService.stopScanning();
         _showSnackBar('Stopped scanning');
       } else {
-        // Check permissions before scanning
+        // check permissions before scanning
         await _checkAndRequestPermissions();
         if (await _bleService.hasRequiredPermissions()) {
           await _bleService.startScanning();
@@ -176,12 +176,12 @@ class _BluetoothPageState extends State<BluetoothPage> {
                 onPressed: () async {
                   TelemetryService().logAction('bluetooth_page', 'Manual permission request initiated');
                   await _bleService.initialize();
-                  // Check if permissions were granted
+                  // check if permissions were granted
                   if (await _bleService.hasRequiredPermissions()) {
                     _showSnackBar('All permissions granted');
                   } else {
                     _showSnackBar('Some permissions are still missing. Please check Settings.', isError: true);
-                    // Show settings dialog
+                    // show settings dialog
                     showDialog(
                       context: context,
                       builder: (context) => AlertDialog(
@@ -232,7 +232,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
                       setState(() {
                         _isCentral = index == 0;
                         _bleService.setCentralMode(_isCentral);
-                        // Clear discovered devices when switching modes
+                        // clear discovered devices when switching modes
                         _discoveredDevices.clear();
                       });
                     },
@@ -269,15 +269,27 @@ class _BluetoothPageState extends State<BluetoothPage> {
           ),
           Expanded(
             child: _discoveredDevices.isEmpty
-                ? Center(child: Text('No devices found'))
+                ? Center(
+                    child: Text(
+                      'No scouters found yet...',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  )
                 : ListView.builder(
                     itemCount: _discoveredDevices.length,
                     itemBuilder: (context, index) {
                       final device = _discoveredDevices[index];
                       return ListTile(
                         leading: Icon(Icons.bluetooth),
-                        title: Text(device.name.isEmpty ? 'Unknown Scouter' : device.name),
-                        subtitle: Text(device.id),
+                        title: Text(device.name.isEmpty ? 'Unknown Device' : device.name),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('ID: ${device.id}'),
+                            Text('RSSI: ${device.rssi}'),
+                            Text('Services: ${device.serviceUuids.join(", ")}'),
+                          ],
+                        ),
                         trailing: ElevatedButton(
                           onPressed: () => _connectToDevice(device),
                           child: Text('Connect'),
