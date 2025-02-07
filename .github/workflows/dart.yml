@@ -36,8 +36,8 @@ jobs:
       
       - run: flutter --version
       - run: flutter pub get
-      - run: flutter build ios --release --no-codesign --no-tree-shake-icons
-      - run: flutter build ipa --release --no-codesign --no-tree-shake-icons
+      - run: flutter build ios --release --no-codesign --no-tree-shake-icons --target-platform ios 15.5
+      - run: flutter build ipa --release --no-codesign --no-tree-shake-icons --target-platform ios 15.5
       
       - name: Upload iOS build
         uses: actions/upload-artifact@v4
