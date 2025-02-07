@@ -1,5 +1,5 @@
 # Rebel Robotics Scouting App for FRC 2025: REEFSCAPE
-Version 0.2.3-beta
+Version 0.3.2-beta
 
 Still under development.
 
@@ -20,11 +20,11 @@ Still under development.
 ## Planned features:
 
 #### Data Storage and Transfer
-- CSV file storage (replacing JSON).
-- QR Code data transfers.
+- CSV file storage (replacing JSON). (DONE)
+- QR Code data transfers. (DONE)
 - Bluetooth LE data transfers.
-- Drawing auto paths (maybe)
+- Drawing auto paths (maybe) (DONE)
 
 #### Data Analysis
-- Improved data analytics features: team vs. team comparisons, improved statistics, and more.
+- Improved data analytics features: team vs. team comparisons, improved statistics, and more. (DONE)
 - Blue Alliance API Scraping (Post-Game)
