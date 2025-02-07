@@ -17,6 +17,7 @@ import 'theme/app_theme.dart';  // Add this import
 import 'database_helper.dart';
 import 'widgets/telemetry_overlay.dart';
 import 'dart:math';
+import 'team_number_selector.dart';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -95,6 +96,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // Add feederStation variable (if needed for your record)
   String feederStation = '';
 
+  // Add a focus node
+  final FocusNode _focusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -115,6 +119,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
   @override
   void dispose() {
     _devModeSubscription?.cancel();
+    _focusNode.dispose();
     super.dispose();
   }
 
@@ -146,46 +151,52 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: TopBar(
-        title: _currentIndex == 0 ? 'Scouting' :
-               _currentIndex == 1 ? 'Data' :
-               _currentIndex == 2 ? 'Settings' :
-               'About',
-        actions: _currentIndex == 0 ? <Widget>[
-          IconButton(
-            icon: Icon(Icons.refresh),
-            tooltip: 'Reset Form',
-            onPressed: () => _showResetDialog(context),
-          ),
-          if (_isDevMode)
+    return GestureDetector(
+      onTap: () {
+        // Dismiss keyboard when tapping anywhere
+        FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
+        appBar: TopBar(
+          title: _currentIndex == 0 ? 'Scouting' :
+                 _currentIndex == 1 ? 'Data' :
+                 _currentIndex == 2 ? 'Settings' :
+                 'About',
+          actions: _currentIndex == 0 ? <Widget>[
             IconButton(
-              icon: Icon(Icons.analytics),
-              onPressed: () {
-                final myAppState = context.findAncestorStateOfType<MyAppState>();
-                if (myAppState != null) {
-                  myAppState.toggleTelemetry(!myAppState.telemetryVisible);
-                }
-              },
+              icon: Icon(Icons.refresh),
+              tooltip: 'Reset Form',
+              onPressed: () => _showResetDialog(context),
             ),
-          IconButton(
-            icon: Icon(Icons.save),
-            onPressed: _saveRecord,
-          ),
-        ] : null,
-      ),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: [
-          _buildScoutingPage(),
-          DataPage(key: _dataPageKey),
-          SettingsPage(),
-          AboutPage(),
-        ],
-      ),
-      bottomNavigationBar: NavBar(
-        currentIndex: _currentIndex,
-        onTap: _onItemTapped,
+            if (_isDevMode)
+              IconButton(
+                icon: Icon(Icons.analytics),
+                onPressed: () {
+                  final myAppState = context.findAncestorStateOfType<MyAppState>();
+                  if (myAppState != null) {
+                    myAppState.toggleTelemetry(!myAppState.telemetryVisible);
+                  }
+                },
+              ),
+            IconButton(
+              icon: Icon(Icons.save),
+              onPressed: _saveRecord,
+            ),
+          ] : null,
+        ),
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            _buildScoutingPage(),
+            DataPage(key: _dataPageKey),
+            SettingsPage(),
+            AboutPage(),
+          ],
+        ),
+        bottomNavigationBar: NavBar(
+          currentIndex: _currentIndex,
+          onTap: _onItemTapped,
+        ),
       ),
     );
   }
@@ -558,35 +569,28 @@ class _ScoutingPageState extends State<ScoutingPage> {
           CounterRow(
             label: 'Height 4',
             value: coralOnReefHeight4,
-            onIncrement: () {
+            onChanged: (newValue) {
               final oldValue = coralOnReefHeight4;
-              setState(() => coralOnReefHeight4++);
-              _logStateChange('coralOnReefHeight4', oldValue, coralOnReefHeight4);
-              //TelemetryService().logAction('counter_increment', 'coralOnReefHeight4');
-            },
-            onDecrement: () {
-              if (coralOnReefHeight4 > 0) {
-                final oldValue = coralOnReefHeight4;
-                setState(() => coralOnReefHeight4--);
-                _logStateChange('coralOnReefHeight4', oldValue, coralOnReefHeight4);
-                //TelemetryService().logAction('counter_decrement', 'coralOnReefHeight4');
-              }
+              setState(() {
+                coralOnReefHeight4 = newValue;
+              });
+              _logStateChange('coralOnReefHeight4', oldValue, newValue);
             },
           ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: ToggleRow(
-            label: 'Coral Ranking Point?',
-            options: ['YES', 'NO'],
-            selectedIndex: coralRankingPoint ? 0 : 1,
-            onSelected: (index) {
-              final oldValue = coralRankingPoint;
-              setState(() {
-                coralOnReefHeight4 = value;
-                _logStateChange('coralOnReefHeight4', coralOnReefHeight4, value);
-              });
-            },
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
+            child: ToggleRow(
+              label: 'Coral Ranking Point?',
+              options: ['YES', 'NO'],
+              selectedIndex: coralRankingPoint ? 0 : 1,
+              onSelected: (index) {
+                final oldValue = coralRankingPoint;
+                setState(() {
+                  coralRankingPoint = (index == 0);
+                });
+                _logStateChange('coralRankingPoint', oldValue, coralRankingPoint);
+              },
+            ),
           ),
           
           // Robot capabilities section
@@ -935,45 +939,17 @@ class TeamNumberSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text('Number', style: TextStyle(fontSize: 16)),
-          InkWell(
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => TeamNumberSelectorDialog(
-                    initialValue: initialValue,
-                    onValueChanged: onChanged,
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    initialValue.toString(),
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_drop_down),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return ElevatedButton(
+      onPressed: () async {
+        await showTeamNumberSelector(
+          context,
+          initialValue,
+          (value) {
+            onChanged(value);
+          },
+        );
+      },
+      child: Text('Team ${initialValue == 0 ? "Number" : initialValue.toString()}'),
     );
   }
 }
@@ -1054,7 +1030,7 @@ class ToggleRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           selectedBorderColor: Colors.transparent,
           borderWidth: 1,
-          fillColor: selectedIndex == 0 
+          fillColor: selectedIndex == 0
               ? (isDark ? Colors.blue.shade900 : Colors.green.shade300)
               : (isDark ? Colors.red.shade900 : Colors.red.shade300),
           color: Theme.of(context).textTheme.bodyLarge?.color,
@@ -1064,10 +1040,12 @@ class ToggleRow extends StatelessWidget {
             options.length,
             (index) => index == selectedIndex,
           ),
-          children: options.map((option) => Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(option),
-          )).toList(),
+          children: options
+              .map((option) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text(option),
+                  ))
+              .toList(),
           onPressed: onSelected,
         ),
       ],
@@ -1291,6 +1269,7 @@ class _DrawingButtonState extends State<DrawingButton> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
+            ),
         ],
       ),
     );
@@ -1343,7 +1322,7 @@ class SwitchCard extends StatelessWidget {
   }
 }
 
-class NumberInput extends StatelessWidget {
+class NumberInput extends StatefulWidget {
   final String label;
   final int value;
   final ValueChanged<int> onChanged;
@@ -1354,6 +1333,35 @@ class NumberInput extends StatelessWidget {
     required this.value,
     required this.onChanged,
   }) : super(key: key);
+
+  @override
+  _NumberInputState createState() => _NumberInputState();
+}
+
+class _NumberInputState extends State<NumberInput> {
+  late TextEditingController _controller;
+  final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value.toString());
+  }
+
+  @override
+  void didUpdateWidget(NumberInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value) {
+      _controller.text = widget.value.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -1368,7 +1376,7 @@ class NumberInput extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
+            widget.label,
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.primary,
@@ -1376,8 +1384,10 @@ class NumberInput extends StatelessWidget {
           ),
           SizedBox(height: AppSpacing.xs),
           TextField(
-            controller: TextEditingController(text: value.toString()),
+            controller: _controller,
+            focusNode: _focusNode,
             keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.next,
             decoration: InputDecoration(
               isDense: true,
               contentPadding: EdgeInsets.symmetric(
@@ -1389,8 +1399,12 @@ class NumberInput extends StatelessWidget {
             onChanged: (text) {
               final newValue = int.tryParse(text);
               if (newValue != null) {
-                onChanged(newValue);
+                widget.onChanged(newValue);
               }
+            },
+            onEditingComplete: () {
+              // Move to next focus instead of closing keyboard
+              FocusScope.of(context).nextFocus();
             },
           ),
         ],
@@ -1563,97 +1577,6 @@ class _AllianceButton extends StatelessWidget {
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
-      ),
-    );
-  }
-}
-
-class TeamNumberSelectorDialog extends StatefulWidget {
-  final int initialValue;
-  final ValueChanged<int> onValueChanged;
-
-  const TeamNumberSelectorDialog({
-    Key? key,
-    required this.initialValue,
-    required this.onValueChanged,
-  }) : super(key: key);
-
-  @override
-  _TeamNumberSelectorDialogState createState() => _TeamNumberSelectorDialogState();
-}
-
-class _TeamNumberSelectorDialogState extends State<TeamNumberSelectorDialog> {
-  late List<int> selectedDigits;
-
-  @override
-  void initState() {
-    super.initState();
-    selectedDigits = _numberToDigits(widget.initialValue);
-  }
-
-  List<int> _numberToDigits(int number) {
-    String numStr = number.toString().padLeft(5, '0');
-    return numStr.split('').map(int.parse).toList();
-  }
-
-  void _updateTeamNumber() {
-    int number = selectedDigits.fold(0, (prev, digit) => prev * 10 + digit);
-    widget.onValueChanged(number);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Select Team Number')),
-      body: Column(
-        children: [
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: List.generate(5, (columnIndex) {
-                return SizedBox(
-                  width: 60,
-                  child: ListWheelScrollView(
-                    controller: FixedExtentScrollController(
-                      initialItem: selectedDigits[columnIndex],
-                    ),
-                    itemExtent: 40,
-                    physics: FixedExtentScrollPhysics(),
-                    onSelectedItemChanged: (index) {
-                      setState(() {
-                        selectedDigits[columnIndex] = index;
-                        _updateTeamNumber();
-                      });
-                    },
-                    children: List.generate(
-                      10,
-                      (index) => Container(
-                        alignment: Alignment.center,
-                        child: Text(
-                          index.toString(),
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              }),
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.all(16),
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('Done'),
-              style: ElevatedButton.styleFrom(
-                minimumSize: Size(double.infinity, 50),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

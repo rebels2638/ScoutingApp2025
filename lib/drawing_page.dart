@@ -94,14 +94,13 @@ class _DrawingPageState extends State<DrawingPage> {
   Color currentColor = Colors.black;
   bool isErasing = false;
   double strokeWidth = 5.0;
-  List<Offset>? currentLine;
+  DrawingLine? currentLine;
 
   @override
   void initState() {
     super.initState();
     currentColor = widget.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance;
     lines = widget.initialLines ?? [];
-    _initializeDrawing();
   }
 
   @override
@@ -236,44 +235,43 @@ class _DrawingPageState extends State<DrawingPage> {
   }
 
   void _onPanStart(DragStartDetails details) {
-    setState(() {
-      currentLine = [details.localPosition];
-    });
+    currentLine = DrawingLine(
+      points: [details.localPosition],
+      color: currentColor,
+      strokeWidth: strokeWidth,
+    );
+    setState(() {});
   }
 
   void _onPanUpdate(DragUpdateDetails details) {
+    if (currentLine == null) return;
+    
     setState(() {
-      if (currentLine != null) {
-        currentLine!.add(details.localPosition);
-        // If we're not erasing, update the current line
-        if (!isErasing) {
-          if (lines.isNotEmpty) {
-            lines.removeLast(); // Remove the "preview" line
-          }
-          lines.add(DrawingLine(
-            points: List.from(currentLine!), // Create a new list from current points
-            color: currentColor,
-            strokeWidth: strokeWidth,
-          ));
+      if (!isErasing) {
+        currentLine!.points.add(details.localPosition);
+        // Only update the last line if it's the current one
+        if (lines.isNotEmpty && lines.last == currentLine) {
+          lines.last = currentLine!;
         } else {
-          // Handle erasing by removing lines that are close to the current position
-          lines.removeWhere((line) {
-            return line.points.any((point) =>
-                (point - details.localPosition).distance < 20.0);
-          });
+          lines.add(currentLine!);
         }
+      } else {
+        // Optimize erasing by using Rect.contains
+        final erasePoint = details.localPosition;
+        lines.removeWhere((line) {
+          return line.points.any((point) =>
+              (point - erasePoint).distance < 20.0);
+        });
       }
     });
   }
 
   void _onPanEnd(DragEndDetails details) {
-    setState(() {
-      if (!isErasing && currentLine != null && currentLine!.length > 1) {
-        // The final line is already in the lines list from onPanUpdate
-        redoHistory.clear(); // Clear redo history when a new line is drawn
-      }
-      currentLine = null;
-    });
+    if (currentLine != null && currentLine!.points.length > 1) {
+      redoHistory.clear();
+    }
+    currentLine = null;
+    setState(() {});
   }
 }
 

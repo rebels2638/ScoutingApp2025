@@ -7,11 +7,15 @@ import 'comparison.dart';
 import 'team_analysis.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:csv/csv.dart';
-import 'drawing_page.dart';
+import 'drawing_page.dart' as drawing;
 import 'theme/app_theme.dart';
 import 'database_helper.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'record_detail.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'qr_scanner_page.dart';
+import 'drawing_page.dart';
 import 'record_detail.dart';
 
 class ScoutingRecord {
@@ -457,23 +461,13 @@ class DataManager {
 
   List<ScoutingRecord> _records = [];
   
-  // Add back the static methods that were removed
   static Future<void> saveRecord(ScoutingRecord record) async {
     try {
       final records = await DatabaseHelper.instance.getAllRecords();
       records.add(record);
-      
-      // Convert records to CSV
-      final csvData = [
-        ScoutingRecord.getCsvHeaders(),
-        ...records.map((r) => r.toCsvRow()),
-      ];
-      
-      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
-      await prefs.setString(_storageKey, csv);
-    } catch (e, stackTrace) {
+      await DatabaseHelper.instance.saveRecords(records);
+    } catch (e) {
       print('Error saving record: $e');
-      print('Stack trace: $stackTrace');
       throw e;
     }
   }
@@ -483,7 +477,6 @@ class DataManager {
       return await DatabaseHelper.instance.getAllRecords();
     } catch (e) {
       print('Error getting records: $e');
-      print('Stack trace: $stackTrace');
       return [];
     }
   }
@@ -572,137 +565,422 @@ class DataPage extends StatefulWidget {
   DataPageState createState() => DataPageState();
 }
 
-class DataPageState extends State<DataPage> with WidgetsBindingObserver {
+class DataPageState extends State<DataPage> {
   List<ScoutingRecord> _records = [];
   Set<int> selectedRecords = {};
+  String _searchQuery = '';
+  bool _isSelectionMode = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    loadRecords();
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      loadRecords();
-    }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
     loadRecords();
   }
 
   Future<void> loadRecords() async {
-    List<ScoutingRecord> recs = await DatabaseHelper.instance.getAllRecords();
-    if (mounted) {
-      setState(() {
-        _records = recs;
-      });
+    setState(() => _isLoading = true);
+    try {
+      final records = await DatabaseHelper.instance.getAllRecords();
+      if (mounted) {
+        setState(() {
+          _records = records;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading records: $e')),
+        );
+        setState(() => _isLoading = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Match Data'),
-        actions: [
-          if (selectedRecords.isNotEmpty)
-            Container(
-              margin: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-              child: FilledButton.icon(
-                icon: Icon(Icons.compare_arrows),
-                label: Text('Compare (${selectedRecords.length})'),
-                onPressed: () {
-                  final selectedList = _records
-                      .asMap()
-                      .entries
-                      .where((e) => selectedRecords.contains(e.key))
-                      .map((e) => e.value)
-                      .toList();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ComparisonPage(records: selectedList),
-                    ),
-                  );
-                },
-              ),
-            ),
-          IconButton(
-            icon: Icon(Icons.qr_code),
-            onPressed: () => _showQRCodeDialog(context),
-            tooltip: 'Generate QR Code',
-          ),
-          IconButton(
-            icon: Icon(Icons.analytics),
-            onPressed: () => _showTeamAnalysis(context),
-          ),
-          PopupMenuButton(
-            icon: Icon(Icons.more_vert),
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                child: Text('Clear Selection'),
-                enabled: selectedRecords.isNotEmpty,
-                onTap: () {
-                  setState(() => selectedRecords.clear());
-                },
-              ),
-              PopupMenuItem(
-                child: Text('Import Data'),
-                onTap: () {
-                  Future.delayed(Duration.zero, () => _importData());
-                },
-              ),
-              PopupMenuItem(
-                child: Text('Export Data'),
-                onTap: () {
-                  Future.delayed(Duration.zero, () => _exportData());
-                },
-              ),
-              PopupMenuItem(
-                child: Text('Delete All Data'),
-                onTap: () => _showDeleteConfirmation(context),
-              ),
-            ],
+      body: Column(
+        children: [
+          _buildSearchAndFilterBar(),
+          _buildActionBar(),
+          Expanded(
+            child: _isLoading 
+              ? const Center(child: CircularProgressIndicator())
+              : _records.isEmpty 
+                ? _buildEmptyState()
+                : _buildRecordsList(),
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: _records.length,
-        padding: EdgeInsets.all(AppSpacing.md),
-        itemBuilder: (context, index) {
-          final record = _records[index];
-          return ScoutingRecordCard(
-            record: record,
-            isSelected: selectedRecords.contains(index),
-            onSelected: (selected) {
-              setState(() {
-                if (selected ?? false) {
-                  selectedRecords.add(index);
-                } else {
-                  selectedRecords.remove(index);
-                }
-              });
-            },
-            onDelete: () => _showDeleteConfirmation(context, index),
-          );
-        },
+      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  Widget _buildSearchAndFilterBar() {
+    return Card(
+      margin: const EdgeInsets.all(8),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search matches, teams...',
+                  prefixIcon: const Icon(Icons.search),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() => _searchQuery = value);
+                },
+              ),
+            ),
+            const SizedBox(width: 8),
+            PopupMenuButton(
+              icon: const Icon(Icons.filter_list),
+              tooltip: 'Filter records',
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'team',
+                  child: Text('Filter by Team'),
+                ),
+                const PopupMenuItem(
+                  value: 'match',
+                  child: Text('Filter by Match'),
+                ),
+                const PopupMenuItem(
+                  value: 'alliance',
+                  child: Text('Filter by Alliance'),
+                ),
+              ],
+              onSelected: (value) {
+                // Implement filter logic
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  void _showQRCodeDialog(BuildContext context) {
+  Widget _buildActionBar() {
+    if (!_isSelectionMode && selectedRecords.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Theme.of(context).colorScheme.primaryContainer,
+      child: Row(
+        children: [
+          Text(
+            '${selectedRecords.length} selected',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Spacer(),
+          if (selectedRecords.length >= 2)
+            IconButton(
+              icon: const Icon(Icons.compare),
+              tooltip: 'Compare selected',
+              onPressed: () {
+                final selectedList = _records
+                    .asMap()
+                    .entries
+                    .where((e) => selectedRecords.contains(e.key))
+                    .map((e) => e.value)
+                    .toList();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ComparisonPage(records: selectedList),
+                  ),
+                );
+              },
+            ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: 'Delete selected',
+            onPressed: () => _showDeleteConfirmation(context),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            tooltip: 'Clear selection',
+            onPressed: () {
+              setState(() {
+                selectedRecords.clear();
+                _isSelectionMode = false;
+              });
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRecordsList() {
+    final filteredRecords = _records.where((record) {
+      if (_searchQuery.isEmpty) return true;
+      return record.teamNumber.toString().contains(_searchQuery) ||
+             record.matchNumber.toString().contains(_searchQuery);
+    }).toList();
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(8),
+      itemCount: filteredRecords.length,
+      itemBuilder: (context, index) {
+        final record = filteredRecords[index];
+        return _buildRecordCard(record, index);
+      },
+    );
+  }
+
+  Widget _buildRecordCard(ScoutingRecord record, int index) {
+    final isSelected = selectedRecords.contains(index);
+
+    return Card(
+      elevation: isSelected ? 4 : 1,
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      color: isSelected 
+          ? Theme.of(context).colorScheme.primaryContainer
+          : null,
+      child: InkWell(
+        onTap: () {
+          if (_isSelectionMode) {
+            setState(() {
+              if (isSelected) {
+                selectedRecords.remove(index);
+                if (selectedRecords.isEmpty) {
+                  _isSelectionMode = false;
+                }
+              } else {
+                selectedRecords.add(index);
+              }
+            });
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => RecordDetailPage(record: record),
+              ),
+            );
+          }
+        },
+        onLongPress: () {
+          setState(() {
+            _isSelectionMode = true;
+            if (isSelected) {
+              selectedRecords.remove(index);
+            } else {
+              selectedRecords.add(index);
+            }
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              if (_isSelectionMode)
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Icon(
+                    isSelected ? Icons.check_circle : Icons.circle_outlined,
+                    color: isSelected 
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                  ),
+                ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Team ${record.teamNumber}',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: record.isRedAlliance 
+                                ? Colors.red.withOpacity(0.2)
+                                : Colors.blue.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            record.isRedAlliance ? 'Red' : 'Blue',
+                            style: TextStyle(
+                              color: record.isRedAlliance 
+                                  ? Colors.red
+                                  : Colors.blue,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${record.matchType} Match ${record.matchNumber}',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    if (record.comments.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        record.comments,
+                        style: Theme.of(context).textTheme.bodySmall,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.more_vert),
+                onPressed: () => _showRecordOptions(context, record, index),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.note_alt_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No scouting records yet',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Start scouting matches to see them here',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return SpeedDial(
+      icon: Icons.add,
+      activeIcon: Icons.close,
+      children: [
+        SpeedDialChild(
+          child: const Icon(Icons.qr_code_scanner),
+          label: 'Scan QR Code',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => QrScannerPage()),
+            );
+          },
+        ),
+        SpeedDialChild(
+          child: const Icon(Icons.file_upload),
+          label: 'Import Data',
+          onTap: _importData,
+        ),
+        SpeedDialChild(
+          child: const Icon(Icons.file_download),
+          label: 'Export Data',
+          onTap: _exportData,
+        ),
+        SpeedDialChild(
+          child: const Icon(Icons.analytics),
+          label: 'Team Analysis',
+          onTap: () => _showTeamAnalysis(context),
+        ),
+      ],
+    );
+  }
+
+  void _showRecordOptions(BuildContext context, ScoutingRecord record, int index) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.visibility),
+              title: const Text('View Details'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecordDetailPage(record: record),
+                  ),
+                );
+              },
+            ),
+            if (record.robotPath != null)
+              ListTile(
+                leading: const Icon(Icons.map),
+                title: const Text('View Auto Path'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DrawingPage(
+                        isRedAlliance: record.isRedAlliance,
+                        initialDrawing: record.robotPath,
+                        readOnly: true,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.qr_code),
+              title: const Text('Generate QR Code'),
+              onTap: () {
+                Navigator.pop(context);
+                _showQRCodeDialog(context, record);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text('Delete'),
+              textColor: Colors.red,
+              iconColor: Colors.red,
+              onTap: () {
+                Navigator.pop(context);
+                _showDeleteConfirmation(context, index);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showQRCodeDialog(BuildContext context, ScoutingRecord record) {
     // TODO: Implement QR Code dialog
   }
 
@@ -721,48 +999,6 @@ class DataPageState extends State<DataPage> with WidgetsBindingObserver {
   void _showDeleteConfirmation(BuildContext context, [int? index]) {
     // TODO: Implement delete confirmation dialog
   }
-
-  Widget _buildDetailSection(String title, List<Widget> children) {
-    return Card(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(title, style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          ...children,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return ListTile(
-      title: Text(label),
-      subtitle: Text(value),
-    );
-  }
-
-  Widget ScoutingRecordCard({
-    required ScoutingRecord record,
-    required bool isSelected,
-    required ValueChanged<bool?> onSelected,
-    required VoidCallback onDelete,
-  }) {
-    return Card(
-      child: ListTile(
-        title: Text('Match ${record.matchNumber} - Team ${record.teamNumber}'),
-        subtitle: Text(record.matchType),
-        selected: isSelected,
-        onTap: () => onSelected(!isSelected),
-        trailing: IconButton(
-          icon: Icon(Icons.delete),
-          onPressed: onDelete,
-        ),
-      ),
-    );
-  }
 }
 
 // Add this extension for median calculation
@@ -775,5 +1011,69 @@ extension ListNumberExtension on List<num> {
       return (sorted[middle - 1] + sorted[middle]) / 2;
     }
     return sorted[middle].toDouble();
+  }
+}
+
+class TeamNumberSelector extends StatelessWidget {
+  final int initialValue;
+  final ValueChanged<int> onChanged;
+
+  const TeamNumberSelector({
+    Key? key,
+    required this.initialValue,
+    required this.onChanged,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: () async {
+        int? selected = await showDialog<int>(
+          context: context,
+          builder: (context) => TeamNumberSelectorDialog(
+            initialValue: initialValue,
+            onValueChanged: (value) {
+              // This callback fires immediately when digits change.
+              // (No extra action needed here.)
+            },
+          ),
+        );
+        if (selected != null) {
+          onChanged(selected);
+        }
+      },
+      child: Text(initialValue.toString()),
+    );
+  }
+}
+
+// --- New stub for TeamNumberSelectorDialog ---
+class TeamNumberSelectorDialog extends StatefulWidget {
+  final int initialValue;
+  final ValueChanged<int> onValueChanged;
+
+  const TeamNumberSelectorDialog({
+    Key? key,
+    required this.initialValue,
+    required this.onValueChanged,
+  }) : super(key: key);
+
+  @override
+  _TeamNumberSelectorDialogState createState() => _TeamNumberSelectorDialogState();
+}
+
+class _TeamNumberSelectorDialogState extends State<TeamNumberSelectorDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text("Select Team Number"),
+      content: Text("Team number selection dialog placeholder."),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(widget.initialValue),
+          child: Text("OK"),
+        ),
+      ],
+    );
   }
 }

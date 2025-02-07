@@ -6,6 +6,9 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'dart:convert';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
+import 'drawing_page.dart' as drawing;
+import 'dart:math' show max;
+import 'scouting.dart' show SectionHeader;
 
 // Fallback implementation for LinkedScrollControllerGroup in case it's not available in your Flutter version.
 class LinkedScrollControllerGroup {
@@ -104,136 +107,297 @@ class TeamStats {
 
 class ComparisonPage extends StatefulWidget {
   final List<ScoutingRecord> records;
-
   const ComparisonPage({Key? key, required this.records}) : super(key: key);
 
   @override
   _ComparisonPageState createState() => _ComparisonPageState();
 }
 
-class _ComparisonViewState extends State<ComparisonView> with SingleTickerProviderStateMixin {
+class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final ScrollController _horizontalScrollController = ScrollController();
-  
+  final LinkedScrollControllerGroup _scrollControllers = LinkedScrollControllerGroup();
+  late ScrollController _headerScrollController;
+  late ScrollController _contentScrollController;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _headerScrollController = _scrollControllers.addAndGetController();
+    _contentScrollController = _scrollControllers.addAndGetController();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _horizontalScrollController.dispose();
+    _headerScrollController.dispose();
+    _contentScrollController.dispose();
+    _scrollControllers.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          controller: _horizontalScrollController,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Container(
-            constraints: BoxConstraints(
-              minWidth: MediaQuery.of(context).size.width,
-            ),
-            color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: widget.records.map((record) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                  child: TeamHeader(
-                    teamNumber: record.teamNumber,
-                    isRedAlliance: record.isRedAlliance,
-                    matchCount: widget.records.where((r) => r.teamNumber == record.teamNumber).length,
+    Map<int, List<ScoutingRecord>> recordsByTeam = {};
+    for (var record in widget.records) {
+      recordsByTeam.putIfAbsent(record.teamNumber, () => []).add(record);
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text('Compare Teams'),
+        centerTitle: true,
+      ),
+      body: Column(
+        children: [
+          Material(
+            elevation: 4,
+            child: Column(
+              children: [
+                // Team cards
+                Container(
+                  height: 100,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: ListView.builder(
+                    controller: _headerScrollController,
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: recordsByTeam.length,
+                    itemBuilder: (context, index) {
+                      final entry = recordsByTeam.entries.elementAt(index);
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: _buildTeamCard(
+                          teamNumber: entry.key,
+                          matches: entry.value,
+                          isMultipleMatches: entry.value.length > 1,
+                        ),
+                      );
+                    },
                   ),
-                );
-              }).toList(),
+                ),
+                // Tab bar
+                TabBar(
+                  controller: _tabController,
+                  isScrollable: true,
+                  tabAlignment: TabAlignment.center,
+                  tabs: const [
+                    Tab(icon: Icon(Icons.auto_awesome), text: 'Auto'),
+                    Tab(icon: Icon(Icons.sports_esports), text: 'Teleop'),
+                    Tab(icon: Icon(Icons.flag), text: 'Endgame'),
+                    Tab(icon: Icon(Icons.analytics), text: 'Overview'),
+                  ],
+                ),
+              ],
             ),
           ),
+          // Tab content
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildScrollableTab(AutoTab(records: _processRecords(recordsByTeam)), recordsByTeam.length),
+                _buildScrollableTab(TeleopTab(records: _processRecords(recordsByTeam)), recordsByTeam.length),
+                _buildScrollableTab(EndgameTab(records: _processRecords(recordsByTeam)), recordsByTeam.length),
+                OverviewTab(records: widget.records),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<ScoutingRecord> _processRecords(Map<int, List<ScoutingRecord>> recordsByTeam) {
+    return recordsByTeam.entries.map((entry) {
+      if (entry.value.length == 1) return entry.value.first;
+      
+      // Calculate averages for multiple matches
+      var matches = entry.value;
+      return ScoutingRecord(
+        teamNumber: entry.key,
+        matchNumber: matches.first.matchNumber,
+        matchType: '${matches.length} Matches (Avg)',
+        isRedAlliance: matches.first.isRedAlliance,
+        timestamp: matches.first.timestamp,
+        // Required fields
+        cageType: matches.first.cageType,
+        coralPreloaded: _mostCommon(matches.map((r) => r.coralPreloaded)),
+        taxis: _mostCommon(matches.map((r) => r.taxis)),
+        algaeRemoved: _average(matches.map((r) => r.algaeRemoved)),
+        coralPlaced: _mostCommonString(matches.map((r) => r.coralPlaced)),
+        rankingPoint: _mostCommon(matches.map((r) => r.rankingPoint)),
+        canPickupCoral: _mostCommon(matches.map((r) => r.canPickupCoral)),
+        canPickupAlgae: _mostCommon(matches.map((r) => r.canPickupAlgae)),
+        coralPickupMethod: _mostCommonString(matches.map((r) => r.coralPickupMethod)),
+        // Auto
+        autoAlgaeInNet: _average(matches.map((r) => r.autoAlgaeInNet)),
+        autoAlgaeInProcessor: _average(matches.map((r) => r.autoAlgaeInProcessor)),
+        // Teleop
+        algaeScoredInNet: _average(matches.map((r) => r.algaeScoredInNet)),
+        coralRankingPoint: _mostCommon(matches.map((r) => r.coralRankingPoint)),
+        algaeProcessed: _average(matches.map((r) => r.algaeProcessed)),
+        processedAlgaeScored: _average(matches.map((r) => r.processedAlgaeScored)),
+        processorCycles: _average(matches.map((r) => r.processorCycles)),
+        coOpPoint: _mostCommon(matches.map((r) => r.coOpPoint)),
+        // Endgame
+        returnedToBarge: _mostCommon(matches.map((r) => r.returnedToBarge)),
+        cageHang: _mostCommonString(matches.map((r) => r.cageHang)),
+        bargeRankingPoint: _mostCommon(matches.map((r) => r.bargeRankingPoint)),
+        // Other
+        breakdown: _mostCommon(matches.map((r) => r.breakdown)),
+        comments: matches.map((r) => r.comments).where((c) => c.isNotEmpty).join('; '),
+        // Coral placement
+        coralOnReefHeight1: _average(matches.map((r) => r.coralOnReefHeight1)),
+        coralOnReefHeight2: _average(matches.map((r) => r.coralOnReefHeight2)),
+        coralOnReefHeight3: _average(matches.map((r) => r.coralOnReefHeight3)),
+        coralOnReefHeight4: _average(matches.map((r) => r.coralOnReefHeight4)),
+        // Additional fields
+        feederStation: _mostCommonString(matches.map((r) => r.feederStation)),
+        robotPath: matches.first.robotPath, // Take the first match's path
+      );
+    }).toList();
+  }
+
+  int _average(Iterable<int> values) {
+    if (values.isEmpty) return 0;
+    return (values.reduce((a, b) => a + b) / values.length).round();
+  }
+
+  bool _mostCommon(Iterable<bool> values) {
+    if (values.isEmpty) return false;
+    return values.where((v) => v).length > values.length / 2;
+  }
+
+  String _mostCommonString(Iterable<String> values) {
+    if (values.isEmpty) return '';
+    Map<String, int> counts = {};
+    for (var value in values) {
+      counts[value] = (counts[value] ?? 0) + 1;
+    }
+    return counts.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
+  }
+
+  Widget _buildTeamCard({
+    required int teamNumber,
+    required List<ScoutingRecord> matches,
+    required bool isMultipleMatches,
+  }) {
+    final record = matches.first;
+    return SizedBox(
+      width: 130,
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance,
+            width: 2,
+          ),
         ),
-        TabBar(
-          controller: _tabController,
-          isScrollable: true,  // Make tabs scrollable
-          tabs: const [
-            Tab(text: 'Auto'),
-            Tab(text: 'Teleop'),
-            Tab(text: 'Endgame'),
-            Tab(text: 'Overview'),
-          ],
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: AutoComparisonTab(records: widget.records),
+              Text(
+                'Team $teamNumber',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: TeleopComparisonTab(records: widget.records),
+              const SizedBox(height: 4),
+              Text(
+                isMultipleMatches
+                    ? '${matches.length} Matches (Avg)'
+                    : 'Match ${record.matchNumber}',
+                style: Theme.of(context).textTheme.bodySmall,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: EndgameComparisonTab(records: widget.records),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: (record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance)
+                      .withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  record.isRedAlliance ? 'Red' : 'Blue',
+                  style: TextStyle(
+                    color: record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-              OverviewComparisonTab(records: widget.records),
             ],
           ),
         ),
-      ],
+      ),
+    );
+  }
+
+  Widget _buildScrollableTab(Widget content, int teamCount) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      controller: _contentScrollController,
+      child: SizedBox(
+        width: max(
+          MediaQuery.of(context).size.width,
+          teamCount * 150.0,
+        ),
+        child: content,
+      ),
     );
   }
 }
 
-class TeamHeader extends StatelessWidget {
-  final int teamNumber;
-  final bool isRedAlliance;
-  final int matchCount;
-
-  const TeamHeader({
-    Key? key,
-    required this.teamNumber,
-    required this.isRedAlliance,
-    required this.matchCount,
-  }) : super(key: key);
+class AutoTab extends StatelessWidget {
+  final List<ScoutingRecord> records;
+  const AutoTab({Key? key, required this.records}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: (isRedAlliance ? Colors.red : Colors.blue).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: (isRedAlliance ? Colors.red : Colors.blue).withOpacity(0.3),
-        ),
-      ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          FittedBox(
-            fit: BoxFit.scaleDown,
-            child: Text(
-              'Team $teamNumber',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: isRedAlliance ? Colors.red : Colors.blue,
-              ),
-            ),
+          SectionHeader(
+            title: 'Scoring',
+            color: Theme.of(context).colorScheme.primary,
           ),
-          Text(
-            '$matchCount matches',
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).textTheme.bodySmall?.color,
-            ),
+          ComparisonMetric(
+            label: 'Algae Removed',
+            values: records.map((r) => r.algaeRemoved.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Algae in Net',
+            values: records.map((r) => r.autoAlgaeInNet.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          SectionHeader(
+            title: 'Mobility',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'Taxis',
+            values: records.map((r) => r.taxis ? 'Yes' : 'No').toList(),
+            colors: records.map((r) => r.taxis ? AppColors.success : Theme.of(context).colorScheme.error).toList(),
           ),
         ],
       ),
@@ -256,89 +420,41 @@ class ComparisonMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: BoxConstraints(
-        minWidth: MediaQuery.of(context).size.width,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 150,  // Fixed width for labels
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          ...List.generate(values.length, (index) {
-            return Container(
-              width: 100,  // Fixed width for values
-              padding: EdgeInsets.all(8),
-              margin: EdgeInsets.symmetric(horizontal: 4),
-              decoration: BoxDecoration(
-                color: colors[index].withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: colors[index].withOpacity(0.3),
-                ),
-              ),
-              child: Text(
-                values[index],
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors[index],
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}
-
-class AutoComparisonTab extends StatelessWidget {
-  final List<ScoutingRecord> records;
-
-  const AutoComparisonTab({Key? key, required this.records}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
+      margin: const EdgeInsets.only(bottom: 12),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ComparisonMetric(
-            label: 'Algae Removed',
-            values: records.map((r) => r.algaeRemoved.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
+          Padding(
+            padding: const EdgeInsets.only(left: 8, bottom: 8),
+            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
           ),
-          ComparisonMetric(
-            label: 'Algae in Net',
-            values: records.map((r) => r.autoAlgaeInNet.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
-          ),
-          ComparisonMetric(
-            label: 'Algae in Processor',
-            values: records.map((r) => r.autoAlgaeInProcessor.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
-          ),
-          ComparisonMetric(
-            label: 'Taxis',
-            values: records.map((r) => r.taxis ? 'Yes' : 'No').toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
-          ),
-          ComparisonMetric(
-            label: 'Coral Placed',
-            values: records.map((r) => r.coralPlaced).toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
-          ),
-          ComparisonMetric(
-            label: 'Ranking Point',
-            values: records.map((r) => r.rankingPoint ? 'Yes' : 'No').toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
+          Row(
+            children: values.asMap().entries.map((entry) {
+              return SizedBox(
+                width: 150, // Fixed width to match team cards
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: colors[entry.key].withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: colors[entry.key].withOpacity(0.3),
+                    ),
+                  ),
+                  child: Text(
+                    entry.value,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: colors[entry.key],
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              );
+            }).toList(),
           ),
         ],
       ),
@@ -346,40 +462,46 @@ class AutoComparisonTab extends StatelessWidget {
   }
 }
 
-class TeleopComparisonTab extends StatelessWidget {
+class TeleopTab extends StatelessWidget {
   final List<ScoutingRecord> records;
 
-  const TeleopComparisonTab({Key? key, required this.records}) : super(key: key);
+  const TeleopTab({Key? key, required this.records}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SectionHeader(
+            title: 'Teleop',
+            color: Theme.of(context).colorScheme.primary,
+          ),
           ComparisonMetric(
             label: 'Algae in Net',
             values: records.map((r) => r.algaeScoredInNet.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
             label: 'Algae Processed',
             values: records.map((r) => r.algaeProcessed.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
             label: 'Processed Scored',
             values: records.map((r) => r.processedAlgaeScored.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
             label: 'Processor Cycles',
             values: records.map((r) => r.processorCycles.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
             label: 'Co-Op Point',
             values: records.map((r) => r.coOpPoint ? 'Yes' : 'No').toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
         ],
       ),
@@ -387,30 +509,36 @@ class TeleopComparisonTab extends StatelessWidget {
   }
 }
 
-class EndgameComparisonTab extends StatelessWidget {
+class EndgameTab extends StatelessWidget {
   final List<ScoutingRecord> records;
 
-  const EndgameComparisonTab({Key? key, required this.records}) : super(key: key);
+  const EndgameTab({Key? key, required this.records}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SectionHeader(
+            title: 'Endgame',
+            color: Theme.of(context).colorScheme.primary,
+          ),
           ComparisonMetric(
             label: 'Returned to Barge',
             values: records.map((r) => r.returnedToBarge ? 'Yes' : 'No').toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
             label: 'Cage Hang',
             values: records.map((r) => r.cageHang).toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
             label: 'Barge RP',
             values: records.map((r) => r.bargeRankingPoint ? 'Yes' : 'No').toList(),
-            colors: records.map((r) => r.isRedAlliance ? Colors.red : Colors.blue).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
         ],
       ),
@@ -418,10 +546,10 @@ class EndgameComparisonTab extends StatelessWidget {
   }
 }
 
-class OverviewComparisonTab extends StatelessWidget {
+class OverviewTab extends StatelessWidget {
   final List<ScoutingRecord> records;
 
-  const OverviewComparisonTab({Key? key, required this.records}) : super(key: key);
+  const OverviewTab({Key? key, required this.records}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -464,6 +592,8 @@ class TeamOverviewCard extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   color: record.isRedAlliance ? Colors.red : Colors.blue,
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
@@ -482,7 +612,7 @@ class TeamOverviewCard extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => DrawingPage(
+                          builder: (context) => drawing.DrawingPage(
                             isRedAlliance: record.isRedAlliance,
                             initialDrawing: record.robotPath,
                             readOnly: true,
@@ -497,6 +627,33 @@ class TeamOverviewCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class SectionHeader extends StatelessWidget {
+  final String title;
+  final Color color;
+
+  const SectionHeader({
+    Key? key,
+    required this.title,
+    required this.color,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: color,
+          letterSpacing: 0.5,
+        ),
       ),
     );
   }

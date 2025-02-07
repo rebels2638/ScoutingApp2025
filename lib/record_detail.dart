@@ -30,40 +30,44 @@ class RecordDetailPage extends StatelessWidget {
     
     return Scaffold(
       appBar: AppBar(
-        title: Text('Record Details'),
+        title: Text('Match Details'),
       ),
-      body: ListView(
-        padding: EdgeInsets.all(AppSpacing.md),
-        children: [
-          _buildDetailTile("Timestamp", record.timestamp),
-          _buildDetailTile("Match Number", record.matchNumber.toString()),
-          _buildDetailTile("Match Type", record.matchType),
-          _buildDetailTile("Team Number", record.teamNumber.toString()),
-          _buildDetailTile("Alliance", record.isRedAlliance ? "Red" : "Blue"),
-          _buildDetailTile("Cage Type", record.cageType),
-          _buildDetailTile("Coral Preloaded", record.coralPreloaded ? "Yes" : "No"),
-          // ... add additional details as needed ...
-          // Optionally include auto or teleop stats, breakdown, etc.
-          if (drawingLines.isNotEmpty)
-            SizedBox(height: 20),
-          if (drawingLines.isNotEmpty)
-            ElevatedButton(
-              onPressed: () {
-                // Open the DrawingPage in read-only mode, passing the saved drawing
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DrawingPage(
-                      isRedAlliance: record.isRedAlliance,
-                      readOnly: true,
-                      initialLines: drawingLines,
+      body: SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Team ${record.teamNumber}'),
+            Text('${record.matchType} Match ${record.matchNumber}'),
+            // Add more record details here
+            _buildDetailTile("Timestamp", record.timestamp),
+            _buildDetailTile("Match Type", record.matchType),
+            _buildDetailTile("Alliance", record.isRedAlliance ? "Red" : "Blue"),
+            _buildDetailTile("Cage Type", record.cageType),
+            _buildDetailTile("Coral Preloaded", record.coralPreloaded ? "Yes" : "No"),
+            // ... add additional details as needed ...
+            // Optionally include auto or teleop stats, breakdown, etc.
+            if (drawingLines.isNotEmpty)
+              SizedBox(height: 20),
+            if (drawingLines.isNotEmpty)
+              ElevatedButton(
+                onPressed: () {
+                  // Open the DrawingPage in read-only mode, passing the saved drawing
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DrawingPage(
+                        isRedAlliance: record.isRedAlliance,
+                        readOnly: true,
+                        initialLines: drawingLines,
+                      ),
                     ),
-                  ),
-                );
-              },
-              child: Text("View Drawing"),
-            ),
-        ],
+                  );
+                },
+                child: Text("View Drawing"),
+              ),
+          ],
+        ),
       ),
     );
   }

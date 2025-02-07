@@ -123,19 +123,19 @@ class _QrScannerPageState extends State<QrScannerPage> {
         actions: [
           IconButton(
             icon: Icon(Icons.flash_on),
-            onPressed: () {
-              controller.toggleTorch();
-            },
+            onPressed: () => controller.toggleTorch(),
           ),
         ],
       ),
       body: MobileScanner(
         controller: controller,
         onDetect: (capture) {
-          final barcode = capture.barcodes.first;
-          if (barcode.rawValue != null) {
-            controller.stop();
-            _processScannedData(barcode.rawValue);
+          final List<Barcode> barcodes = capture.barcodes;
+          for (final barcode in barcodes) {
+            if (barcode.rawValue != null) {
+              controller.stop();
+              _processScannedData(barcode.rawValue);
+            }
           }
         },
       ),
