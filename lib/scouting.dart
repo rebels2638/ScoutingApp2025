@@ -424,18 +424,22 @@ class _ScoutingPageState extends State<ScoutingPage> {
             title: 'Coral',
             color: Theme.of(context).colorScheme.primary,
           ),
-          DropdownCard(
+          FormRow(
             label: 'Cage Type',
-            value: cageType,
-            items: const ['Shallow', 'Deep'],
-            onChanged: (value) {
-              if (value != null) {
+            input: DropdownCard(
+              label: 'Cage Type',
+              value: cageType,
+              items: const [
+                'Shallow',
+                'Deep',
+              ],
+              onChanged: (value) {
                 setState(() {
-                  cageType = value;
+                  cageType = value!;
                   _logStateChange('cageType', cageType, value);
                 });
-              }
-            },
+              },
+            ),
           ),
           SwitchCard(
             label: 'Coral Preloaded',
@@ -447,18 +451,23 @@ class _ScoutingPageState extends State<ScoutingPage> {
               });
             },
           ),
-          DropdownCard(
+          FormRow(
             label: 'Coral Placed',
-            value: coralPlaced,
-            items: const ['No', 'Yes - Shallow', 'Yes - Deep'],
-            onChanged: (value) {
-              if (value != null) {
+            input: DropdownCard(
+              label: 'Coral Placed',
+              value: coralPlaced,
+              items: const [
+                'No',
+                'Yes - Shallow',
+                'Yes - Deep',
+              ],
+              onChanged: (value) {
                 setState(() {
-                  coralPlaced = value;
+                  coralPlaced = value!;
                   _logStateChange('coralPlaced', coralPlaced, value);
                 });
-              }
-            },
+              },
+            ),
           ),
           
           // Ranking point
@@ -623,18 +632,40 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 },
               ),
               SizedBox(height: 12),
-              DropdownCard(
-                label: 'Coral Pickup Method',
-                value: coralPickupMethod,
-                items: const ['None', 'Ground', 'Human Player', 'Both'],
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      coralPickupMethod = value;
-                      _logStateChange('coralPickupMethod', coralPickupMethod, value);
-                    });
-                  }
-                },
+              Row(
+                children: [
+                  Expanded(
+                    flex: 2,  // Give more space to the label
+                    child: Text(
+                      'Coral Pickup Method',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),  // Add spacing between label and dropdown
+                  Expanded(
+                    flex: 3,  // Give more space to the dropdown
+                    child: DropdownCard(
+                      label: 'Coral Pickup Method',
+                      value: coralPickupMethod,
+                      items: const [
+                        'None',
+                        'Ground',
+                        'Source',
+                        'Both',
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          coralPickupMethod = value!;
+                          _logStateChange('coralPickupMethod', coralPickupMethod, value);
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -698,18 +729,23 @@ class _ScoutingPageState extends State<ScoutingPage> {
             title: 'Hanging',
             color: Theme.of(context).colorScheme.primary,
           ),
-          DropdownCard(
+          FormRow(
             label: 'Cage Hang',
-            value: cageHang,
-            items: const ['None', 'Low', 'Mid', 'High'],
-            onChanged: (value) {
-              if (value != null) {
+            input: DropdownCard(
+              label: '',
+              value: cageHang,
+              items: const [
+                'None',
+                'Shallow',
+                'Deep',
+              ],
+              onChanged: (value) {
                 setState(() {
-                  cageHang = value;
+                  cageHang = value!;
                   _logStateChange('cageHang', cageHang, value);
                 });
-              }
-            },
+              },
+            ),
           ),
           SwitchCard(
             label: 'Barge RP',
@@ -958,19 +994,23 @@ class SectionHeader extends StatelessWidget {
   final String title;
   final Color color;
 
-  const SectionHeader({required this.title, required this.color});
+  const SectionHeader({
+    Key? key,
+    required this.title,
+    required this.color,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+      padding: const EdgeInsets.only(top: 24, bottom: 12),
       child: Text(
-        title,
+        title.toUpperCase(),
         style: TextStyle(
-          fontSize: 14,
+          fontSize: 17,  // Increased from 14
           fontWeight: FontWeight.w600,
           color: color,
-          letterSpacing: 0.5,
+          letterSpacing: 0.8,  // Adjusted for better readability
         ),
       ),
     );
@@ -1005,50 +1045,68 @@ class ToggleRow extends StatelessWidget {
   final Function(int) onSelected;
 
   const ToggleRow({
+    Key? key,
     required this.label,
     required this.options,
     required this.onSelected,
     required this.selectedIndex,
-  });
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
-        ),
-        ToggleButtons(
-          borderRadius: BorderRadius.circular(8),
-          selectedBorderColor: Colors.transparent,
-          borderWidth: 1,
-          fillColor: selectedIndex == 0
-              ? (isDark ? Colors.blue.shade900 : Colors.green.shade300)
-              : (isDark ? Colors.red.shade900 : Colors.red.shade300),
-          color: Theme.of(context).textTheme.bodyLarge?.color,
-          selectedColor: Theme.of(context).textTheme.bodyLarge?.color,
-          constraints: BoxConstraints(minWidth: 100, minHeight: 40),
-          isSelected: List.generate(
-            options.length,
-            (index) => index == selectedIndex,
+          const SizedBox(width: 8),
+          ToggleButtons(
+            borderRadius: BorderRadius.circular(8),
+            selectedBorderColor: Colors.transparent,
+            borderWidth: 1,
+            fillColor: selectedIndex == 0
+                ? (isDark ? Colors.blue.shade900 : Colors.green.shade300)
+                : (isDark ? Colors.red.shade900 : Colors.red.shade300),
+            color: Theme.of(context).textTheme.bodyLarge?.color,
+            selectedColor: Theme.of(context).textTheme.bodyLarge?.color,
+            constraints: const BoxConstraints(minWidth: 60, minHeight: 36),
+            isSelected: List.generate(
+              options.length,
+              (index) => index == selectedIndex,
+            ),
+            children: options
+                .map((option) => Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Text(
+                        option,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ))
+                .toList(),
+            onPressed: onSelected,
           ),
-          children: options
-              .map((option) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(option),
-                  ))
-              .toList(),
-          onPressed: onSelected,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1084,7 +1142,8 @@ class CounterRow extends StatelessWidget {
             child: Text(
               label,
               style: TextStyle(
-                fontSize: 15,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
@@ -1207,7 +1266,7 @@ class DrawingButton extends StatefulWidget {
 }
 
 class _DrawingButtonState extends State<DrawingButton> {
-  late bool hasPath;
+  bool hasPath = false;
 
   @override
   void initState() {
@@ -1291,7 +1350,8 @@ class SwitchCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 12.0),
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
         borderRadius: BorderRadius.circular(8),
@@ -1302,19 +1362,17 @@ class SwitchCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 15,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
-          Switch.adaptive(
+          Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: Theme.of(context).colorScheme.primary,
           ),
         ],
       ),
@@ -1403,7 +1461,6 @@ class _NumberInputState extends State<NumberInput> {
               }
             },
             onEditingComplete: () {
-              // Move to next focus instead of closing keyboard
               FocusScope.of(context).nextFocus();
             },
           ),
@@ -1432,34 +1489,29 @@ class DropdownCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: AppShadows.small,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
       ),
-      padding: EdgeInsets.all(AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.primary,
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: DropdownButton<String>(
+        value: value,
+        isExpanded: true,
+        underline: SizedBox(),
+        icon: Icon(Icons.arrow_drop_down, size: 20),
+        isDense: true,
+        padding: EdgeInsets.zero,
+        items: items.map((item) {
+          return DropdownMenuItem(
+            value: item,
+            child: Text(
+              item,
+              style: TextStyle(fontSize: 14),
             ),
-          ),
-          SizedBox(height: AppSpacing.xs),
-          DropdownButton<String>(
-            value: value,
-            isExpanded: true,
-            underline: SizedBox(),
-            items: items.map((item) {
-              return DropdownMenuItem(
-                value: item,
-                child: Text(item),
-              );
-            }).toList(),
-            onChanged: onChanged,
-          ),
-        ],
+          );
+        }).toList(),
+        onChanged: onChanged,
       ),
     );
   }
@@ -1577,6 +1629,53 @@ class _AllianceButton extends StatelessWidget {
             fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// Create a reusable FormRow widget for consistent styling
+class FormRow extends StatelessWidget {
+  final String label;
+  final Widget input;
+
+  const FormRow({
+    Key? key,
+    required this.label,
+    required this.input,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 3,
+            child: input,
+          ),
+        ],
       ),
     );
   }

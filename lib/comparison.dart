@@ -159,25 +159,27 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
             child: Column(
               children: [
                 // Team cards
-                Container(
-                  height: 100,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                  child: ListView.builder(
-                    controller: _headerScrollController,
-                    scrollDirection: Axis.horizontal,
-                    itemCount: recordsByTeam.length,
-                    itemBuilder: (context, index) {
-                      final entry = recordsByTeam.entries.elementAt(index);
-                      return Container(
-                        width: 150,
-                        margin: const EdgeInsets.only(right: 16),
-                        child: _buildTeamCard(
-                          teamNumber: entry.key,
-                          matches: entry.value,
-                          isMultipleMatches: entry.value.length > 1,
-                        ),
-                      );
-                    },
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+                  child: SizedBox(
+                    height: 100,  // Match the team card height
+                    child: ListView.builder(
+                      controller: _headerScrollController,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: recordsByTeam.length,
+                      itemBuilder: (context, index) {
+                        final entry = recordsByTeam.entries.elementAt(index);
+                        return Container(
+                          width: 140,
+                          margin: const EdgeInsets.only(right: 20),
+                          child: _buildTeamCard(
+                            teamNumber: entry.key,
+                            matches: entry.value,
+                            isMultipleMatches: entry.value.length > 1,
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
                 // Tab bar
@@ -200,9 +202,30 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
             child: TabBarView(
               controller: _tabController,
               children: [
-                _buildScrollableTab(AutoTab(records: _processRecords(recordsByTeam)), recordsByTeam.length),
-                _buildScrollableTab(TeleopTab(records: _processRecords(recordsByTeam)), recordsByTeam.length),
-                _buildScrollableTab(EndgameTab(records: _processRecords(recordsByTeam)), recordsByTeam.length),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  controller: _contentScrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 16),  // Match team cards padding
+                    child: AutoTab(records: _processRecords(recordsByTeam)),
+                  ),
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  controller: _contentScrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: TeleopTab(records: _processRecords(recordsByTeam)),
+                  ),
+                ),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  controller: _contentScrollController,
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 16),
+                    child: EndgameTab(records: _processRecords(recordsByTeam)),
+                  ),
+                ),
                 OverviewTab(records: widget.records),
               ],
             ),
@@ -291,8 +314,10 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
   }) {
     final record = matches.first;
     return SizedBox(
-      width: 150,
+      width: 140,
+      height: 100,  // Fixed height to prevent overflow
       child: Card(
+        margin: EdgeInsets.zero,  // Remove default card margin
         elevation: 2,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -302,37 +327,35 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          padding: const EdgeInsets.all(8),  // Reduced padding
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,  // Center content vertically
             children: [
               Text(
                 'Team $teamNumber',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: 18,  // Slightly reduced font size
                   fontWeight: FontWeight.bold,
                   color: record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 4),  // Reduced spacing
               Text(
                 isMultipleMatches
-                    ? '${matches.length} Matches (Avg)'
+                    ? '${matches.length} Matches'
                     : 'Match ${record.matchNumber}',
                 style: Theme.of(context).textTheme.bodySmall,
                 textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 4),  // Reduced spacing
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),  // Reduced padding
                 decoration: BoxDecoration(
                   color: (record.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance)
                       .withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   record.isRedAlliance ? 'Red' : 'Blue',
@@ -341,6 +364,7 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
@@ -355,7 +379,7 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
       scrollDirection: Axis.horizontal,
       controller: _contentScrollController,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.only(left: 16),
         child: content,
       ),
     );
@@ -364,15 +388,48 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
 
 class AutoTab extends StatelessWidget {
   final List<ScoutingRecord> records;
+
   const AutoTab({Key? key, required this.records}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16),  // Remove left padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
+          // Starting Configuration
+          SectionHeader(
+            title: 'Starting Configuration',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'Cage Type',
+            values: records.map((r) => r.cageType).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Coral Preloaded',
+            values: records.map((r) => r.coralPreloaded ? 'Yes' : 'No').toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // Auto Movement
+          SectionHeader(
+            title: 'Auto Movement',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'Taxis',
+            values: records.map((r) => r.taxis ? 'Yes' : 'No').toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // Auto Scoring
+          SectionHeader(
+            title: 'Auto Scoring',
+            color: Theme.of(context).colorScheme.primary,
+          ),
           ComparisonMetric(
             label: 'Algae Removed',
             values: records.map((r) => r.algaeRemoved.toString()).toList(),
@@ -384,8 +441,18 @@ class AutoTab extends StatelessWidget {
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
-            label: 'Taxis',
-            values: records.map((r) => r.taxis ? 'Yes' : 'No').toList(),
+            label: 'Algae in Processor',
+            values: records.map((r) => r.autoAlgaeInProcessor.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Coral Placed',
+            values: records.map((r) => r.coralPlaced).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Ranking Point',
+            values: records.map((r) => r.rankingPoint ? 'Yes' : 'No').toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
         ],
@@ -397,7 +464,7 @@ class AutoTab extends StatelessWidget {
 class ComparisonMetric extends StatelessWidget {
   final String label;
   final List<String> values;
-  final List<Color> colors;
+  final List<Color> colors;  // This will only be used for team alliance colors
 
   const ComparisonMetric({
     Key? key,
@@ -406,61 +473,99 @@ class ComparisonMetric extends StatelessWidget {
     required this.colors,
   }) : super(key: key);
 
+  Color _getValueColor(String value) {
+    // For Yes/No values
+    if (value == 'Yes') return Colors.green.withOpacity(0.15);
+    if (value == 'No') return Colors.red.withOpacity(0.15);
+    if (value.startsWith('Yes')) return Colors.green.withOpacity(0.15);
+    
+    // For numeric values
+    if (value == '0' || value == '0.0') return Colors.red.withOpacity(0.15);
+    if (double.tryParse(value) != null) {
+      double numValue = double.parse(value);
+      if (numValue > 0) return Colors.green.withOpacity(0.15);
+      if (numValue < 0) return Colors.red.withOpacity(0.15);
+    }
+    
+    // For cage hang values
+    if (value == 'None') return Colors.red.withOpacity(0.15);
+    if (value == 'Shallow' || value == 'Deep') return Colors.green.withOpacity(0.15);
+    
+    return Colors.transparent;
+  }
+
+  Color _getBorderColor(String value) {
+    // For Yes/No values
+    if (value == 'Yes') return Colors.green.shade700;
+    if (value == 'No') return Colors.red.shade700;
+    if (value.startsWith('Yes')) return Colors.green.shade700;
+    
+    // For numeric values
+    if (value == '0' || value == '0.0') return Colors.red.shade700;
+    if (double.tryParse(value) != null) {
+      double numValue = double.parse(value);
+      if (numValue > 0) return Colors.green.shade700;
+      if (numValue < 0) return Colors.red.shade700;
+    }
+    
+    // For cage hang values
+    if (value == 'None') return Colors.red.shade700;
+    if (value == 'Shallow' || value == 'Deep') return Colors.green.shade700;
+    
+    return Colors.grey;
+  }
+
+  Color _getTextColor(BuildContext context, String value) {
+    return _getBorderColor(value);  // Use the same color as border for text
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(left: 16, bottom: 8),
-            child: Text(label, style: Theme.of(context).textTheme.bodyMedium),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,  // Decreased from 16
+              fontWeight: FontWeight.w400,  // Made lighter
+              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),  // Slightly dimmed
+            ),
           ),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: values.asMap().entries.map((entry) {
-              return Container(
-                width: 150,
-                margin: const EdgeInsets.only(right: 16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: values[entry.key].isEmpty 
-                        ? Colors.black12 
-                        : colors[entry.key].withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: values[entry.key].isEmpty 
-                        ? null 
-                        : Border.all(
-                            color: colors[entry.key].withOpacity(0.3),
-                          ),
-                    image: values[entry.key].isEmpty 
-                        ? const DecorationImage(
-                            image: AssetImage('assets/hazard_stripes.png'),
-                            repeat: ImageRepeat.repeat,
-                            opacity: 0.2,
-                          )
-                        : null,
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
+            for (int i = 0; i < values.length; i++)
+              Container(
+                width: 140,  // Fixed width for all boxes
+                height: 50,  // Fixed height for all boxes
+                margin: const EdgeInsets.only(right: 20, bottom: 16),
+                decoration: BoxDecoration(
+                  color: _getValueColor(values[i]),
+                  border: Border.all(
+                    color: _getBorderColor(values[i]),
+                    width: 2,
                   ),
-                  child: values[entry.key].isEmpty 
-                      ? null
-                      : Text(
-                          values[entry.key],
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: colors[entry.key],
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+                child: Center(  // Center the text both horizontally and vertically
+                  child: Text(
+                    values[i],
+                    style: TextStyle(
+                      color: _getTextColor(context, values[i]),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -473,16 +578,48 @@ class TeleopTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16),  // Remove left padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Coral Scoring Section
           SectionHeader(
-            title: 'Teleop',
+            title: 'Coral Scoring',
             color: Theme.of(context).colorScheme.primary,
           ),
           ComparisonMetric(
-            label: 'Algae in Net',
+            label: 'Height 1 Coral',
+            values: records.map((r) => r.coralOnReefHeight1.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Height 2 Coral',
+            values: records.map((r) => r.coralOnReefHeight2.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Height 3 Coral',
+            values: records.map((r) => r.coralOnReefHeight3.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Height 4 Coral',
+            values: records.map((r) => r.coralOnReefHeight4.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Coral Ranking Point',
+            values: records.map((r) => r.coralRankingPoint ? 'Yes' : 'No').toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // Algae Processing Section
+          SectionHeader(
+            title: 'Algae Processing',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'Algae Scored in Net',
             values: records.map((r) => r.algaeScoredInNet.toString()).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
@@ -492,7 +629,7 @@ class TeleopTab extends StatelessWidget {
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
-            label: 'Processed Scored',
+            label: 'Processed Algae Scored',
             values: records.map((r) => r.processedAlgaeScored.toString()).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
@@ -501,8 +638,14 @@ class TeleopTab extends StatelessWidget {
             values: records.map((r) => r.processorCycles.toString()).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
+
+          // Co-op Section
+          SectionHeader(
+            title: 'Co-op',
+            color: Theme.of(context).colorScheme.primary,
+          ),
           ComparisonMetric(
-            label: 'Co-Op Point',
+            label: 'Co-op Point',
             values: records.map((r) => r.coOpPoint ? 'Yes' : 'No').toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
@@ -520,7 +663,7 @@ class EndgameTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16),  // Remove left padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -535,7 +678,7 @@ class EndgameTab extends StatelessWidget {
           ),
           ComparisonMetric(
             label: 'Cage Hang',
-            values: records.map((r) => r.cageHang).toList(),
+            values: records.map((r) => r.cageHang).toList(),  // This should now be 'None', 'Shallow', or 'Deep'
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
@@ -648,14 +791,14 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
+      padding: const EdgeInsets.only(top: 24, bottom: 12),  // Increased padding
       child: Text(
-        title,
+        title.toUpperCase(),  // Make it uppercase for emphasis
         style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
+          fontSize: 20,  // Increased from 16
+          fontWeight: FontWeight.bold,  // Made bolder
           color: color,
-          letterSpacing: 0.5,
+          letterSpacing: 1.2,  // Added letter spacing
         ),
       ),
     );
