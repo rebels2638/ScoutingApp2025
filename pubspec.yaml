@@ -32,13 +32,14 @@ dependencies:
     sdk: flutter
   intl: ^0.20.2
   shared_preferences: ^2.2.2
-  file_picker: ^8.3.1
-  path_provider: ^2.1.2
+  file_selector: ^1.0.1
+  path_provider: ^2.0.0
   qr_flutter: ^4.1.0
   csv: ^6.0.0
   cupertino_icons: ^1.0.8
   mobile_scanner: ^6.0.6
   flutter_speed_dial: ^7.0.0
+  share_plus: ^7.0.0
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.3

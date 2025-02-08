@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:file_selector/file_selector.dart';
 import 'comparison.dart';
 import 'team_analysis.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -17,6 +17,8 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'qr_scanner_page.dart';
 import 'drawing_page.dart';
 import 'record_detail.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -985,15 +987,85 @@ class DataPageState extends State<DataPage> {
   }
 
   void _showTeamAnalysis(BuildContext context) {
-    // TODO: Implement Team Analysis view
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TeamAnalysisPage(records: _records),
+      ),
+    );
   }
 
-  void _importData() {
-    // TODO: Implement data import logic
+  void _importData() async {
+    try {
+      final XTypeGroup csvTypeGroup = XTypeGroup(
+        label: 'CSV',
+        extensions: ['csv'],
+      );
+      
+      final XFile? file = await openFile(
+        acceptedTypeGroups: [csvTypeGroup],
+      );
+
+      if (file != null) {
+        final contents = await file.readAsString();
+        
+        final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(contents);
+        if (rows.length <= 1) throw Exception('No data found in file');
+        
+        final records = rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
+        await DatabaseHelper.instance.saveRecords(records);
+        
+        setState(() {
+          loadRecords();
+        });
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Data imported successfully')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error importing data: $e')),
+      );
+    }
   }
 
-  void _exportData() {
-    // TODO: Implement data export logic
+  void _exportData() async {
+    try {
+      final csvData = [
+        ScoutingRecord.getCsvHeaders(),
+        ..._records.map((r) => r.toCsvRow()),
+      ];
+      
+      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
+      
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/scouting_data.csv');
+      await file.writeAsString(csv);
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Data exported to ${file.path}'),
+          action: SnackBarAction(
+            label: 'Share',
+            onPressed: () {
+              Share.shareFiles(
+                [file.path],
+                text: 'Scouting Data Export',
+              );
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error exporting data: $e')),
+      );
+    }
   }
 
   void _showDeleteConfirmation(BuildContext context, [int? index]) {
