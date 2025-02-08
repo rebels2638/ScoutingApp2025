@@ -19,6 +19,7 @@ import 'drawing_page.dart';
 import 'record_detail.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -983,7 +984,111 @@ class DataPageState extends State<DataPage> {
   }
 
   void _showQRCodeDialog(BuildContext context, ScoutingRecord record) {
-    // TODO: Implement QR Code dialog
+    // Don't allow QR code generation if there's a drawing
+    if (record.robotPath != null && record.robotPath!.isNotEmpty) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Cannot Generate QR Code'),
+          content: const Text(
+            'This record contains an auto path drawing which makes the data too large for a QR code. '
+            'Please use the export function instead.'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    // Create a minimal array format to reduce data size
+    final List<dynamic> qrData = [
+      record.timestamp,
+      record.matchNumber,
+      record.matchType,
+      record.teamNumber,
+      record.isRedAlliance ? 1 : 0,
+      record.cageType,
+      record.coralPreloaded ? 1 : 0,
+      record.taxis ? 1 : 0,
+      record.algaeRemoved,
+      record.coralPlaced,
+      record.rankingPoint ? 1 : 0,
+      record.canPickupCoral ? 1 : 0,
+      record.canPickupAlgae ? 1 : 0,
+      record.autoAlgaeInNet,
+      record.autoAlgaeInProcessor,
+      record.coralPickupMethod,
+      record.coralOnReefHeight1,
+      record.coralOnReefHeight2,
+      record.coralOnReefHeight3,
+      record.coralOnReefHeight4,
+      record.feederStation,
+      record.algaeScoredInNet,
+      record.coralRankingPoint ? 1 : 0,
+      record.algaeProcessed,
+      record.processedAlgaeScored,
+      record.processorCycles,
+      record.coOpPoint ? 1 : 0,
+      record.returnedToBarge ? 1 : 0,
+      record.cageHang,
+      record.bargeRankingPoint ? 1 : 0,
+      record.breakdown ? 1 : 0,
+      record.comments,
+    ];
+
+    // Convert to compact JSON string
+    final jsonStr = jsonEncode(qrData);
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        child: SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Team ${record.teamNumber}\nMatch ${record.matchNumber}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                QrImageView(
+                  data: jsonStr,
+                  version: QrVersions.auto,
+                  size: 280,
+                  errorCorrectionLevel: QrErrorCorrectLevel.L,
+                  gapless: true,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Scan this QR code to import the match data',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showTeamAnalysis(BuildContext context) {
@@ -1034,21 +1139,52 @@ class DataPageState extends State<DataPage> {
 
   void _exportData() async {
     try {
+      if (Platform.isAndroid) {
+        // Request storage permissions based on Android version
+        if (await Permission.manageExternalStorage.isDenied) {
+          final status = await Permission.manageExternalStorage.request();
+          if (!status.isGranted) {
+            final storageStatus = await Permission.storage.request();
+            if (!storageStatus.isGranted) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Storage permission is required to export data. Please grant permission in Settings.'),
+                  duration: Duration(seconds: 4),
+                  action: SnackBarAction(
+                    label: 'Settings',
+                    onPressed: openAppSettings,
+                  ),
+                ),
+              );
+              return;
+            }
+          }
+        }
+      }
+
       final csvData = [
         ScoutingRecord.getCsvHeaders(),
         ..._records.map((r) => r.toCsvRow()),
       ];
       
       final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
+      final String dirPath = await _getExportDirectory();
       
-      final directory = await getApplicationDocumentsDirectory();
-      final file = File('${directory.path}/scouting_data.csv');
+      final now = DateTime.now();
+      final timestamp = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}-${now.minute.toString().padLeft(2, '0')}';
+      
+      final file = File('$dirPath/scouting_data_$timestamp.csv');
       await file.writeAsString(csv);
       
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Data exported to ${file.path}'),
+          content: Text(Platform.isAndroid 
+            ? 'Data exported to Documents → 2638 Scout → Exports'
+            : 'Data exported to Files App → 2638 Scout → Exports'
+          ),
+          duration: const Duration(seconds: 4),
           action: SnackBarAction(
             label: 'Share',
             onPressed: () {
@@ -1068,8 +1204,137 @@ class DataPageState extends State<DataPage> {
     }
   }
 
+  Future<String> _getExportDirectory() async {
+    if (Platform.isIOS) {
+      // On iOS, create a directory in the Documents folder that will be visible in Files app
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      final String dirPath = '${appDocDir.path}/2638 Scout/Exports';
+      
+      // Create the directory if it doesn't exist
+      final dir = Directory(dirPath);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      return dirPath;
+    } else if (Platform.isAndroid) {
+      Directory? directory;
+      
+      try {
+        // Use Documents directory with a clear path structure
+        if (await Permission.manageExternalStorage.isGranted) {
+          directory = Directory('/storage/emulated/0/Documents/2638 Scout/Exports');
+        } else {
+          // Fallback to app-specific directory
+          final appDir = await getExternalStorageDirectory();
+          if (appDir == null) {
+            throw Exception('Could not access external storage');
+          }
+          directory = Directory('${appDir.path}/2638 Scout/Exports');
+        }
+        
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        return directory.path;
+      } catch (e) {
+        // Fallback to app's private directory if all else fails
+        final appDir = await getApplicationDocumentsDirectory();
+        directory = Directory('${appDir.path}/2638 Scout/Exports');
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        return directory.path;
+      }
+    } else {
+      // Fallback for other platforms
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      return '${appDocDir.path}/2638 Scout/Exports';
+    }
+  }
+
+  Future<List<FileSystemEntity>> listExports() async {
+    final String dirPath = await _getExportDirectory();
+    final dir = Directory(dirPath);
+    if (!await dir.exists()) {
+      return [];
+    }
+    return dir.listSync().where((e) => e.path.endsWith('.csv')).toList();
+  }
+
   void _showDeleteConfirmation(BuildContext context, [int? index]) {
-    // TODO: Implement delete confirmation dialog
+    final bool isMultipleDelete = selectedRecords.isNotEmpty;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(isMultipleDelete 
+          ? 'Delete ${selectedRecords.length} Records?' 
+          : 'Delete Record?'
+        ),
+        content: Text(isMultipleDelete
+          ? 'Are you sure you want to delete ${selectedRecords.length} selected records? This cannot be undone.'
+          : 'Are you sure you want to delete this record? This cannot be undone.'
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                if (isMultipleDelete) {
+                  // Sort indices in descending order to avoid index shifting
+                  final sortedIndices = selectedRecords.toList()..sort((a, b) => b.compareTo(a));
+                  final records = await DatabaseHelper.instance.getAllRecords();
+                  
+                  for (final index in sortedIndices) {
+                    records.removeAt(index);
+                  }
+                  
+                  await DatabaseHelper.instance.saveRecords(records);
+                  
+                  if (!mounted) return;
+                  setState(() {
+                    selectedRecords.clear();
+                    _isSelectionMode = false;
+                    loadRecords();
+                  });
+                } else if (index != null) {
+                  final records = await DatabaseHelper.instance.getAllRecords();
+                  records.removeAt(index);
+                  await DatabaseHelper.instance.saveRecords(records);
+                  
+                  if (!mounted) return;
+                  setState(() {
+                    loadRecords();
+                  });
+                }
+                
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(isMultipleDelete
+                      ? '${selectedRecords.length} records deleted'
+                      : 'Record deleted'
+                    ),
+                  ),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error deleting record(s): $e')),
+                );
+              }
+            },
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
   }
 }
 
