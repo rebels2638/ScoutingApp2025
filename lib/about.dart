@@ -25,7 +25,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Version 1.0.0',
+                    'Version 0.3.5-beta',
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
@@ -54,7 +54,7 @@ class AboutPage extends StatelessWidget {
             context,
             title: 'Credits',
             icon: Icons.people,
-            content: Text('Developed by the Scouting App Team'),
+            content: Text('Developed by Ethan Kang, Chimming Wang, and Richard Xu'),
           ),
         ],
       ),
