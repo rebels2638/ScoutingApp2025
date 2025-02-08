@@ -26,7 +26,6 @@
 - ✏️ Interactive auto path drawing tool with undo/redo functionality
 - ✅ Real-time data validation and error checking
 - 🔄 Support for both red and blue alliance scouting
-- 🔢 Team number quick-select with scrolling digit picker
 
 ### 💾 Data Management
 - 🔒 Secure local storage with persistent data
