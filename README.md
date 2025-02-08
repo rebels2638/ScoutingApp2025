@@ -120,5 +120,5 @@ This project is licensed under the BSD 3-Clause License - see the [LICENSE](LICE
 ---
 
 <div align="center">
-  <sub>Built with ❤️ by FRC Team 2638 Rebel Robotics</sub>
+  <sub>Built with ❤️ by FRC Team 2638 Rebel Robotics | ⭐ Star if you like the project!</sub>
 </div>
