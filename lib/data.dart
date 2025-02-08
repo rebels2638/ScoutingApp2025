@@ -622,8 +622,21 @@ class DataPageState extends State<DataPage> {
   }
 
   Widget _buildSearchAndFilterBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Card(
       margin: const EdgeInsets.all(8),
+      color: isDark 
+          ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
+          : Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isDark
+              ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
+              : Colors.transparent,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(8),
         child: Row(
@@ -632,10 +645,36 @@ class DataPageState extends State<DataPage> {
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Search matches, teams...',
-                  prefixIcon: const Icon(Icons.search),
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: isDark
+                          ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    ),
                   ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: isDark
+                          ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: isDark
+                      ? Theme.of(context).colorScheme.surface
+                      : Theme.of(context).colorScheme.surface,
+                ),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
                 ),
                 onChanged: (value) {
                   setState(() => _searchQuery = value);
@@ -644,7 +683,10 @@ class DataPageState extends State<DataPage> {
             ),
             const SizedBox(width: 8),
             PopupMenuButton(
-              icon: const Icon(Icons.filter_list),
+              icon: Icon(
+                Icons.filter_list,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+              ),
               tooltip: 'Filter records',
               itemBuilder: (context) => [
                 const PopupMenuItem(
@@ -744,13 +786,24 @@ class DataPageState extends State<DataPage> {
 
   Widget _buildRecordCard(ScoutingRecord record, int index) {
     final isSelected = selectedRecords.contains(index);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
       elevation: isSelected ? 4 : 1,
       margin: const EdgeInsets.symmetric(vertical: 4),
       color: isSelected 
           ? Theme.of(context).colorScheme.primaryContainer
-          : null,
+          : isDark 
+              ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
+              : Theme.of(context).colorScheme.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isDark
+              ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
+              : Colors.transparent,
+        ),
+      ),
       child: InkWell(
         onTap: () {
           if (_isSelectionMode) {
@@ -794,7 +847,7 @@ class DataPageState extends State<DataPage> {
                     isSelected ? Icons.check_circle : Icons.circle_outlined,
                     color: isSelected 
                         ? Theme.of(context).colorScheme.primary
-                        : null,
+                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               Expanded(
@@ -805,9 +858,10 @@ class DataPageState extends State<DataPage> {
                       children: [
                         Text(
                           'Team ${record.teamNumber}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
+                            color: Theme.of(context).colorScheme.onSurface,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -818,16 +872,16 @@ class DataPageState extends State<DataPage> {
                           ),
                           decoration: BoxDecoration(
                             color: record.isRedAlliance 
-                                ? Colors.red.withOpacity(0.2)
-                                : Colors.blue.withOpacity(0.2),
+                                ? AppColors.redAlliance.withOpacity(isDark ? 0.2 : 0.1)
+                                : AppColors.blueAlliance.withOpacity(isDark ? 0.2 : 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             record.isRedAlliance ? 'Red' : 'Blue',
                             style: TextStyle(
                               color: record.isRedAlliance 
-                                  ? Colors.red
-                                  : Colors.blue,
+                                  ? AppColors.redAlliance
+                                  : AppColors.blueAlliance,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -837,13 +891,17 @@ class DataPageState extends State<DataPage> {
                     const SizedBox(height: 4),
                     Text(
                       '${record.matchType} Match ${record.matchNumber}',
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                      ),
                     ),
                     if (record.comments.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(
                         record.comments,
-                        style: Theme.of(context).textTheme.bodySmall,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                        ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -852,7 +910,10 @@ class DataPageState extends State<DataPage> {
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.more_vert),
+                icon: Icon(
+                  Icons.more_vert,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+                ),
                 onPressed: () => _showRecordOptions(context, record, index),
               ),
             ],

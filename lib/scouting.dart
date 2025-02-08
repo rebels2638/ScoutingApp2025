@@ -289,9 +289,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Match number and type
+          // Match number and type in a Row with proper alignment
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,  // Align to top
             children: [
+              // Match Number input - make it same width as dropdown
               Expanded(
                 child: NumberInput(
                   label: 'Match Number',
@@ -305,19 +307,43 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 ),
               ),
               SizedBox(width: AppSpacing.md),
+              // Match Type dropdown - make it same width as number input
               Expanded(
-                child: DropdownCard(
-                  label: 'Match Type',
-                  value: matchType,
-                  items: const ['Practice', 'Qualification', 'Playoff'],
-                  onChanged: (value) {
-                    if (value != null) {
-                      setState(() {
-                        matchType = value;
-                        _logStateChange('matchType', matchType, value);
-                      });
-                    }
-                  },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    boxShadow: Theme.of(context).brightness == Brightness.dark 
+                        ? [] 
+                        : AppShadows.small,
+                  ),
+                  padding: EdgeInsets.all(AppSpacing.sm),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Match Type',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      SizedBox(height: AppSpacing.xs),
+                      DropdownCard(
+                        label: 'Match Type',
+                        value: matchType,
+                        items: const ['Practice', 'Qualification', 'Playoff'],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setState(() {
+                              matchType = value;
+                              _logStateChange('matchType', matchType, value);
+                            });
+                          }
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -347,6 +373,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
   }
 
   Widget _buildAutoSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return SectionCard(
       title: 'Autonomous',
       icon: Icons.auto_awesome,
@@ -383,11 +411,31 @@ class _ScoutingPageState extends State<ScoutingPage> {
             },
           ),
           
-          // Scoring section
-          SectionHeader(
-            title: 'Scoring',
-            color: Theme.of(context).colorScheme.primary,
+          // Update the SCORING header
+          Container(
+            margin: EdgeInsets.only(top: AppSpacing.md),
+            padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: isDark 
+                      ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                      : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                ),
+              ),
+            ),
+            child: Text(
+              'SCORING',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 1.2,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
           ),
+          
+          // Scoring section
           CounterRow(
             label: 'Algae Removed',
             value: algaeRemoved,
@@ -975,6 +1023,8 @@ class TeamNumberSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return ElevatedButton(
       onPressed: () async {
         await showTeamNumberSelector(
@@ -985,7 +1035,30 @@ class TeamNumberSelector extends StatelessWidget {
           },
         );
       },
-      child: Text('Team ${initialValue == 0 ? "Number" : initialValue.toString()}'),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isDark 
+            ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
+            : Theme.of(context).colorScheme.surface,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm,
+        ),
+        side: BorderSide(
+          color: isDark
+              ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+        elevation: isDark ? 0 : 1,
+      ),
+      child: Text(
+        'Team ${initialValue == 0 ? "Number" : initialValue.toString()}',
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: Theme.of(context).colorScheme.onSurface,
+        ),
+      ),
     );
   }
 }
@@ -1002,15 +1075,27 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24, bottom: 12),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Container(
+      margin: EdgeInsets.only(top: AppSpacing.md),
+      padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: isDark 
+                ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          ),
+        ),
+      ),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
-          fontSize: 17,  // Increased from 14
+          fontSize: 14,
           fontWeight: FontWeight.w600,
-          color: color,
-          letterSpacing: 0.8,  // Adjusted for better readability
+          letterSpacing: 1.2,
+          color: Theme.of(context).colorScheme.primary,
         ),
       ),
     );
@@ -1125,14 +1210,20 @@ class CounterRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+        color: isDark 
+            ? Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3)
+            : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: isDark
+              ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -1150,10 +1241,14 @@ class CounterRow extends StatelessWidget {
           ),
           Container(
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
+              color: isDark
+                  ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
+                  : Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                color: isDark
+                    ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                    : Theme.of(context).colorScheme.outline.withOpacity(0.2),
               ),
             ),
             child: Row(
@@ -1212,12 +1307,16 @@ class SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       margin: EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark
+            ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: AppShadows.small,
+        boxShadow: isDark ? [] : AppShadows.small,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1227,13 +1326,17 @@ class SectionCard extends StatelessWidget {
             padding: EdgeInsets.all(AppSpacing.md),
             child: Row(
               children: [
-                Icon(icon, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 SizedBox(width: AppSpacing.sm),
                 Text(
                   title,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                 ),
               ],
@@ -1349,14 +1452,20 @@ class SwitchCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+        color: isDark
+            ? Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3)
+            : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: isDark
+              ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -1423,11 +1532,15 @@ class _NumberInputState extends State<NumberInput> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark
+            ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: AppShadows.small,
+        boxShadow: isDark ? [] : AppShadows.small,
       ),
       padding: EdgeInsets.all(AppSpacing.sm),
       child: Column(
@@ -1452,7 +1565,17 @@ class _NumberInputState extends State<NumberInput> {
                 horizontal: AppSpacing.sm,
                 vertical: AppSpacing.xs,
               ),
-              border: OutlineInputBorder(),
+              border: OutlineInputBorder(
+                borderSide: BorderSide(
+                  color: isDark
+                      ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                      : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                ),
+              ),
+              filled: true,
+              fillColor: isDark
+                  ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
+                  : Theme.of(context).colorScheme.surface,
             ),
             onChanged: (text) {
               final newValue = int.tryParse(text);
@@ -1486,12 +1609,18 @@ class DropdownCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        color: isDark
+            ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
+            : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: isDark
+              ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
         ),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -1499,15 +1628,25 @@ class DropdownCard extends StatelessWidget {
         value: value,
         isExpanded: true,
         underline: SizedBox(),
-        icon: Icon(Icons.arrow_drop_down, size: 20),
+        icon: Icon(
+          Icons.arrow_drop_down,
+          size: 20,
+          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+        ),
         isDense: true,
         padding: EdgeInsets.zero,
+        dropdownColor: isDark
+            ? Theme.of(context).colorScheme.surface
+            : Theme.of(context).colorScheme.surface,
         items: items.map((item) {
           return DropdownMenuItem(
             value: item,
             child: Text(
               item,
-              style: TextStyle(fontSize: 14),
+              style: TextStyle(
+                fontSize: 14,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           );
         }).toList(),
