@@ -47,5 +47,15 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>We need camera access to scan QR codes for importing match data</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to save exported data files</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We need access to save exported data files</string>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>UISupportsDocumentBrowser</key>
+	<true/>
 </dict>
 </plist>

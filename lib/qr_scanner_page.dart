@@ -12,11 +12,49 @@ class QrScannerPage extends StatefulWidget {
 class _QrScannerPageState extends State<QrScannerPage> {
   MobileScannerController controller = MobileScannerController();
 
-  void _processScannedData(String? csvData) {
-    if (csvData == null) return;
+  void _processScannedData(String? rawData) {
+    if (rawData == null) return;
 
     try {
-      final record = _parseCsvToScoutingRecord(csvData);
+      // Parse the JSON array
+      final List<dynamic> data = jsonDecode(rawData);
+      
+      // Create a ScoutingRecord from the array data
+      final record = ScoutingRecord(
+        timestamp: data[0] as String,
+        matchNumber: data[1] as int,
+        matchType: data[2] as String,
+        teamNumber: data[3] as int,
+        isRedAlliance: data[4] == 1,
+        cageType: data[5] as String,
+        coralPreloaded: data[6] == 1,
+        taxis: data[7] == 1,
+        algaeRemoved: data[8] as int,
+        coralPlaced: data[9] as String,
+        rankingPoint: data[10] == 1,
+        canPickupCoral: data[11] == 1,
+        canPickupAlgae: data[12] == 1,
+        autoAlgaeInNet: data[13] as int,
+        autoAlgaeInProcessor: data[14] as int,
+        coralPickupMethod: data[15] as String,
+        coralOnReefHeight1: data[16] as int,
+        coralOnReefHeight2: data[17] as int,
+        coralOnReefHeight3: data[18] as int,
+        coralOnReefHeight4: data[19] as int,
+        feederStation: data[20] as String,
+        algaeScoredInNet: data[21] as int,
+        coralRankingPoint: data[22] == 1,
+        algaeProcessed: data[23] as int,
+        processedAlgaeScored: data[24] as int,
+        processorCycles: data[25] as int,
+        coOpPoint: data[26] == 1,
+        returnedToBarge: data[27] == 1,
+        cageHang: data[28] as String,
+        bargeRankingPoint: data[29] == 1,
+        breakdown: data[30] == 1,
+        comments: data[31] as String,
+        robotPath: null,
+      );
 
       showDialog(
         context: context,
@@ -27,8 +65,10 @@ class _QrScannerPageState extends State<QrScannerPage> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Match #: ${record.matchNumber}'),
-                Text('Team #: ${record.teamNumber}'),
+                Text('Team ${record.teamNumber}'),
+                Text('Match ${record.matchNumber}'),
+                Text('Type: ${record.matchType}'),
+                Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
               ],
             ),
             actions: [
@@ -55,57 +95,8 @@ class _QrScannerPageState extends State<QrScannerPage> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(content: Text('Error: Invalid QR code format')),
       );
-    }
-  }
-
-  ScoutingRecord _parseCsvToScoutingRecord(String csvData) {
-    try {
-      final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(csvData);
-      if (rows.isEmpty) throw Exception('Invalid QR code data');
-
-      final row = rows[0];
-      return ScoutingRecord(
-        timestamp: row[0].toString(),
-        matchNumber: int.tryParse(row[1].toString()) ?? 0,
-        matchType: row[2].toString(),
-        teamNumber: int.tryParse(row[3].toString()) ?? 0,
-        isRedAlliance: row[4].toString() == '1',
-        cageType: row[5].toString(),
-        coralPreloaded: row[6].toString() == '1',
-        taxis: row[7].toString() == '1',
-        algaeRemoved: int.tryParse(row[8].toString()) ?? 0,
-        coralPlaced: row[9].toString(),
-        rankingPoint: row[10].toString() == '1',
-        canPickupCoral: row[11].toString() == '1',
-        canPickupAlgae: row[12].toString() == '1',
-        algaeScoredInNet: int.tryParse(row[13].toString()) ?? 0,
-        coralRankingPoint: row[14].toString() == '1',
-        algaeProcessed: int.tryParse(row[15].toString()) ?? 0,
-        processedAlgaeScored: int.tryParse(row[16].toString()) ?? 0,
-        processorCycles: int.tryParse(row[17].toString()) ?? 0,
-        coOpPoint: row[18].toString() == '1',
-        returnedToBarge: row[19].toString() == '1',
-        cageHang: row[20].toString(),
-        bargeRankingPoint: row[21].toString() == '1',
-        breakdown: row[22].toString() == '1',
-        comments: row[23].toString(),
-        autoAlgaeInNet: int.tryParse(row[24].toString()) ?? 0,
-        autoAlgaeInProcessor: int.tryParse(row[25].toString()) ?? 0,
-        coralPickupMethod: row[26].toString(),
-        coralOnReefHeight1: int.tryParse(row[27].toString()) ?? 0,
-        coralOnReefHeight2: int.tryParse(row[28].toString()) ?? 0,
-        coralOnReefHeight3: int.tryParse(row[29].toString()) ?? 0,
-        coralOnReefHeight4: int.tryParse(row[30].toString()) ?? 0,
-        feederStation: row[31].toString(),
-        robotPath: row[32].toString().isNotEmpty ?
-          jsonDecode(row[32].toString()) as List<Map<String, dynamic>> :
-          null,
-      );
-    } catch (e) {
-      print('Error parsing QR data: $e');
-      throw Exception('Invalid QR code format');
     }
   }
 
