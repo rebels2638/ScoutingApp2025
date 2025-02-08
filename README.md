@@ -52,6 +52,27 @@
 - 🔄 Offline-first architecture
 - 🛠️ Developer mode with telemetry overlay
 
+## 🕑 Planned Features
+
+### 📡 Connectivity
+- 🔷 Bluetooth LE data transfer support
+  - Direct device-to-device match data sharing
+  - Real-time scouting data synchronization
+
+### 🌐 API Integration
+- 🤖 Blue Alliance API support
+  - Auto-fetch match schedules
+  - Import team data and statistics
+  - Cross-reference match results
+  - Historical performance analysis
+
+### 📊 Enhanced Analytics
+- 🎯 Custom metric creation
+
+### 💻 Technical Improvements
+- ⚡ Performance optimizations
+
+---
 
 ## 👥 Team
 
@@ -74,22 +95,17 @@
       <br />
       <sub></sub>
     </td>
-  </tr>
-</table>
-
-### 🤝 Contributors
-<table>
-  <tr>
     <td align="center">
       <a href="https://github.com/Richard28277">
         <img src="https://github.com/Richard28277.png" width="100px;" style="border-radius: 50%;" alt="Richard Xu"/><br />
         <sub><b>Richard Xu</b></sub>
       </a>
       <br />
-      <sub>QR Code Capability</sub>
+      <sub></sub>
     </td>
   </tr>
 </table>
+
 
 ## 📄 License
 
