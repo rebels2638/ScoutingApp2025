@@ -159,7 +159,7 @@ class MyAppState extends State<MyApp> {
             themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
             home: Stack(
               children: [
-                ScoutingPage(),
+                _buildScoutingPage(),
                 if (telemetryVisible)
                   Positioned(
                     right: 16,
@@ -179,6 +179,10 @@ class MyAppState extends State<MyApp> {
         },
       ),
     );
+  }
+
+  Widget _buildScoutingPage() {
+    return ScoutingPage();
   }
 }
 

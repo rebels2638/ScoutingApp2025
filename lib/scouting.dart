@@ -18,6 +18,7 @@ import 'database_helper.dart';
 import 'widgets/telemetry_overlay.dart';
 import 'dart:math';
 import 'team_number_selector.dart';
+import 'api.dart';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -153,14 +154,14 @@ class _ScoutingPageState extends State<ScoutingPage> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        // Dismiss keyboard when tapping anywhere
         FocusScope.of(context).unfocus();
       },
       child: Scaffold(
         appBar: TopBar(
           title: _currentIndex == 0 ? 'Scouting' :
                  _currentIndex == 1 ? 'Data' :
-                 _currentIndex == 2 ? 'Settings' :
+                 _currentIndex == 2 ? 'API' :
+                 _currentIndex == 3 ? 'Settings' :
                  'About',
           actions: _currentIndex == 0 ? <Widget>[
             IconButton(
@@ -189,6 +190,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
           children: [
             _buildScoutingPage(),
             DataPage(key: _dataPageKey),
+            ApiPage(key: ApiPageState.globalKey),
             SettingsPage(),
             AboutPage(),
           ],
@@ -1471,12 +1473,15 @@ class SwitchCard extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.onSurface,
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
           ),
           Switch(
@@ -1572,10 +1577,10 @@ class _NumberInputState extends State<NumberInput> {
                       : Theme.of(context).colorScheme.outline.withOpacity(0.2),
                 ),
               ),
-              filled: true,
               fillColor: isDark
                   ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
                   : Theme.of(context).colorScheme.surface,
+              filled: true,
             ),
             onChanged: (text) {
               final newValue = int.tryParse(text);
