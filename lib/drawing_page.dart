@@ -34,14 +34,19 @@ class DrawingLine {
   }
 
   static DrawingLine fromJson(Map<String, dynamic> json) {
-    return DrawingLine(
-      points: (json['points'] as List).map((p) {
+    List<Offset> points = [];
+    if (json['points'] != null) {
+      points = (json['points'] as List).map((p) {
         final point = p as Map<String, dynamic>;
         return Offset(
           (point['x'] as num).toDouble(),
           (point['y'] as num).toDouble(),
         );
-      }).toList(),
+      }).toList();
+    }
+    
+    return DrawingLine(
+      points: points,
       color: Color(json['color'] as int),
       strokeWidth: (json['strokeWidth'] as num).toDouble(),
     );
@@ -100,7 +105,15 @@ class _DrawingPageState extends State<DrawingPage> {
   void initState() {
     super.initState();
     currentColor = widget.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance;
-    lines = widget.initialLines ?? [];
+    
+    // Initialize lines from either initialLines or initialDrawing
+    if (widget.initialLines != null) {
+      lines = widget.initialLines!;
+    } else if (widget.initialDrawing != null) {
+      lines = widget.initialDrawing!.map((map) => DrawingLine.fromJson(map)).toList();
+    } else {
+      lines = [];
+    }
   }
 
   @override
@@ -213,21 +226,7 @@ class _DrawingPageState extends State<DrawingPage> {
 
   void _initializeDrawing() {
     try {
-      lines = widget.initialDrawing?.map((map) {
-        final pointsList = (map['points'] as List).map((p) {
-          final point = p as Map<String, dynamic>;
-          return Offset(
-            (point['x'] as num).toDouble(),
-            (point['y'] as num).toDouble(),
-          );
-        }).toList();
-        
-        return DrawingLine(
-          points: pointsList,
-          color: Color(map['color'] as int),
-          strokeWidth: (map['strokeWidth'] as num).toDouble(),
-        );
-      }).toList() ?? [];
+      lines = widget.initialDrawing?.map((map) => DrawingLine.fromJson(map)).toList() ?? [];
     } catch (e) {
       print('Error initializing drawing: $e');  // Debug print
       lines = [];

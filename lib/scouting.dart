@@ -100,6 +100,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // Add a focus node
   final FocusNode _focusNode = FocusNode();
 
+  // Add this at the top with other state variables
+  final FocusNode _matchNumberFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -115,12 +118,20 @@ class _ScoutingPageState extends State<ScoutingPage> {
         });
       }
     });
+
+    // Add this to handle focus when the page is loaded
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        FocusScope.of(context).unfocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _devModeSubscription?.cancel();
     _focusNode.dispose();
+    _matchNumberFocusNode.dispose();
     super.dispose();
   }
 
@@ -148,56 +159,66 @@ class _ScoutingPageState extends State<ScoutingPage> {
     if (index == 1) {
       _dataPageKey.currentState?.loadRecords();
     }
+
+    // Add this method to handle focus when switching tabs
+    FocusScope.of(context).unfocus();
   }
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
+    return WillPopScope(
+      onWillPop: () async {
+        // Ensure keyboard is dismissed when navigating back
         FocusScope.of(context).unfocus();
+        return true;
       },
-      child: Scaffold(
-        appBar: TopBar(
-          title: _currentIndex == 0 ? 'Scouting' :
-                 _currentIndex == 1 ? 'Data' :
-                 _currentIndex == 2 ? 'API' :
-                 _currentIndex == 3 ? 'Settings' :
-                 'About',
-          actions: _currentIndex == 0 ? <Widget>[
-            IconButton(
-              icon: Icon(Icons.refresh),
-              tooltip: 'Reset Form',
-              onPressed: () => _showResetDialog(context),
-            ),
-            if (_isDevMode)
+      child: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: Scaffold(
+          appBar: TopBar(
+            title: _currentIndex == 0 ? 'Scouting' :
+                   _currentIndex == 1 ? 'Data' :
+                   _currentIndex == 2 ? 'API' :
+                   _currentIndex == 3 ? 'Settings' :
+                   'About',
+            actions: _currentIndex == 0 ? <Widget>[
               IconButton(
-                icon: Icon(Icons.analytics),
-                onPressed: () {
-                  final myAppState = context.findAncestorStateOfType<MyAppState>();
-                  if (myAppState != null) {
-                    myAppState.toggleTelemetry(!myAppState.telemetryVisible);
-                  }
-                },
+                icon: Icon(Icons.refresh),
+                tooltip: 'Reset Form',
+                onPressed: () => _showResetDialog(context),
               ),
-            IconButton(
-              icon: Icon(Icons.save),
-              onPressed: _saveRecord,
-            ),
-          ] : null,
-        ),
-        body: IndexedStack(
-          index: _currentIndex,
-          children: [
-            _buildScoutingPage(),
-            DataPage(key: _dataPageKey),
-            ApiPage(key: ApiPageState.globalKey),
-            SettingsPage(),
-            AboutPage(),
-          ],
-        ),
-        bottomNavigationBar: NavBar(
-          currentIndex: _currentIndex,
-          onTap: _onItemTapped,
+              if (_isDevMode)
+                IconButton(
+                  icon: Icon(Icons.analytics),
+                  onPressed: () {
+                    final myAppState = context.findAncestorStateOfType<MyAppState>();
+                    if (myAppState != null) {
+                      myAppState.toggleTelemetry(!myAppState.telemetryVisible);
+                    }
+                  },
+                ),
+              IconButton(
+                icon: Icon(Icons.save),
+                onPressed: _saveRecord,
+              ),
+            ] : null,
+          ),
+          body: IndexedStack(
+            index: _currentIndex,
+            children: [
+              _buildScoutingPage(),
+              DataPage(key: _dataPageKey),
+              ApiPage(key: ApiPageState.globalKey),
+              SettingsPage(),
+              AboutPage(),
+            ],
+          ),
+          bottomNavigationBar: NavBar(
+            currentIndex: _currentIndex,
+            onTap: _onItemTapped,
+          ),
         ),
       ),
     );
@@ -306,6 +327,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
                       _logStateChange('matchNumber', matchNumber, value);
                     });
                   },
+                  autofocus: false,
+                  focusNode: _matchNumberFocusNode,
                 ),
               ),
               SizedBox(width: AppSpacing.md),
@@ -953,13 +976,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
         _currentIndex = 1;
       });
 
-      // Show success message
-      if (!context.mounted) return;
+      // Explicitly unfocus before showing snackbar
+      FocusScope.of(context).unfocus();
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Record saved successfully'),
-          backgroundColor: Colors.green,
-        ),
+        SnackBar(content: Text('Record saved successfully')),
       );
       
       // reset form
@@ -988,6 +1009,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
         autoAlgaeInProcessor = 0;
         coralPickupMethod = 'None';
         drawingData = null;
+        if (_drawingButtonKey.currentState != null) {
+          _drawingButtonKey.currentState!.resetPath();
+        }
         updateTime();
       });
 
@@ -1380,9 +1404,11 @@ class _DrawingButtonState extends State<DrawingButton> {
   }
 
   void resetPath() {
-    setState(() {
-      hasPath = false;
-    });
+    if (mounted) {
+      setState(() {
+        hasPath = false;
+      });
+    }
   }
 
   @override
@@ -1394,6 +1420,9 @@ class _DrawingButtonState extends State<DrawingButton> {
         children: [
           ElevatedButton.icon(
             onPressed: () async {
+              // Unfocus before opening drawing page
+              FocusScope.of(context).unfocus();
+              
               final drawingData = await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -1404,6 +1433,11 @@ class _DrawingButtonState extends State<DrawingButton> {
                   ),
                 ),
               );
+              
+              // Ensure keyboard stays hidden after returning
+              if (context.mounted) {
+                FocusScope.of(context).unfocus();
+              }
               
               if (drawingData != null) {
                 widget.onPathSaved(drawingData);
@@ -1498,12 +1532,16 @@ class NumberInput extends StatefulWidget {
   final String label;
   final int value;
   final ValueChanged<int> onChanged;
+  final bool autofocus;
+  final FocusNode? focusNode;
 
   const NumberInput({
     Key? key,
     required this.label,
     required this.value,
     required this.onChanged,
+    this.autofocus = false,
+    this.focusNode,
   }) : super(key: key);
 
   @override
@@ -1512,26 +1550,29 @@ class NumberInput extends StatefulWidget {
 
 class _NumberInputState extends State<NumberInput> {
   late TextEditingController _controller;
-  final FocusNode _focusNode = FocusNode();
+  late FocusNode _focusNode;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.value.toString());
-  }
-
-  @override
-  void didUpdateWidget(NumberInput oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value) {
-      _controller.text = widget.value.toString();
-    }
+    _focusNode = widget.focusNode ?? FocusNode();
+    
+    // Add listener to handle focus changes
+    _focusNode.addListener(() {
+      if (!_focusNode.hasFocus) {
+        // When focus is lost, ensure the keyboard stays dismissed
+        FocusScope.of(context).unfocus();
+      }
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    _focusNode.dispose();
+    if (widget.focusNode == null) {
+      _focusNode.dispose();
+    }
     super.dispose();
   }
 
@@ -1564,6 +1605,7 @@ class _NumberInputState extends State<NumberInput> {
             focusNode: _focusNode,
             keyboardType: TextInputType.number,
             textInputAction: TextInputAction.next,
+            autofocus: widget.autofocus,
             decoration: InputDecoration(
               isDense: true,
               contentPadding: EdgeInsets.symmetric(
@@ -1589,7 +1631,8 @@ class _NumberInputState extends State<NumberInput> {
               }
             },
             onEditingComplete: () {
-              FocusScope.of(context).nextFocus();
+              // Explicitly unfocus when editing is complete
+              FocusScope.of(context).unfocus();
             },
           ),
         ],
