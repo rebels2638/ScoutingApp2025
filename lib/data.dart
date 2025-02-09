@@ -639,74 +639,43 @@ class DataPageState extends State<DataPage> {
       ),
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search matches, teams...',
-                  hintStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: isDark
-                          ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
-                          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: isDark
-                          ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
-                          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  filled: true,
-                  fillColor: isDark
-                      ? Theme.of(context).colorScheme.surface
-                      : Theme.of(context).colorScheme.surface,
-                ),
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
-                ),
-                onChanged: (value) {
-                  setState(() => _searchQuery = value);
-                },
+        child: TextField(
+          decoration: InputDecoration(
+            hintText: 'Search by team number...',
+            hintStyle: TextStyle(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+            prefixIcon: Icon(
+              Icons.search,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isDark
+                    ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                    : Theme.of(context).colorScheme.outline.withOpacity(0.2),
               ),
             ),
-            const SizedBox(width: 8),
-            PopupMenuButton(
-              icon: Icon(
-                Icons.filter_list,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: isDark
+                    ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                    : Theme.of(context).colorScheme.outline.withOpacity(0.2),
               ),
-              tooltip: 'Filter records',
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'team',
-                  child: Text('Filter by Team'),
-                ),
-                const PopupMenuItem(
-                  value: 'match',
-                  child: Text('Filter by Match'),
-                ),
-                const PopupMenuItem(
-                  value: 'alliance',
-                  child: Text('Filter by Alliance'),
-                ),
-              ],
-              onSelected: (value) {
-                // Implement filter logic
-              },
             ),
-          ],
+            filled: true,
+            fillColor: isDark
+                ? Theme.of(context).colorScheme.surface
+                : Theme.of(context).colorScheme.surface,
+          ),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+          onChanged: (value) {
+            setState(() => _searchQuery = value);
+          },
         ),
       ),
     );
@@ -770,8 +739,8 @@ class DataPageState extends State<DataPage> {
   Widget _buildRecordsList() {
     final filteredRecords = _records.where((record) {
       if (_searchQuery.isEmpty) return true;
-      return record.teamNumber.toString().contains(_searchQuery) ||
-             record.matchNumber.toString().contains(_searchQuery);
+      // Only filter by team number
+      return record.teamNumber.toString().contains(_searchQuery);
     }).toList();
 
     return ListView.builder(

@@ -25,7 +25,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Version 0.3.5-beta',
+                    'Version 0.5.3-beta',
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
@@ -37,15 +37,31 @@ class AboutPage extends StatelessWidget {
           SizedBox(height: AppSpacing.md),
           _buildSection(
             context,
-            title: 'Features',
-            icon: Icons.star,
+            title: 'Update Notes',
+            icon: Icons.update,
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildFeature('Match scouting with auto path drawing'),
-                _buildFeature('Team comparison tools'),
-                _buildFeature('Data export and sharing'),
-                _buildFeature('Dark mode support'),
+                _buildUpdateNote('0.5.3', [
+                  'Fixed team number search functionality',
+                  'Added save confirmation toggle',
+                  'Improved UI consistency',
+                  'Bug fixes and performance improvements',
+                ]),
+                const SizedBox(height: AppSpacing.md),
+                _buildUpdateNote('0.5.2', [
+                  'Added QR code scanning',
+                  'Added team comparison tools',
+                  'Added data export features',
+                  'Added dark mode support',
+                ]),
+                const SizedBox(height: AppSpacing.md),
+                _buildUpdateNote('0.5.1', [
+                  'Initial beta release',
+                  'Basic match scouting functionality',
+                  'Auto path drawing feature',
+                  'Local data storage',
+                ]),
               ],
             ),
           ),
@@ -54,7 +70,68 @@ class AboutPage extends StatelessWidget {
             context,
             title: 'Credits',
             icon: Icons.people,
-            content: Text('Developed by Ethan Kang, Chimming Wang, and Richard Xu'),
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Developers',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Ethan Kang - Developer'),
+                      Text('Chiming Wang - Developer'),
+                      Text('Richard Xu - Developer'),
+                    ],
+                  ),
+                ),
+                
+                Text(
+                  'Special Thanks',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, bottom: 16),
+                  child: Text(
+                    'Thank you to all our mentors for their continuous support '
+                    'and guidance throughout our robotics journey.',
+                    style: TextStyle(height: 1.4),
+                  ),
+                ),
+                
+                Text(
+                  'Team Recognition',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.only(left: 16),
+                  child: Text(
+                    'Thank you to all members of Team 2638 Rebel Robotics '
+                    'for their support, testing, and feedback throughout '
+                    'the development of this app.',
+                    style: TextStyle(height: 1.4),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -94,16 +171,29 @@ class AboutPage extends StatelessWidget {
     );
   }
 
-  Widget _buildFeature(String text) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: AppSpacing.xs),
-      child: Row(
-        children: [
-          Icon(Icons.check_circle, color: AppColors.success, size: 20),
-          SizedBox(width: AppSpacing.sm),
-          Text(text),
-        ],
-      ),
+  Widget _buildUpdateNote(String version, List<String> notes) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Version $version',
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        ...notes.map((note) => Padding(
+          padding: const EdgeInsets.only(left: 16, bottom: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('• ', style: TextStyle(fontWeight: FontWeight.bold)),
+              Expanded(child: Text(note)),
+            ],
+          ),
+        )),
+      ],
     );
   }
 }

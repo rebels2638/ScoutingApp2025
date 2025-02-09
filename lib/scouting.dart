@@ -911,6 +911,45 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
     TelemetryService().logAction('save_button_pressed');
     try {
+      // Get the confirmation setting
+      final prefs = await SharedPreferences.getInstance();
+      final confirmBeforeSaving = prefs.getBool('confirm_before_saving') ?? true;
+
+      // If confirmation is enabled, show dialog
+      if (confirmBeforeSaving) {
+        final shouldSave = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Save Record'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Are you sure you want to save this record?'),
+                SizedBox(height: 8),
+                Text('Team $teamNumber - Match $matchNumber'),
+                Text('${matchType} Match'),
+                Text(isRedAlliance ? 'Red Alliance' : 'Blue Alliance'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Save'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldSave != true) {
+          return;
+        }
+      }
+
       // Log all values before saving
       TelemetryService().logInfo('save_record_debug', {
         'coralPreloaded': coralPreloaded,
