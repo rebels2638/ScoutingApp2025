@@ -771,7 +771,8 @@ class DataPageState extends State<DataPage> {
               ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
               : Colors.transparent,
         ),
-      child: InkWell(
+      ),
+      child: ListTile(
         onTap: () {
           if (_isSelectionMode) {
             setState(() {
@@ -803,109 +804,73 @@ class DataPageState extends State<DataPage> {
             }
           });
         },
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Row(
-            children: [
-              if (_isSelectionMode)
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Icon(
-                    isSelected ? Icons.check_circle : Icons.circle_outlined,
-                    color: isSelected 
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          'Team ${record.teamNumber}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: record.isRedAlliance 
-                                ? AppColors.redAlliance.withOpacity(isDark ? 0.2 : 0.1)
-                                : AppColors.blueAlliance.withOpacity(isDark ? 0.2 : 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            record.isRedAlliance ? 'Red' : 'Blue',
-                            style: TextStyle(
-                              color: record.isRedAlliance 
-                                  ? AppColors.redAlliance
-                                  : AppColors.blueAlliance,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${record.matchType} Match ${record.matchNumber}',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
-                      ),
-                    ),
-                    if (record.comments.isNotEmpty) ...[
-                      const SizedBox(height: 8),
-                      Text(
-                        record.comments,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ],
+        leading: _isSelectionMode 
+            ? Icon(
+                isSelected ? Icons.check_circle : Icons.circle_outlined,
+                color: isSelected 
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              )
+            : null,
+        title: Row(
+          children: [
+            Text(
+              'Team ${record.teamNumber}',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: record.isRedAlliance 
+                    ? AppColors.redAlliance.withOpacity(0.1)
+                    : AppColors.blueAlliance.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                record.isRedAlliance ? 'Red' : 'Blue',
+                style: TextStyle(
+                  color: record.isRedAlliance 
+                      ? AppColors.redAlliance
+                      : AppColors.blueAlliance,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.bluetooth),
-                    onPressed: () async {
-                      try {
-                        await BleService().sendMatchData(record);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Data sent successfully')),
-                        );
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Failed to send data: $e')),
-                        );
-                      }
-                    },
-                    tooltip: 'Send via Bluetooth',
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.qr_code),
-                    onPressed: () {
-                      _showQrCodeForRecord(record);
-                    },
-                    tooltip: 'Show QR Code',
-                  ),
-                ],
+            ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '${record.timestamp} Match ${record.matchNumber}',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
+              ),
+            ),
+            if (record.comments.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                record.comments,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
-          ),
+          ],
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.more_vert),
+          onPressed: () => _showRecordOptions(context, record, index),
         ),
       ),
     );
@@ -999,7 +964,7 @@ class DataPageState extends State<DataPage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => DrawingPage(
+                      builder: (context) => drawing.DrawingPage(
                         isRedAlliance: record.isRedAlliance,
                         initialDrawing: record.robotPath,
                         readOnly: true,

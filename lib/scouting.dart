@@ -1013,6 +1013,20 @@ class _ScoutingPageState extends State<ScoutingPage> {
       '$oldValue → $newValue',
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(_getPageTitle(_currentIndex)),
+      ),
+      body: _getPage(_currentIndex),
+      bottomNavigationBar: NavBar(
+        currentIndex: _currentIndex,
+        onTap: _onItemTapped,
+      ),
+    );
+  }
 }
 
 class TeamNumberSelector extends StatelessWidget {
