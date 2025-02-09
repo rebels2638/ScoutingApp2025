@@ -19,6 +19,8 @@ import 'widgets/telemetry_overlay.dart';
 import 'dart:math';
 import 'team_number_selector.dart';
 import 'api.dart';
+import 'package:flutter/services.dart';  // Add this import
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -257,6 +259,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
   // Reset form fields
   void _resetForm() {
+    _triggerHaptic();  // Add haptic feedback when resetting
     setState(() {
       teamNumber = 0;
       matchNumber = 0;
@@ -1016,6 +1019,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
       });
 
       TelemetryService().logInfo('record_saved_successfully', 'Match $matchNumber');
+
+      _triggerHaptic();  // Add haptic feedback when saving
     } catch (e, stackTrace) {
       TelemetryService().logError('save_record_failed', '${e.toString()}\n${stackTrace.toString()}');
       developer.log('Error saving record: $e');
@@ -1026,6 +1031,24 @@ class _ScoutingPageState extends State<ScoutingPage> {
           backgroundColor: Colors.red,
         ),
       );
+    }
+  }
+
+  void _triggerHaptic() async {
+    final prefs = await SharedPreferences.getInstance();
+    final vibrateEnabled = prefs.getBool('vibrate_on_action') ?? true;
+    
+    if (vibrateEnabled) {
+      switch (Theme.of(context).platform) {
+        case TargetPlatform.iOS:
+          await HapticFeedback.mediumImpact();
+          break;
+        case TargetPlatform.android:
+          await HapticFeedback.vibrate();
+          break;
+        default:
+          break;
+      }
     }
   }
 

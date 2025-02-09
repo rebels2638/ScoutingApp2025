@@ -3,11 +3,15 @@ import 'theme/app_theme.dart';
 import 'data.dart'; // for ScoutingRecord
 import 'drawing_page.dart';
 import 'drawing_page.dart' show DrawingPage, DrawingLine;
+import 'database_helper.dart';
 
 class RecordDetailPage extends StatelessWidget {
   final ScoutingRecord record;
 
-  const RecordDetailPage({Key? key, required this.record}) : super(key: key);
+  const RecordDetailPage({
+    Key? key, 
+    required this.record,
+  }) : super(key: key);
 
   // Helper to build a key-value tile.
   Widget _buildDetailTile(String title, String value) {
@@ -39,20 +43,16 @@ class RecordDetailPage extends StatelessWidget {
           children: [
             Text('Team ${record.teamNumber}'),
             Text('${record.matchType} Match ${record.matchNumber}'),
-            // Add more record details here
             _buildDetailTile("Timestamp", record.timestamp),
             _buildDetailTile("Match Type", record.matchType),
             _buildDetailTile("Alliance", record.isRedAlliance ? "Red" : "Blue"),
             _buildDetailTile("Cage Type", record.cageType),
             _buildDetailTile("Coral Preloaded", record.coralPreloaded ? "Yes" : "No"),
-            // ... add additional details as needed ...
-            // Optionally include auto or teleop stats, breakdown, etc.
-            if (drawingLines.isNotEmpty)
+            // ... other detail tiles ...
+            if (record.robotPath != null && record.robotPath!.isNotEmpty) ...[
               SizedBox(height: 20),
-            if (drawingLines.isNotEmpty)
               ElevatedButton(
                 onPressed: () {
-                  // Open the DrawingPage in read-only mode, passing the saved drawing
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -66,6 +66,7 @@ class RecordDetailPage extends StatelessWidget {
                 },
                 child: Text("View Drawing"),
               ),
+            ],
           ],
         ),
       ),
