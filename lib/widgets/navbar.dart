@@ -17,6 +17,7 @@ class NavBar extends StatelessWidget {
         BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Scouting'),
         BottomNavigationBarItem(icon: Icon(Icons.data_usage), label: 'Data'),
         BottomNavigationBarItem(icon: Icon(Icons.api), label: 'API'),
+        BottomNavigationBarItem(icon: Icon(Icons.bluetooth), label: 'Bluetooth'),
         BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         BottomNavigationBarItem(icon: Icon(Icons.info), label: 'About'),
       ],

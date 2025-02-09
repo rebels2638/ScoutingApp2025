@@ -21,6 +21,7 @@ import 'team_number_selector.dart';
 import 'api.dart';
 import 'package:flutter/services.dart';  // Add this import
 import 'package:shared_preferences/shared_preferences.dart';
+import 'bluetooth_page.dart';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -166,127 +167,42 @@ class _ScoutingPageState extends State<ScoutingPage> {
     FocusScope.of(context).unfocus();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Ensure keyboard is dismissed when navigating back
-        FocusScope.of(context).unfocus();
-        return true;
-      },
-      child: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-        },
-        child: Scaffold(
-          appBar: TopBar(
-            title: _currentIndex == 0 ? 'Scouting' :
-                   _currentIndex == 1 ? 'Data' :
-                   _currentIndex == 2 ? 'API' :
-                   _currentIndex == 3 ? 'Settings' :
-                   'About',
-            actions: _currentIndex == 0 ? <Widget>[
-              IconButton(
-                icon: Icon(Icons.refresh),
-                tooltip: 'Reset Form',
-                onPressed: () => _showResetDialog(context),
-              ),
-              if (_isDevMode)
-                IconButton(
-                  icon: Icon(Icons.analytics),
-                  onPressed: () {
-                    final myAppState = context.findAncestorStateOfType<MyAppState>();
-                    if (myAppState != null) {
-                      myAppState.toggleTelemetry(!myAppState.telemetryVisible);
-                    }
-                  },
-                ),
-              IconButton(
-                icon: Icon(Icons.save),
-                onPressed: _saveRecord,
-              ),
-            ] : null,
-          ),
-          body: IndexedStack(
-            index: _currentIndex,
-            children: [
-              _buildScoutingPage(),
-              DataPage(key: _dataPageKey),
-              ApiPage(key: ApiPageState.globalKey),
-              SettingsPage(),
-              AboutPage(),
-            ],
-          ),
-          bottomNavigationBar: NavBar(
-            currentIndex: _currentIndex,
-            onTap: _onItemTapped,
-          ),
-        ),
-      ),
-    );
+  String _getPageTitle(int index) {
+    switch (index) {
+      case 0:
+        return 'Scouting';
+      case 1:
+        return 'Data';
+      case 2:
+        return 'API';
+      case 3:
+        return 'Bluetooth';
+      case 4:
+        return 'Settings';
+      case 5:
+        return 'About';
+      default:
+        return 'Scouting';
+    }
   }
 
-  // Show reset confirmation dialog
-  void _showResetDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.warning, color: Colors.orange),
-            const SizedBox(width: AppSpacing.sm),
-            const Text('Reset Form'),
-          ],
-        ),
-        content: const Text('Are you sure you want to reset all fields? This cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _resetForm();
-            },
-            child: const Text('Reset'),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Reset form fields
-  void _resetForm() {
-    _triggerHaptic();  // Add haptic feedback when resetting
-    setState(() {
-      teamNumber = 0;
-      matchNumber = 0;
-      matchType = 'Qualification';
-      // ... other field resets ...
-      drawingData = null;
-      if (_drawingButtonKey.currentState != null) {
-        _drawingButtonKey.currentState!.resetPath();
-      }
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle, color: Colors.white),
-            const SizedBox(width: AppSpacing.sm),
-            const Text('Form reset successfully'),
-          ],
-        ),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-      ),
-    );
+  Widget _getPage(int index) {
+    switch (index) {
+      case 0:
+        return _buildScoutingPage();
+      case 1:
+        return DataPage(key: _dataPageKey);
+      case 2:
+        return ApiPage(key: ApiPageState.globalKey);
+      case 3:
+        return BluetoothPage();
+      case 4:
+        return SettingsPage();
+      case 5:
+        return AboutPage();
+      default:
+        return _buildScoutingPage();
+    }
   }
 
   Widget _buildScoutingPage() {

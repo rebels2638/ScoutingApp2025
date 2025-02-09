@@ -15,8 +15,7 @@ import 'package:flutter/services.dart';
 import 'record_detail.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'qr_scanner_page.dart';
-import 'drawing_page.dart';
-import 'record_detail.dart';
+import 'services/ble_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -772,7 +771,6 @@ class DataPageState extends State<DataPage> {
               ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
               : Colors.transparent,
         ),
-      ),
       child: InkWell(
         onTap: () {
           if (_isSelectionMode) {
@@ -878,12 +876,33 @@ class DataPageState extends State<DataPage> {
                   ],
                 ),
               ),
-              IconButton(
-                icon: Icon(
-                  Icons.more_vert,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
-                ),
-                onPressed: () => _showRecordOptions(context, record, index),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.bluetooth),
+                    onPressed: () async {
+                      try {
+                        await BleService().sendMatchData(record);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Data sent successfully')),
+                        );
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to send data: $e')),
+                        );
+                      }
+                    },
+                    tooltip: 'Send via Bluetooth',
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.qr_code),
+                    onPressed: () {
+                      _showQrCodeForRecord(record);
+                    },
+                    tooltip: 'Show QR Code',
+                  ),
+                ],
               ),
             ],
           ),
