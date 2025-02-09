@@ -1166,6 +1166,8 @@ class DataPageState extends State<DataPage> {
       final XTypeGroup csvTypeGroup = XTypeGroup(
         label: 'CSV',
         extensions: ['csv'],
+        // Add UTIs for iOS
+        uniformTypeIdentifiers: ['public.comma-separated-values-text'],
       );
       
       final XFile? file = await openFile(
@@ -1324,16 +1326,17 @@ class DataPageState extends State<DataPage> {
 
   void _showDeleteConfirmation(BuildContext context, [int? index]) {
     final bool isMultipleDelete = selectedRecords.isNotEmpty;
+    final int deleteCount = isMultipleDelete ? selectedRecords.length : 1;
     
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(isMultipleDelete 
-          ? 'Delete ${selectedRecords.length} Records?' 
+          ? 'Delete $deleteCount Records?' 
           : 'Delete Record?'
         ),
         content: Text(isMultipleDelete
-          ? 'Are you sure you want to delete ${selectedRecords.length} selected records? This cannot be undone.'
+          ? 'Are you sure you want to delete $deleteCount selected records? This cannot be undone.'
           : 'Are you sure you want to delete this record? This cannot be undone.'
         ),
         actions: [
@@ -1377,7 +1380,7 @@ class DataPageState extends State<DataPage> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(isMultipleDelete
-                      ? '${selectedRecords.length} records deleted'
+                      ? '$deleteCount records deleted'
                       : 'Record deleted'
                     ),
                   ),

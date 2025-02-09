@@ -489,7 +489,8 @@ class ComparisonMetric extends StatelessWidget {
     
     // For cage hang values
     if (value == 'None') return Colors.red.withOpacity(0.15);
-    if (value == 'Shallow' || value == 'Deep') return Colors.green.withOpacity(0.15);
+    if (value == 'Shallow') return Colors.blue.shade200.withOpacity(0.3);
+    if (value == 'Deep') return Colors.blue.shade700.withOpacity(0.3);
     
     return Colors.transparent;
   }
@@ -510,7 +511,8 @@ class ComparisonMetric extends StatelessWidget {
     
     // For cage hang values
     if (value == 'None') return Colors.red.shade700;
-    if (value == 'Shallow' || value == 'Deep') return Colors.green.shade700;
+    if (value == 'Shallow') return Colors.blue.shade400;
+    if (value == 'Deep') return Colors.blue.shade900;
     
     return Colors.grey;
   }
@@ -678,7 +680,7 @@ class EndgameTab extends StatelessWidget {
           ),
           ComparisonMetric(
             label: 'Cage Hang',
-            values: records.map((r) => r.cageHang).toList(),  // This should now be 'None', 'Shallow', or 'Deep'
+            values: records.map((r) => r.cageHang).toList(),  // This should now show 'None', 'Shallow', or 'Deep'
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
