@@ -44,7 +44,7 @@ dependencies:
   http: ^1.1.0
   url_launcher: ^6.2.5
   flutter_reactive_ble: ^5.3.1
-  app_settings: ^5.1.1
+  app_settings: 5.1.1
   device_info_plus: ^9.1.2
 
 dev_dependencies:
