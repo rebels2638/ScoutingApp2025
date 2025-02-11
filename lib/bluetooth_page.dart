@@ -25,40 +25,63 @@ class _BluetoothPageState extends State<BluetoothPage> {
     _initializeBle();
   }
 
+  Future<bool> _isBleSupported() async {
+    try {
+      final ble = FlutterReactiveBle();
+      final status = await ble.statusStream.first;
+      
+      // On iOS, poweredOff just means Bluetooth needs to be turned on
+      if (Platform.isIOS) {
+        if (status == BleStatus.poweredOff) {
+          _showBluetoothSettings();
+          return false;
+        }
+        // Consider unauthorized as supported but needing permission
+        if (status == BleStatus.unauthorized) {
+          return true;
+        }
+      }
+      
+      return status != BleStatus.unsupported;
+    } catch (e) {
+      TelemetryService().logError('bluetooth', 'Error checking BLE support: $e');
+      return false;
+    }
+  }
+
   Future<void> _initializeBle() async {
     try {
-      // Check platform support first
       if (!await _isBleSupported()) {
         setState(() {
-          _error = 'Bluetooth LE is not supported on this device';
+          _error = Platform.isIOS 
+              ? 'Please enable Bluetooth to continue'
+              : 'Bluetooth LE is not supported on this device';
         });
         return;
       }
 
-      // Initialize BLE service
+      // For iOS, check Bluetooth permission first
+      if (Platform.isIOS) {
+        final status = await Permission.bluetooth.status;
+        if (status.isDenied) {
+          final result = await Permission.bluetooth.request();
+          if (!result.isGranted) {
+            setState(() {
+              _error = 'Bluetooth permission is required';
+            });
+            return;
+          }
+        }
+      }
+
       await _bleService.initialize();
-      
-      // Set up listeners only after successful initialization
       _setupListeners();
-      
-      setState(() {
-        _isInitialized = true;
-      });
+      setState(() => _isInitialized = true);
     } catch (e) {
       setState(() {
         _error = 'Failed to initialize Bluetooth: $e';
       });
       TelemetryService().logError('bluetooth_page', 'Initialization failed: $e');
-    }
-  }
-
-  Future<bool> _isBleSupported() async {
-    try {
-      final flutterReactiveBle = FlutterReactiveBle();
-      await flutterReactiveBle.statusStream.first;
-      return true;
-    } catch (e) {
-      return false;
     }
   }
 
