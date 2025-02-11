@@ -51,36 +51,42 @@ class _BluetoothPageState extends State<BluetoothPage> {
 
   Future<void> _initializeBle() async {
     try {
-      if (!await _isBleSupported()) {
-        setState(() {
-          _error = Platform.isIOS 
-              ? 'Please enable Bluetooth to continue'
-              : 'Bluetooth LE is not supported on this device';
-        });
-        return;
-      }
-
-      // For iOS, check Bluetooth permission first
+      // For iOS, handle Bluetooth state first
       if (Platform.isIOS) {
-        final status = await Permission.bluetooth.status;
-        if (status.isDenied) {
-          final result = await Permission.bluetooth.request();
-          if (!result.isGranted) {
-            setState(() {
-              _error = 'Bluetooth permission is required';
-            });
+        final ble = FlutterReactiveBle();
+        final bleStatus = await ble.statusStream.first;
+        
+        // If Bluetooth is off, show settings
+        if (bleStatus == BleStatus.poweredOff) {
+          setState(() => _error = 'Please enable Bluetooth to continue');
+          _showBluetoothSettings();
+          return;
+        }
+        
+        // If unauthorized, request permission
+        if (bleStatus == BleStatus.unauthorized) {
+          final status = await Permission.bluetooth.request();
+          if (!status.isGranted) {
+            setState(() => _error = 'Bluetooth permission is required');
             return;
           }
         }
+        
+        // Add listener for Bluetooth state changes
+        ble.statusStream.listen((status) {
+          if (status == BleStatus.ready && _error != null) {
+            // Auto retry when Bluetooth becomes ready
+            setState(() => _error = null);
+            _initializeBle();
+          }
+        });
       }
 
       await _bleService.initialize();
       _setupListeners();
       setState(() => _isInitialized = true);
     } catch (e) {
-      setState(() {
-        _error = 'Failed to initialize Bluetooth: $e';
-      });
+      setState(() => _error = 'Failed to initialize Bluetooth: $e');
       TelemetryService().logError('bluetooth_page', 'Initialization failed: $e');
     }
   }
