@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import 'services/ble_service.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'services/telemetry_service.dart';
@@ -112,49 +113,102 @@ class _BluetoothPageState extends State<BluetoothPage> {
     );
   }
 
+  void _showBluetoothSettings() async {
+    try {
+      if (Platform.isIOS) {
+        // On iOS, we need to direct users to the system settings
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Enable Bluetooth'),
+            content: Text(
+              'Please enable Bluetooth in your device settings to use this feature.\n\n'
+              'Settings → Bluetooth'
+            ),
+            actions: [
+              TextButton(
+                child: Text('Cancel'),
+                onPressed: () => Navigator.pop(context),
+              ),
+              TextButton(
+                child: Text('Open Settings'),
+                onPressed: () {
+                  Navigator.pop(context);
+                  AppSettings.openAppSettings(type: AppSettingsType.bluetooth);
+                },
+              ),
+            ],
+          ),
+        );
+      } else {
+        // On Android, we can directly open Bluetooth settings
+        await AppSettings.openAppSettings(type: AppSettingsType.bluetooth);
+      }
+    } catch (e) {
+      TelemetryService().logError('bluetooth_page', 'Error opening settings: $e');
+      _showSnackBar('Could not open Bluetooth settings', isError: true);
+    }
+  }
+
   Future<void> _checkAndRequestPermissions() async {
     TelemetryService().logInfo('bluetooth_page', 'Checking and requesting permissions');
     try {
       if (!await _bleService.hasRequiredPermissions()) {
-        if (_bleService.needsLocationPermission) {
-          TelemetryService().logInfo('bluetooth_page', 'Showing location permission dialog');
-          showDialog(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('Location Permission Required'),
-              content: Text(
-                'This app needs location permission to scan for nearby Bluetooth devices. ' +
-                'This is required by Android for Bluetooth scanning to work.\n\n' +
-                'The app does not track or store your location.',
+        if (Platform.isIOS) {
+          // iOS-specific permission handling
+          final status = await Permission.bluetooth.request();
+          if (!status.isGranted) {
+            _showBluetoothSettings();
+            return;
+          }
+          
+          // Check if Bluetooth is actually enabled
+          final ble = FlutterReactiveBle();
+          final bleStatus = await ble.statusStream.first;
+          if (bleStatus == BleStatus.poweredOff) {
+            _showBluetoothSettings();
+            return;
+          }
+        } else {
+          // Existing Android permission handling
+          if (_bleService.needsLocationPermission) {
+            TelemetryService().logInfo('bluetooth_page', 'Showing location permission dialog');
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Location Permission Required'),
+                content: Text(
+                  'This app needs location permission to scan for nearby Bluetooth devices. ' +
+                  'This is required by Android for Bluetooth scanning to work.\n\n' +
+                  'The app does not track or store your location.',
+                ),
+                actions: [
+                  TextButton(
+                    child: Text('Cancel'),
+                    onPressed: () {
+                      TelemetryService().logAction('bluetooth_permissions', 'User cancelled permission request');
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  TextButton(
+                    child: Text('Open Settings'),
+                    onPressed: () async {
+                      TelemetryService().logAction('bluetooth_permissions', 'User opened settings');
+                      Navigator.of(context).pop();
+                      await AppSettings.openAppSettings(type: AppSettingsType.bluetooth);
+                    },
+                  ),
+                ],
               ),
-              actions: [
-                TextButton(
-                  child: Text('Cancel'),
-                  onPressed: () {
-                    TelemetryService().logAction('bluetooth_permissions', 'User cancelled permission request');
-                    Navigator.of(context).pop();
-                  },
-                ),
-                TextButton(
-                  child: Text('Open Settings'),
-                  onPressed: () async {
-                    TelemetryService().logAction('bluetooth_permissions', 'User opened settings');
-                    Navigator.of(context).pop();
-                    await openAppSettings();
-                  },
-                ),
-              ],
-            ),
-          );
-          return;
+            );
+            return;
+          }
+          await _bleService.initialize();
         }
-        TelemetryService().logInfo('bluetooth_page', 'Initializing BLE service and requesting permissions');
-        await _bleService.initialize();
         
         // Check permissions again after initialization
         if (!await _bleService.hasRequiredPermissions()) {
-          TelemetryService().logError('bluetooth_page', 'Permissions still not granted after initialization');
-          _showSnackBar('Please grant all required permissions in Settings', isError: true);
+          _showSnackBar('Please enable Bluetooth and grant required permissions', isError: true);
           return;
         }
       }
@@ -310,7 +364,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
                             child: Text('Open Settings'),
                             onPressed: () {
                               Navigator.pop(context);
-                              openAppSettings();
+                              AppSettings.openAppSettings(type: AppSettingsType.bluetooth);
                             },
                           ),
                         ],
