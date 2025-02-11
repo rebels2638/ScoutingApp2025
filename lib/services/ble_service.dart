@@ -56,7 +56,46 @@ class BleService {
   Future<void> initialize() async {
     TelemetryService().logInfo('bluetooth', 'Initializing BLE service');
     try {
-      if (Platform.isAndroid) {
+      if (Platform.isIOS) {
+        // For iOS, we need to:
+        // 1. Check if Bluetooth is powered on
+        // 2. Request permission if needed
+        // 3. Wait for BLE to be ready
+        
+        final bleStatus = await _ble.statusStream.first;
+        TelemetryService().logInfo('bluetooth', 'Initial BLE status: $bleStatus');
+        
+        if (bleStatus == BleStatus.poweredOff) {
+          throw Exception('Bluetooth is turned off');
+        }
+        
+        if (bleStatus == BleStatus.unauthorized) {
+          // Request Bluetooth permission
+          final status = await Permission.bluetoothScan.request();
+          TelemetryService().logInfo('bluetooth', 'Bluetooth permission request result: ${status.name}');
+          
+          if (!status.isGranted) {
+            throw Exception('Bluetooth permission denied');
+          }
+          
+          // Wait for BLE status to update after permission grant
+          await for (final status in _ble.statusStream) {
+            if (status == BleStatus.ready) break;
+            if (status == BleStatus.poweredOff) {
+              throw Exception('Bluetooth is turned off');
+            }
+            // Wait up to 5 seconds for status to become ready
+            await Future.delayed(Duration(seconds: 5));
+            throw Exception('Bluetooth failed to initialize');
+          }
+        }
+        
+        if (bleStatus != BleStatus.ready) {
+          throw Exception('Bluetooth is not ready: $bleStatus');
+        }
+        
+        TelemetryService().logInfo('bluetooth', 'iOS BLE initialization successful');
+      } else if (Platform.isAndroid) {
         // get Android version
         final androidInfo = await DeviceInfoPlugin().androidInfo;
         final sdkInt = androidInfo.version.sdkInt;
@@ -118,34 +157,6 @@ class BleService {
         }
 
         TelemetryService().logInfo('bluetooth', 'All permissions successfully granted');
-      } else if (Platform.isIOS) {
-        // iOS requires different permission handling
-        TelemetryService().logInfo('bluetooth', 'Initializing BLE on iOS');
-        
-        // Check Bluetooth authorization status
-        final status = await Permission.bluetooth.status;
-        TelemetryService().logInfo('bluetooth', 'Initial Bluetooth status: ${status.name}');
-        
-        if (status.isDenied || status.isRestricted) {
-          // Request permission
-          final result = await Permission.bluetooth.request();
-          TelemetryService().logInfo('bluetooth', 'Bluetooth permission request result: ${result.name}');
-          
-          if (!result.isGranted) {
-            throw Exception('Bluetooth permission denied');
-          }
-        }
-        
-        // Initialize FlutterReactiveBle
-        final ble = FlutterReactiveBle();
-        
-        // Wait for BLE to initialize and check status
-        final bleStatus = await ble.statusStream.first;
-        TelemetryService().logInfo('bluetooth', 'BLE status: $bleStatus');
-        
-        if (bleStatus != BleStatus.ready) {
-          throw Exception('Bluetooth is not ready: $bleStatus');
-        }
       }
       
       TelemetryService().logInfo('bluetooth', 'BLE service initialized successfully');
@@ -206,18 +217,17 @@ class BleService {
                  bluetoothAdvertise.isGranted;
         }
       } else if (Platform.isIOS) {
-        // For iOS, check both Bluetooth permission and BLE status
-        final bluetoothStatus = await Permission.bluetooth.status;
-        TelemetryService().logInfo('bluetooth_permissions', 'iOS Bluetooth Permission: ${bluetoothStatus.name}');
+        // For iOS, check both permission and BLE status
+        final bleStatus = await _ble.statusStream.first;
         
-        if (!bluetoothStatus.isGranted) {
+        if (bleStatus == BleStatus.poweredOff) {
           return false;
         }
         
-        // Check if BLE is actually available and ready
-        final ble = FlutterReactiveBle();
-        final bleStatus = await ble.statusStream.first;
-        TelemetryService().logInfo('bluetooth_permissions', 'iOS BLE Status: $bleStatus');
+        if (bleStatus == BleStatus.unauthorized) {
+          final status = await Permission.bluetoothScan.status;
+          return status.isGranted;
+        }
         
         return bleStatus == BleStatus.ready;
       }
