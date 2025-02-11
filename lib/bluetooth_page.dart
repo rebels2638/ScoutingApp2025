@@ -15,19 +15,65 @@ class _BluetoothPageState extends State<BluetoothPage> {
   List<DiscoveredDevice> _discoveredDevices = [];
   bool _isCentral = false;
   String? _connectionStatus;
+  bool _isInitialized = false;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    
-    // Listen for discovered devices
-    _bleService.deviceStream.listen((device) {
+    _initializeBle();
+  }
+
+  Future<void> _initializeBle() async {
+    try {
+      // Check platform support first
+      if (!await _isBleSupported()) {
+        setState(() {
+          _error = 'Bluetooth LE is not supported on this device';
+        });
+        return;
+      }
+
+      // Initialize BLE service
+      await _bleService.initialize();
+      
+      // Set up listeners only after successful initialization
+      _setupListeners();
+      
       setState(() {
-        if (!_discoveredDevices.any((d) => d.id == device.id)) {
-          _discoveredDevices.add(device);
-        }
+        _isInitialized = true;
       });
-    });
+    } catch (e) {
+      setState(() {
+        _error = 'Failed to initialize Bluetooth: $e';
+      });
+      TelemetryService().logError('bluetooth_page', 'Initialization failed: $e');
+    }
+  }
+
+  Future<bool> _isBleSupported() async {
+    try {
+      final flutterReactiveBle = FlutterReactiveBle();
+      await flutterReactiveBle.statusStream.first;
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  void _setupListeners() {
+    _bleService.deviceStream.listen(
+      (device) {
+        setState(() {
+          if (!_discoveredDevices.any((d) => d.id == device.id)) {
+            _discoveredDevices.add(device);
+          }
+        });
+      },
+      onError: (e) {
+        TelemetryService().logError('bluetooth_page', 'Device stream error: $e');
+      },
+    );
 
     // Listen for clear signals
     _bleService.clearStream.listen((_) {
@@ -175,6 +221,51 @@ class _BluetoothPageState extends State<BluetoothPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Show error state if initialization failed
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red),
+              SizedBox(height: 16),
+              Text(
+                _error!,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.red),
+              ),
+              SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _error = null;
+                  });
+                  _initializeBle();
+                },
+                child: Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Show loading state while initializing
+    if (!_isInitialized) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Initializing Bluetooth...'),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
         Padding(
@@ -343,7 +434,12 @@ class _BluetoothPageState extends State<BluetoothPage> {
 
   @override
   void dispose() {
-    _bleService.dispose();
+    // Safely dispose of BLE service
+    try {
+      _bleService.dispose();
+    } catch (e) {
+      TelemetryService().logError('bluetooth_page', 'Error disposing BLE service: $e');
+    }
     super.dispose();
   }
 } 

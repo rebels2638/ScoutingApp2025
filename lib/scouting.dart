@@ -1019,6 +1019,84 @@ class _ScoutingPageState extends State<ScoutingPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_getPageTitle(_currentIndex)),
+        actions: _currentIndex == 0 ? [
+          // Only show these buttons on the scouting page
+          IconButton(
+            icon: const Icon(Icons.save),
+            tooltip: 'Save Record',
+            onPressed: _saveRecord,
+          ),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Reset Form',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Reset Form?'),
+                  content: const Text('This will clear all fields. Are you sure?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        setState(() {
+                          algaeRemoved = 0;
+                          algaeScoredInNet = 0;
+                          coralOnReefHeight1 = 0;
+                          coralOnReefHeight2 = 0;
+                          coralOnReefHeight3 = 0;
+                          coralOnReefHeight4 = 0;
+                          algaeProcessed = 0;
+                          processedAlgaeScored = 0;
+                          processorCycles = 0;
+                          coralPlaced = 'No';
+                          cageHang = 'None';
+                          comments = '';
+                          taxis = false;
+                          rankingPoint = false;
+                          coralRankingPoint = false;
+                          coOpPoint = false;
+                          returnedToBarge = false;
+                          bargeRankingPoint = false;
+                          breakdown = false;
+                          autoAlgaeInNet = 0;
+                          autoAlgaeInProcessor = 0;
+                          coralPickupMethod = 'None';
+                          drawingData = null;
+                          if (_drawingButtonKey.currentState != null) {
+                            _drawingButtonKey.currentState!.resetPath();
+                          }
+                          updateTime();
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Form reset')),
+                        );
+                      },
+                      style: TextButton.styleFrom(foregroundColor: Colors.red),
+                      child: const Text('Reset'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // Only show telemetry button if dev mode is enabled
+          if (_isDevMode)
+            IconButton(
+              icon: const Icon(Icons.bug_report),
+              tooltip: 'Toggle Telemetry',
+              onPressed: () {
+                final myAppState = context.findAncestorStateOfType<MyAppState>();
+                if (myAppState != null) {
+                  myAppState.toggleTelemetry(!myAppState.telemetryVisible);
+                }
+              },
+            ),
+        ] : null,
       ),
       body: _getPage(_currentIndex),
       bottomNavigationBar: NavBar(
