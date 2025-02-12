@@ -998,26 +998,6 @@ class DataPageState extends State<DataPage> {
   }
 
   void _showQRCodeDialog(BuildContext context, ScoutingRecord record) {
-    // Don't allow QR code generation if there's a drawing
-    if (record.robotPath != null && record.robotPath!.isNotEmpty) {
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Cannot Generate QR Code'),
-          content: const Text(
-            'This record contains an auto path drawing which makes the data too large for a QR code. '
-            'Please use the export function instead.'
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
 
     // Create a minimal array format to reduce data size
     final List<dynamic> qrData = [
