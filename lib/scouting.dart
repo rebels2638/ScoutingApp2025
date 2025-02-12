@@ -1312,13 +1312,11 @@ class CounterRow extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       decoration: BoxDecoration(
-        color: isDark 
-            ? Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3)
-            : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+        color: isDark ? Colors.black : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isDark
-              ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+              ? Colors.grey.withOpacity(0.3)
               : Theme.of(context).colorScheme.outline.withOpacity(0.2),
         ),
       ),
@@ -1408,11 +1406,22 @@ class SectionCard extends StatelessWidget {
     return Container(
       margin: EdgeInsets.only(bottom: AppSpacing.md),
       decoration: BoxDecoration(
-        color: isDark
-            ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
-            : Theme.of(context).colorScheme.surface,
+        color: isDark ? Colors.black : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: isDark ? [] : AppShadows.small,
+        border: Border.all(
+          color: isDark 
+              ? Colors.grey.withOpacity(0.2)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.1),
+        ),
+        boxShadow: isDark 
+            ? [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ]
+            : AppShadows.small,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -1564,13 +1573,11 @@ class SwitchCard extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       decoration: BoxDecoration(
-        color: isDark
-            ? Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3)
-            : Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+        color: isDark ? Colors.black : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: isDark
-              ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+              ? (value ? Colors.blue.withOpacity(0.3) : Colors.grey.withOpacity(0.2))
               : Theme.of(context).colorScheme.outline.withOpacity(0.2),
         ),
       ),
@@ -1652,10 +1659,13 @@ class _NumberInputState extends State<NumberInput> {
     
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
-            : Theme.of(context).colorScheme.surface,
+        color: isDark ? Colors.black : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: isDark
+              ? Colors.grey.withOpacity(0.3)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
         boxShadow: isDark ? [] : AppShadows.small,
       ),
       padding: EdgeInsets.all(AppSpacing.sm),
@@ -1790,11 +1800,25 @@ class TeamSelector extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: AppShadows.small,
+        color: isDark ? Colors.black : Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark
+              ? Colors.grey.withOpacity(0.3)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+        boxShadow: isDark
+            ? [
+                BoxShadow(
+                  color: Colors.blue.withOpacity(0.1),
+                  blurRadius: 4,
+                ),
+              ]
+            : AppShadows.small,
       ),
       padding: EdgeInsets.all(AppSpacing.md),
       child: Column(
@@ -1904,14 +1928,18 @@ class FormRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4.0),
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.2),
+        color: isDark ? Colors.black : Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+          color: isDark
+              ? Colors.grey.withOpacity(0.3)
+              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
         ),
       ),
       child: Row(

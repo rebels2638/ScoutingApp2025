@@ -805,11 +805,25 @@ class DataPageState extends State<DataPage> {
           });
         },
         leading: _isSelectionMode 
-            ? Icon(
-                isSelected ? Icons.check_circle : Icons.circle_outlined,
-                color: isSelected 
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ? Container(
+                decoration: BoxDecoration(
+                  color: isSelected 
+                      ? Colors.blue.withOpacity(0.2)
+                      : Colors.grey.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected 
+                        ? Colors.blue 
+                        : Colors.grey.withOpacity(0.5),
+                    width: 2,
+                  ),
+                ),
+                child: Icon(
+                  isSelected ? Icons.check_circle : Icons.circle_outlined,
+                  color: isSelected 
+                      ? Colors.blue
+                      : Colors.grey.withOpacity(0.7),
+                ),
               )
             : null,
         title: Row(
@@ -998,7 +1012,6 @@ class DataPageState extends State<DataPage> {
   }
 
   void _showQRCodeDialog(BuildContext context, ScoutingRecord record) {
-
     // Create a minimal array format to reduce data size
     final List<dynamic> qrData = [
       record.timestamp,
@@ -1041,6 +1054,9 @@ class DataPageState extends State<DataPage> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
+        backgroundColor: Theme.of(context).brightness == Brightness.dark 
+            ? Colors.grey[900] // Darker background for QR visibility
+            : Colors.white,
         child: SingleChildScrollView(
           child: Container(
             padding: const EdgeInsets.all(16),
@@ -1049,27 +1065,40 @@ class DataPageState extends State<DataPage> {
               children: [
                 Text(
                   'Team ${record.teamNumber}\nMatch ${record.matchNumber}',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
-                QrImageView(
-                  data: jsonStr,
-                  version: QrVersions.auto,
-                  size: 280,
-                  errorCorrectionLevel: QrErrorCorrectLevel.L,
-                  gapless: true,
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white, // Always white background for QR
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.grey.withOpacity(0.2),
+                    ),
+                  ),
+                  child: QrImageView(
+                    data: jsonStr,
+                    version: QrVersions.auto,
+                    size: 280,
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    errorCorrectionLevel: QrErrorCorrectLevel.L,
+                    gapless: true,
+                  ),
                 ),
                 const SizedBox(height: 16),
-                const Text(
+                Text(
                   'Scan this QR code to import the match data',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                   ),
                 ),
                 const SizedBox(height: 8),
