@@ -5,6 +5,7 @@ import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'services/telemetry_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
+import 'package:flutter/foundation.dart';
 
 class BluetoothPage extends StatefulWidget {
   @override
@@ -12,17 +13,31 @@ class BluetoothPage extends StatefulWidget {
 }
 
 class _BluetoothPageState extends State<BluetoothPage> {
-  final BleService _bleService = BleService();
+  late final BleService _bleService;
   List<DiscoveredDevice> _discoveredDevices = [];
   bool _isCentral = false;
   String? _connectionStatus;
   bool _isInitialized = false;
   String? _error;
+  bool _isSupported = false;
 
   @override
   void initState() {
     super.initState();
-    _initializeBle();
+    _bleService = BleService();
+    _checkSupport();
+  }
+
+  Future<void> _checkSupport() async {
+    if (!kIsWeb && (Platform.isIOS || Platform.isAndroid)) {
+      _isSupported = true;
+      _initializeBle();
+    } else {
+      setState(() {
+        _isSupported = false;
+        _error = 'Bluetooth functionality is only supported on iOS and Android devices';
+      });
+    }
   }
 
   Future<bool> _isBleSupported() async {
@@ -304,6 +319,42 @@ class _BluetoothPageState extends State<BluetoothPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Show unsupported platform message
+    if (!_isSupported) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Bluetooth'),
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.bluetooth_disabled,
+                  size: 64,
+                  color: Colors.grey,
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Bluetooth Not Supported',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Bluetooth functionality is only available on iOS and Android devices.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     // Show error state if initialization failed
     if (_error != null) {
       return Center(

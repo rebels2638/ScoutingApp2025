@@ -11,7 +11,7 @@ class BleService {
   static final BleService _instance = BleService._internal();
   factory BleService() => _instance;
   
-  final FlutterReactiveBle _ble = FlutterReactiveBle();
+  FlutterReactiveBle? _ble;
   bool _isScanning = false;
   bool _isCentral = false;
   StreamSubscription? _scanSubscription;
@@ -51,9 +51,17 @@ class BleService {
   // Add a constant for identifying our app's devices
   static const String deviceNamePrefix = "2638Scout";
   
-  BleService._internal();
+  BleService._internal() {
+    if (!kIsWeb && (Platform.isIOS || Platform.isAndroid)) {
+      _ble = FlutterReactiveBle();
+    }
+  }
 
   Future<void> initialize() async {
+    if (_ble == null) {
+      throw UnsupportedError('Bluetooth is not supported on this platform');
+    }
+    
     TelemetryService().logInfo('bluetooth', 'Initializing BLE service');
     try {
       if (Platform.isIOS) {
@@ -62,7 +70,7 @@ class BleService {
         // 2. Request permission if needed
         // 3. Wait for BLE to be ready
         
-        final bleStatus = await _ble.statusStream.first;
+        final bleStatus = await _ble!.statusStream.first;
         TelemetryService().logInfo('bluetooth', 'Initial BLE status: $bleStatus');
         
         if (bleStatus == BleStatus.poweredOff) {
@@ -79,7 +87,7 @@ class BleService {
           }
           
           // Wait for BLE status to update after permission grant
-          await for (final status in _ble.statusStream) {
+          await for (final status in _ble!.statusStream) {
             if (status == BleStatus.ready) break;
             if (status == BleStatus.poweredOff) {
               throw Exception('Bluetooth is turned off');
@@ -167,6 +175,7 @@ class BleService {
   }
 
   Future<bool> hasRequiredPermissions() async {
+    if (_ble == null) return false;
     try {
       TelemetryService().logInfo('bluetooth_permissions', 'Checking required permissions');
       if (Platform.isAndroid) {
@@ -218,7 +227,7 @@ class BleService {
         }
       } else if (Platform.isIOS) {
         // For iOS, check both permission and BLE status
-        final bleStatus = await _ble.statusStream.first;
+        final bleStatus = await _ble!.statusStream.first;
         
         if (bleStatus == BleStatus.poweredOff) {
           return false;
@@ -296,7 +305,7 @@ class BleService {
         final deviceId = DateTime.now().millisecondsSinceEpoch.toString();
         final deviceName = "${deviceNamePrefix}_C_$deviceId"; // C for Central
         
-        _scanSubscription = _ble.scanForDevices(
+        _scanSubscription = _ble!.scanForDevices(
           withServices: [],
           scanMode: ScanMode.lowLatency,
         ).listen(
@@ -348,7 +357,7 @@ class BleService {
         TelemetryService().logInfo('bluetooth', 'Peripheral mode active, deviceId: $deviceName');
         
         // Start scanning for central devices
-        _scanSubscription = _ble.scanForDevices(
+        _scanSubscription = _ble!.scanForDevices(
           withServices: [], 
           scanMode: ScanMode.lowLatency,
         ).listen(
@@ -389,7 +398,7 @@ class BleService {
     // set device name based on role
     final deviceName = _isCentral ? 'Central-${device.id}' : 'Peripheral-${device.id}';
     
-    _connectionSubscription = _ble.connectToDevice(
+    _connectionSubscription = _ble!.connectToDevice(
       id: device.id,
       connectionTimeout: const Duration(seconds: 5),
     ).listen(
@@ -407,7 +416,7 @@ class BleService {
               deviceId: device.id,
             );
             
-            _ble.subscribeToCharacteristic(characteristic).listen(
+            _ble!.subscribeToCharacteristic(characteristic).listen(
               (data) {
                 // handle incoming data
                 print('Received data from central: ${String.fromCharCodes(data)}');
@@ -451,7 +460,7 @@ class BleService {
         );
         
         try {
-          await _ble.writeCharacteristicWithResponse(
+          await _ble!.writeCharacteristicWithResponse(
             characteristic,
             value: chunk,
           );
