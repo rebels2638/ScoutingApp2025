@@ -18,7 +18,7 @@ class BleService {
   StreamSubscription? _connectionSubscription;
   final _deviceController = StreamController<DiscoveredDevice>.broadcast();
   
-  // Service and characteristic UUIDs
+  // service and characteristic UUIDs
   static const String serviceUuid = "26380000-1000-8000-0000-805F9B34FB00";
   static const String characteristicUuid = "26380001-1000-8000-0000-805F9B34FB00";
   
@@ -43,16 +43,16 @@ class BleService {
     TelemetryService().logInfo('bluetooth', 'Initializing BLE service');
     try {
       if (Platform.isAndroid) {
-        // Get Android version
+        // get Android version
         final androidInfo = await DeviceInfoPlugin().androidInfo;
         final sdkInt = androidInfo.version.sdkInt;
         TelemetryService().logInfo('bluetooth', 'Android SDK version: $sdkInt');
 
-        // For Android 12 (SDK 31) and above, we only need the new permissions
+        // android 21/sdk31 and above: only need new perms
         if (sdkInt >= 31) {
           TelemetryService().logInfo('bluetooth', 'Using new Bluetooth permissions for Android 12+');
           
-          // Request location first (still required for scanning)
+          // request location perm: needed for scanning
           var locationStatus = await Permission.location.status;
           if (!locationStatus.isGranted) {
             locationStatus = await Permission.location.request();
@@ -62,7 +62,7 @@ class BleService {
             }
           }
 
-          // Request new Bluetooth permissions
+          // request new bt perms
           final permissions = [
             Permission.bluetoothScan,
             Permission.bluetoothConnect,
@@ -80,7 +80,7 @@ class BleService {
             }
           }
         } else {
-          // For older Android versions, we need the legacy permissions
+          // older android versions: need legacy perms
           TelemetryService().logInfo('bluetooth', 'Using legacy Bluetooth permissions');
           
           final permissions = [
@@ -105,7 +105,7 @@ class BleService {
 
         TelemetryService().logInfo('bluetooth', 'All permissions successfully granted');
       } else if (Platform.isIOS) {
-        // iOS Bluetooth permission handling
+        // ios bluetooth perm handling
         final bluetoothStatus = await Permission.bluetooth.request();
         TelemetryService().logInfo('bluetooth', 'iOS Bluetooth permission result: ${bluetoothStatus.name}');
         
@@ -124,12 +124,12 @@ class BleService {
     try {
       TelemetryService().logInfo('bluetooth_permissions', 'Checking required permissions');
       if (Platform.isAndroid) {
-        // Get Android version
+        // get android version
         final androidInfo = await DeviceInfoPlugin().androidInfo;
         final sdkInt = androidInfo.version.sdkInt;
         
         if (sdkInt >= 31) {
-          // For Android 12+, we only check new permissions
+          // android 12+: only check new perms
           final location = await Permission.location.status;
           final bluetoothScan = await Permission.bluetoothScan.status;
           final bluetoothConnect = await Permission.bluetoothConnect.status;
@@ -148,7 +148,7 @@ class BleService {
                  bluetoothConnect.isGranted && 
                  bluetoothAdvertise.isGranted;
         } else {
-          // For older versions, check all permissions
+          // older android versions: check all perms
           final location = await Permission.location.status;
           final bluetooth = await Permission.bluetooth.status;
           final bluetoothScan = await Permission.bluetoothScan.status;
@@ -182,7 +182,7 @@ class BleService {
     }
   }
 
-  // Add field to track if we need to show location permission rationale
+  // add field to track if we need to show location permission rationale
   bool _needsLocationPermission = false;
   bool get needsLocationPermission => _needsLocationPermission;
 
@@ -195,19 +195,23 @@ class BleService {
       try {
         TelemetryService().logInfo('bluetooth', 'Starting central scanning');
         _isScanning = true;
+        
         _scanSubscription = _ble.scanForDevices(
-          withServices: [Uuid.parse(serviceUuid)],
+          withServices: [], // Remove service filter to see all devices
           scanMode: ScanMode.lowLatency,
         ).listen(
           (device) {
-            TelemetryService().logInfo('bluetooth', 'Found device: ${device.name}');
-            if (!device.name.contains('Central')) {
-              _deviceController.add(device);
-            }
+            TelemetryService().logInfo('bluetooth', 
+              'Central found device: ${device.name} (${device.id})\n' +
+              'RSSI: ${device.rssi}\n' +
+              'Services: ${device.serviceUuids}'
+            );
+            
+            // Add all discovered devices for debugging
+            _deviceController.add(device);
           },
           onError: (error) {
             TelemetryService().logError('bluetooth', 'Central scanning error: $error');
-            print('Central scanning error: $error');
           },
         );
       } catch (e) {
@@ -232,32 +236,36 @@ class BleService {
       try {
         TelemetryService().logInfo('bluetooth', 'Starting peripheral advertising');
         
-        // Create a unique identifier for this device
+        // Create unique identifier for this device
         final deviceId = DateTime.now().millisecondsSinceEpoch.toString();
+        
+        // Note: The flutter_reactive_ble package doesn't directly support advertising
+        // We need to scan for central devices instead
+        _isAdvertising = true;
+        TelemetryService().logInfo('bluetooth', 'Peripheral mode active, deviceId: $deviceId');
         
         // Start scanning for central devices
         _scanSubscription = _ble.scanForDevices(
-          withServices: [Uuid.parse(serviceUuid)],
+          withServices: [], // Remove service filter to see all devices
           scanMode: ScanMode.lowLatency,
         ).listen(
           (device) {
-            TelemetryService().logInfo('bluetooth', 'Detected device: ${device.name}');
-            // Only add central devices
+            TelemetryService().logInfo('bluetooth', 
+              'Peripheral detected device: ${device.name} (${device.id})\n' +
+              'RSSI: ${device.rssi}\n' +
+              'Services: ${device.serviceUuids}'
+            );
+            
             if (device.name.contains('Central')) {
               _deviceController.add(device);
             }
           },
           onError: (error) {
             TelemetryService().logError('bluetooth', 'Peripheral scanning error: $error');
-            print('Peripheral scanning error: $error');
           },
         );
-        
-        _isAdvertising = true;
-        TelemetryService().logInfo('bluetooth', 'Peripheral advertising started');
       } catch (e) {
         TelemetryService().logError('bluetooth', 'Failed to start advertising: $e');
-        print('Error starting peripheral mode: $e');
         _isAdvertising = false;
         rethrow;
       }
@@ -276,7 +284,7 @@ class BleService {
   Future<void> connectToDevice(DiscoveredDevice device) async {
     await _connectionSubscription?.cancel();
     
-    // Set device name based on role
+    // set device name based on role
     final deviceName = _isCentral ? 'Central-${device.id}' : 'Peripheral-${device.id}';
     
     _connectionSubscription = _ble.connectToDevice(
@@ -299,7 +307,7 @@ class BleService {
             
             _ble.subscribeToCharacteristic(characteristic).listen(
               (data) {
-                // Handle incoming data
+                // handle incoming data
                 print('Received data from central: ${String.fromCharCodes(data)}');
               },
               onError: (error) => print('Error receiving data: $error'),
@@ -326,8 +334,8 @@ class BleService {
       final csvData = record.toCsvRow();
       final data = csvData.toString().codeUnits;
       
-      // Split data into chunks if needed (BLE has packet size limits)
-      final chunkSize = 512; // Typical BLE packet size limit
+      // split data into chunks if needed (BLE has packet size limits)
+      final chunkSize = 512; // typical BLE packet size limit
       for (var i = 0; i < data.length; i += chunkSize) {
         final chunk = data.sublist(
           i, 
