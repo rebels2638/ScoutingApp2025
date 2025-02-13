@@ -11,99 +11,38 @@ class BleService {
   static final BleService _instance = BleService._internal();
   factory BleService() => _instance;
   
-  FlutterReactiveBle? _ble;
+  final FlutterReactiveBle _ble = FlutterReactiveBle();
   bool _isScanning = false;
   bool _isCentral = false;
   StreamSubscription? _scanSubscription;
   StreamSubscription? _connectionSubscription;
-  StreamController<DiscoveredDevice>? _deviceController;
-  StreamController<void>? _clearController;
-  StreamController<ConnectionStateUpdate>? _connectionStateController;
+  final _deviceController = StreamController<DiscoveredDevice>.broadcast();
   
   // service and characteristic UUIDs
   static const String serviceUuid = "26380000-1000-8000-0000-805F9B34FB00";
   static const String characteristicUuid = "26380001-1000-8000-0000-805F9B34FB00";
   
-  Stream<DiscoveredDevice> get deviceStream {
-    _deviceController ??= StreamController<DiscoveredDevice>.broadcast();
-    return _deviceController!.stream;
-  }
-  
-  Stream<void> get clearStream {
-    _clearController ??= StreamController<void>.broadcast();
-    return _clearController!.stream;
-  }
-  
-  Stream<ConnectionStateUpdate> get connectionStateStream {
-    _connectionStateController ??= StreamController<ConnectionStateUpdate>.broadcast();
-    return _connectionStateController!.stream;
-  }
-  
+  Stream<DiscoveredDevice> get deviceStream => _deviceController.stream;
   bool get isScanning => _isScanning;
   bool get isCentral => _isCentral;
 
   String? _connectedDeviceId;
   bool _isAdvertising = false;
+  StreamController<ConnectionStateUpdate> _connectionStateController = 
+      StreamController<ConnectionStateUpdate>.broadcast();
+  
+  Stream<ConnectionStateUpdate> get connectionStateStream => 
+      _connectionStateController.stream;
   
   bool get isConnected => _connectedDeviceId != null;
   bool get isAdvertising => _isAdvertising;
 
-  // Add a constant for identifying our app's devices
-  static const String deviceNamePrefix = "2638Scout";
-  
-  BleService._internal() {
-    if (!kIsWeb && (Platform.isIOS || Platform.isAndroid)) {
-      _ble = FlutterReactiveBle();
-    }
-  }
+  BleService._internal();
 
   Future<void> initialize() async {
-    if (_ble == null) {
-      throw UnsupportedError('Bluetooth is not supported on this platform');
-    }
-    
     TelemetryService().logInfo('bluetooth', 'Initializing BLE service');
     try {
-      if (Platform.isIOS) {
-        // For iOS, we need to:
-        // 1. Check if Bluetooth is powered on
-        // 2. Request permission if needed
-        // 3. Wait for BLE to be ready
-        
-        final bleStatus = await _ble!.statusStream.first;
-        TelemetryService().logInfo('bluetooth', 'Initial BLE status: $bleStatus');
-        
-        if (bleStatus == BleStatus.poweredOff) {
-          throw Exception('Bluetooth is turned off');
-        }
-        
-        if (bleStatus == BleStatus.unauthorized) {
-          // Request Bluetooth permission
-          final status = await Permission.bluetoothScan.request();
-          TelemetryService().logInfo('bluetooth', 'Bluetooth permission request result: ${status.name}');
-          
-          if (!status.isGranted) {
-            throw Exception('Bluetooth permission denied');
-          }
-          
-          // Wait for BLE status to update after permission grant
-          await for (final status in _ble!.statusStream) {
-            if (status == BleStatus.ready) break;
-            if (status == BleStatus.poweredOff) {
-              throw Exception('Bluetooth is turned off');
-            }
-            // Wait up to 5 seconds for status to become ready
-            await Future.delayed(Duration(seconds: 5));
-            throw Exception('Bluetooth failed to initialize');
-          }
-        }
-        
-        if (bleStatus != BleStatus.ready) {
-          throw Exception('Bluetooth is not ready: $bleStatus');
-        }
-        
-        TelemetryService().logInfo('bluetooth', 'iOS BLE initialization successful');
-      } else if (Platform.isAndroid) {
+      if (Platform.isAndroid) {
         // get Android version
         final androidInfo = await DeviceInfoPlugin().androidInfo;
         final sdkInt = androidInfo.version.sdkInt;
@@ -165,9 +104,16 @@ class BleService {
         }
 
         TelemetryService().logInfo('bluetooth', 'All permissions successfully granted');
+      } else if (Platform.isIOS) {
+        // ios bluetooth perm handling
+        final bluetoothStatus = await Permission.bluetooth.request();
+        TelemetryService().logInfo('bluetooth', 'iOS Bluetooth permission result: ${bluetoothStatus.name}');
+        
+        if (!bluetoothStatus.isGranted) {
+          TelemetryService().logError('bluetooth', 'Bluetooth permission denied on iOS');
+          throw Exception('Bluetooth permission denied');
+        }
       }
-      
-      TelemetryService().logInfo('bluetooth', 'BLE service initialized successfully');
     } catch (e) {
       TelemetryService().logError('bluetooth', 'Error initializing BLE service: $e');
       rethrow;
@@ -175,7 +121,6 @@ class BleService {
   }
 
   Future<bool> hasRequiredPermissions() async {
-    if (_ble == null) return false;
     try {
       TelemetryService().logInfo('bluetooth_permissions', 'Checking required permissions');
       if (Platform.isAndroid) {
@@ -226,44 +171,13 @@ class BleService {
                  bluetoothAdvertise.isGranted;
         }
       } else if (Platform.isIOS) {
-        // For iOS, check both permission and BLE status
-        final bleStatus = await _ble!.statusStream.first;
-        
-        if (bleStatus == BleStatus.poweredOff) {
-          return false;
-        }
-        
-        if (bleStatus == BleStatus.unauthorized) {
-          final status = await Permission.bluetoothScan.status;
-          return status.isGranted;
-        }
-        
-        return bleStatus == BleStatus.ready;
+        final bluetooth = await Permission.bluetooth.status;
+        TelemetryService().logInfo('bluetooth_permissions', 'iOS Bluetooth Permission: ${bluetooth.name}');
+        return bluetooth.isGranted;
       }
       return false;
     } catch (e) {
       TelemetryService().logError('bluetooth_permissions', 'Error checking permissions: $e');
-      return false;
-    }
-  }
-
-  Future<bool> _isBleSupported() async {
-    try {
-      final ble = FlutterReactiveBle();
-      final status = await ble.statusStream.first;
-      
-      // Log the status for debugging
-      TelemetryService().logInfo('bluetooth', 'BLE status check: $status');
-      
-      // On iOS, poweredOff is a valid state that just means Bluetooth needs to be enabled
-      if (Platform.isIOS && status == BleStatus.poweredOff) {
-        TelemetryService().logInfo('bluetooth', 'BLE is supported but powered off');
-        return true;
-      }
-      
-      return status != BleStatus.unsupported;
-    } catch (e) {
-      TelemetryService().logError('bluetooth', 'Error checking BLE support: $e');
       return false;
     }
   }
@@ -276,47 +190,25 @@ class BleService {
     _isCentral = isCentral;
   }
 
-  // Add method to reset streams
-  void _resetStreams() {
-    // Close existing controllers
-    _deviceController?.close();
-    _clearController?.close();
-    _connectionStateController?.close();
-    
-    // Create new controllers
-    _deviceController = StreamController<DiscoveredDevice>.broadcast();
-    _clearController = StreamController<void>.broadcast();
-    _connectionStateController = StreamController<ConnectionStateUpdate>.broadcast();
-  }
-
   Future<void> startScanning() async {
     if (!_isScanning && _isCentral) {
       try {
-        // Reset streams before starting new scan
-        _resetStreams();
-        
         TelemetryService().logInfo('bluetooth', 'Starting central scanning');
         _isScanning = true;
         
-        // Signal to clear existing devices
-        _clearController?.add(null);
-        
-        // Create unique identifier for this central device
-        final deviceId = DateTime.now().millisecondsSinceEpoch.toString();
-        final deviceName = "${deviceNamePrefix}_C_$deviceId"; // C for Central
-        
-        _scanSubscription = _ble!.scanForDevices(
-          withServices: [],
+        _scanSubscription = _ble.scanForDevices(
+          withServices: [], // Remove service filter to see all devices
           scanMode: ScanMode.lowLatency,
         ).listen(
           (device) {
-            if (device.name.startsWith('${deviceNamePrefix}_P_')) {
-              TelemetryService().logInfo('bluetooth', 
-                'Central found peripheral device: ${device.name}\n' +
-                'RSSI: ${device.rssi}'
-              );
-              _deviceController?.add(device);
-            }
+            TelemetryService().logInfo('bluetooth', 
+              'Central found device: ${device.name} (${device.id})\n' +
+              'RSSI: ${device.rssi}\n' +
+              'Services: ${device.serviceUuids}'
+            );
+            
+            // Add all discovered devices for debugging
+            _deviceController.add(device);
           },
           onError: (error) {
             TelemetryService().logError('bluetooth', 'Central scanning error: $error');
@@ -336,39 +228,36 @@ class BleService {
       _isScanning = false;
       await _scanSubscription?.cancel();
       _scanSubscription = null;
-      // Signal to clear the device list
-      _clearController?.add(null);
     }
   }
 
   Future<void> startAdvertising() async {
     if (!_isCentral && !_isAdvertising) {
       try {
-        // Reset streams before starting advertising
-        _resetStreams();
-        
         TelemetryService().logInfo('bluetooth', 'Starting peripheral advertising');
         
         // Create unique identifier for this device
         final deviceId = DateTime.now().millisecondsSinceEpoch.toString();
-        final deviceName = "${deviceNamePrefix}_P_$deviceId"; // P for Peripheral
         
+        // Note: The flutter_reactive_ble package doesn't directly support advertising
+        // We need to scan for central devices instead
         _isAdvertising = true;
-        TelemetryService().logInfo('bluetooth', 'Peripheral mode active, deviceId: $deviceName');
+        TelemetryService().logInfo('bluetooth', 'Peripheral mode active, deviceId: $deviceId');
         
         // Start scanning for central devices
-        _scanSubscription = _ble!.scanForDevices(
-          withServices: [], 
+        _scanSubscription = _ble.scanForDevices(
+          withServices: [], // Remove service filter to see all devices
           scanMode: ScanMode.lowLatency,
         ).listen(
           (device) {
-            // Only add devices with our app's prefix and central identifier
-            if (device.name.startsWith('${deviceNamePrefix}_C_')) {
-              TelemetryService().logInfo('bluetooth', 
-                'Peripheral detected central device: ${device.name}\n' +
-                'RSSI: ${device.rssi}'
-              );
-              _deviceController?.add(device);
+            TelemetryService().logInfo('bluetooth', 
+              'Peripheral detected device: ${device.name} (${device.id})\n' +
+              'RSSI: ${device.rssi}\n' +
+              'Services: ${device.serviceUuids}'
+            );
+            
+            if (device.name.contains('Central')) {
+              _deviceController.add(device);
             }
           },
           onError: (error) {
@@ -398,12 +287,12 @@ class BleService {
     // set device name based on role
     final deviceName = _isCentral ? 'Central-${device.id}' : 'Peripheral-${device.id}';
     
-    _connectionSubscription = _ble!.connectToDevice(
+    _connectionSubscription = _ble.connectToDevice(
       id: device.id,
       connectionTimeout: const Duration(seconds: 5),
     ).listen(
       (connectionState) {
-        _connectionStateController?.add(connectionState);
+        _connectionStateController.add(connectionState);
         
         if (connectionState.connectionState == DeviceConnectionState.connected) {
           _connectedDeviceId = device.id;
@@ -416,7 +305,7 @@ class BleService {
               deviceId: device.id,
             );
             
-            _ble!.subscribeToCharacteristic(characteristic).listen(
+            _ble.subscribeToCharacteristic(characteristic).listen(
               (data) {
                 // handle incoming data
                 print('Received data from central: ${String.fromCharCodes(data)}');
@@ -460,7 +349,7 @@ class BleService {
         );
         
         try {
-          await _ble!.writeCharacteristicWithResponse(
+          await _ble.writeCharacteristicWithResponse(
             characteristic,
             value: chunk,
           );
@@ -475,12 +364,6 @@ class BleService {
   void dispose() {
     _scanSubscription?.cancel();
     _connectionSubscription?.cancel();
-    _deviceController?.close();
-    _clearController?.close();
-    _connectionStateController?.close();
-    
-    _deviceController = null;
-    _clearController = null;
-    _connectionStateController = null;
+    _deviceController.close();
   }
 } 
