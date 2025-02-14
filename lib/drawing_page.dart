@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
+import 'dart:io';
 
 // Add a class to store line properties
 class DrawingLine {
@@ -77,16 +78,18 @@ class DrawingLine {
 
 class DrawingPage extends StatefulWidget {
   final bool isRedAlliance;
-  final List<Map<String, dynamic>>? initialDrawing;
   final bool readOnly;
-  final List<DrawingLine>? initialLines;
+  final List<Map<String, dynamic>>? initialDrawing;
+  final String? imagePath;
+  final bool useDefaultImage;
 
   const DrawingPage({
     Key? key,
     required this.isRedAlliance,
-    this.initialDrawing,
     this.readOnly = false,
-    this.initialLines,
+    this.initialDrawing,
+    this.imagePath,
+    this.useDefaultImage = true,
   }) : super(key: key);
 
   @override
@@ -107,9 +110,7 @@ class _DrawingPageState extends State<DrawingPage> {
     currentColor = widget.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance;
     
     // Initialize lines from either initialLines or initialDrawing
-    if (widget.initialLines != null) {
-      lines = widget.initialLines!;
-    } else if (widget.initialDrawing != null) {
+    if (widget.initialDrawing != null) {
       lines = widget.initialDrawing!.map((map) => DrawingLine.fromJson(map)).toList();
     } else {
       lines = [];
@@ -153,12 +154,19 @@ class _DrawingPageState extends State<DrawingPage> {
       ),
       body: Stack(
         children: [
-          // Background field image
+          // Background image logic
           Positioned.fill(
-            child: Image.asset(
-              'assets/field_image.png',
-              fit: BoxFit.contain,
-            ),
+            child: widget.imagePath != null
+                ? Image.file(
+                    File(widget.imagePath!),
+                    fit: BoxFit.contain,
+                  )
+                : widget.useDefaultImage
+                    ? Image.asset(
+                        'assets/field_image.png',
+                        fit: BoxFit.contain,
+                      )
+                    : Container(),  // Empty container if no image should be shown
           ),
           // Drawing area
           Container(
@@ -169,11 +177,13 @@ class _DrawingPageState extends State<DrawingPage> {
                 currentColor: currentColor,
                 strokeWidth: strokeWidth,
               ),
-              child: GestureDetector(
-                onPanStart: widget.readOnly ? null : _onPanStart,
-                onPanUpdate: widget.readOnly ? null : _onPanUpdate,
-                onPanEnd: widget.readOnly ? null : _onPanEnd,
-              ),
+              child: widget.readOnly
+                  ? Container()
+                  : GestureDetector(
+                      onPanStart: _onPanStart,
+                      onPanUpdate: _onPanUpdate,
+                      onPanEnd: _onPanEnd,
+                    ),
             ),
           ),
           if (!widget.readOnly)
@@ -221,15 +231,6 @@ class _DrawingPageState extends State<DrawingPage> {
       setState(() {
         lines.add(redoHistory.removeLast());
       });
-    }
-  }
-
-  void _initializeDrawing() {
-    try {
-      lines = widget.initialDrawing?.map((map) => DrawingLine.fromJson(map)).toList() ?? [];
-    } catch (e) {
-      print('Error initializing drawing: $e');  // Debug print
-      lines = [];
     }
   }
 

@@ -79,7 +79,7 @@ class TeamStats {
     if (avgProcessedAlgae >= 4) strengths.add('Efficient Processing');
     if (avgCycles >= 3) strengths.add('Fast Cycling');
     if (cageHangSuccessRate >= 0.8) strengths.add('Reliable Hanging');
-    if (breakdownRate <= 0.1) strengths.add('Very Reliable');
+    if (records.every((r) => !r.breakdown)) strengths.add('No Breakdowns');
     
     return strengths.take(4).toList(); // Limit to top 4 strengths
   }

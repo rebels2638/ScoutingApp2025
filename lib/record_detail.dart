@@ -34,7 +34,8 @@ class RecordDetailPage extends StatelessWidget {
                     builder: (context) => DrawingPage(
                       isRedAlliance: record.isRedAlliance,
                       readOnly: true,
-                      initialLines: drawingLines,
+                      initialDrawing: record.robotPath,
+                      imagePath: record.robotPath?.firstOrNull?['imagePath'] as String?,
                     ),
                   ),
                 );
@@ -288,36 +289,46 @@ class RecordDetailPage extends StatelessWidget {
   }
 
   Widget _buildStat(String label, String value, {Color? color}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: (color ?? Colors.grey).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: (color ?? Colors.grey).withOpacity(0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: color ?? Colors.grey,
+    return Builder(
+      builder: (context) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final defaultColor = isDark ? Colors.grey[300]! : Colors.grey[700]!;
+        final textColor = isDark ? Colors.white : Colors.black87;
+        
+        final effectiveColor = color ?? defaultColor;
+        
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: effectiveColor.withOpacity(isDark ? 0.15 : 0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: effectiveColor.withOpacity(isDark ? 0.3 : 0.2),
             ),
           ),
-          const SizedBox(height: 2),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: color ?? Colors.black87,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: effectiveColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: color ?? textColor,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      }
     );
   }
 } 

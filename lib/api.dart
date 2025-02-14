@@ -216,14 +216,7 @@ class ApiPageState extends State<ApiPage> {
   Widget build(BuildContext context) {
     if (_isLoading) {
       return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Loading team data...'),
-          ],
-        ),
+        child: CircularProgressIndicator(),
       );
     }
 
@@ -251,17 +244,47 @@ class ApiPageState extends State<ApiPage> {
       );
     }
 
-    // If we have team data, show the team info page
+    // If we have team data, show the team info page with refresh button
     if (_teamData != null && _eventsData != null) {
-      return TeamInfoPage(
-        teamInfo: _teamData!,
-        events: _eventsData!,
+      return RefreshIndicator(
+        onRefresh: () async {
+          // Show confirmation dialog
+          final shouldRefresh = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Refresh Team Data'),
+              content: Text('Do you want to refresh the team data?'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: Text('Refresh'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldRefresh == true && _savedTeamNumber != null) {
+            await _loadTeamData(_savedTeamNumber!);
+          }
+        },
+        child: TeamInfoPage(
+          teamInfo: _teamData!,
+          events: _eventsData!,
+        ),
       );
     }
 
-    // If we don't have a team number yet, show the team number selector
+    // If we don't have a team number yet, show the centered team selector
     if (_savedTeamNumber == null) {
-      return _buildTeamNumberSelector();
+      return Center(
+        child: SingleChildScrollView(
+          child: _buildTeamNumberSelector(),
+        ),
+      );
     }
 
     // Loading saved team's data

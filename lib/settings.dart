@@ -18,12 +18,16 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _confirmBeforeSaving = true;
   String _defaultMatchType = 'Qualification';
   bool _vibrateOnAction = true;
+  bool _bluetoothEnabled = false;
+  bool _scoutingLeaderEnabled = false;
   
   static const String _teamNumberKey = 'selected_team_number';
   static const String _autoIncrementKey = 'auto_increment_match';
   static const String _confirmSaveKey = 'confirm_before_saving';
   static const String _defaultMatchTypeKey = 'default_match_type';
   static const String _vibrateKey = 'vibrate_on_action';
+  static const String _bluetoothEnabledKey = 'bluetooth_enabled';
+  static const String _scoutingLeaderKey = 'scouting_leader_enabled';
 
   @override
   void initState() {
@@ -42,6 +46,8 @@ class _SettingsPageState extends State<SettingsPage> {
       _confirmBeforeSaving = prefs.getBool(_confirmSaveKey) ?? true;
       _defaultMatchType = prefs.getString(_defaultMatchTypeKey) ?? 'Qualification';
       _vibrateOnAction = prefs.getBool(_vibrateKey) ?? true;
+      _bluetoothEnabled = prefs.getBool(_bluetoothEnabledKey) ?? false;
+      _scoutingLeaderEnabled = prefs.getBool(_scoutingLeaderKey) ?? false;
     });
   }
 
@@ -67,9 +73,9 @@ class _SettingsPageState extends State<SettingsPage> {
             children: [
               ListTile(
                 title: Text('Team $_teamNumber'),
-                subtitle: const Text('Change team number'),
-                trailing: const Icon(Icons.edit),
-                onTap: _changeTeamNumber,
+                subtitle: const Text('Reset team number'),
+                trailing: const Icon(Icons.refresh),
+                onTap: _resetTeamNumber,
               ),
             ],
           ),
@@ -129,6 +135,73 @@ class _SettingsPageState extends State<SettingsPage> {
                 await _saveSetting(_vibrateKey, value);
                 setState(() => _vibrateOnAction = value);
               },
+            ),
+          ],
+        ),
+
+        // Roles Section
+        _buildSection(
+          title: 'Roles',
+          icon: Icons.badge,
+          children: [
+            SwitchListTile(
+              title: const Text('Scouting Leader'),
+              subtitle: const Text('Enable scouting leader features'),
+              value: _scoutingLeaderEnabled,
+              onChanged: (value) async {
+                await _saveSetting(_scoutingLeaderKey, value);
+                setState(() => _scoutingLeaderEnabled = value);
+              },
+            ),
+          ],
+        ),
+
+        // Experimental Section
+        _buildSection(
+          title: 'Experimental',
+          icon: Icons.science,
+          children: [
+            ListTile(
+              title: Row(
+                children: [
+                  const Text('Enable Bluetooth'),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.red.withOpacity(0.5)),
+                    ),
+                    child: const Text(
+                      'Unstable',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              subtitle: const Text('Enable Bluetooth tab and functionality'),
+              trailing: Switch(
+                value: _bluetoothEnabled,
+                onChanged: (value) async {
+                  await _saveSetting(_bluetoothEnabledKey, value);
+                  setState(() => _bluetoothEnabled = value);
+                  
+                  // Show a snackbar to inform the user about restarting the app
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Please restart the app for changes to take effect'),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                },
+              ),
             ),
           ],
         ),
@@ -251,52 +324,45 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Future<void> _changeTeamNumber() async {
-    if (_teamNumber != null) {
-      await showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Change Team Number'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Current team number: $_teamNumber'),
-              const SizedBox(height: 16),
-              const Text(
-                'Are you sure you want to change your team number? '
-                'This will reset your API settings.',
-                style: TextStyle(color: Colors.red),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () async {
-                // Reset team data using the global key
-                await ApiPageState.globalKey.currentState?.resetTeamData();
-                setState(() {
-                  _teamNumber = null;
-                });
-                
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Team number reset. Please set a new team number in the API tab.'),
-                    ),
-                  );
-                }
-              },
-              child: const Text('Reset'),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-            ),
-          ],
+  Future<void> _resetTeamNumber() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Reset Team Number'),
+        content: Text(
+          'This will:\n'
+          '• Clear all cached team data\n'
+          '• Reset your team number\n'
+          '• Restart the app\n\n'
+          'Are you sure you want to continue?'
         ),
-      );
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      // Reset team data using the global key
+      await ApiPageState.globalKey.currentState?.resetTeamData();
+      
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Team number reset. Please restart the app to apply changes.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 

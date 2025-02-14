@@ -14,29 +14,35 @@ import 'scouting.dart' show SectionHeader;
 class LinkedScrollControllerGroup {
   final List<ScrollController> _controllers = [];
   bool _isJumping = false;
+  bool _isDisposed = false;
   
   ScrollController addAndGetController() {
     final controller = ScrollController();
-    _controllers.add(controller);
-    controller.addListener(() {
-      if (_isJumping) return;
-      _isJumping = true;
-      for (final other in _controllers) {
-        // Do not update the same controller or controllers without clients.
-        if (other == controller || !other.hasClients) continue;
-        // If the difference is significant update.
-        if ((other.offset - controller.offset).abs() > 1.0) {
-          other.jumpTo(controller.offset);
+    if (!_isDisposed) {
+      _controllers.add(controller);
+      controller.addListener(() {
+        if (_isJumping || _isDisposed) return;
+        _isJumping = true;
+        for (final other in _controllers) {
+          if (other == controller || !other.hasClients) continue;
+          if ((other.offset - controller.offset).abs() > 1.0) {
+            other.jumpTo(controller.offset);
+          }
         }
-      }
-      _isJumping = false;
-    });
+        _isJumping = false;
+      });
+    }
     return controller;
   }
   
   void dispose() {
-    for (final controller in _controllers) {
-      controller.dispose();
+    _isDisposed = true;
+    // Create a copy of the list to avoid concurrent modification
+    final controllersCopy = List<ScrollController>.from(_controllers);
+    for (final controller in controllersCopy) {
+      if (controller.hasClients) {
+        controller.dispose();
+      }
     }
     _controllers.clear();
   }
@@ -130,8 +136,7 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
   @override
   void dispose() {
     _tabController.dispose();
-    _headerScrollController.dispose();
-    _contentScrollController.dispose();
+    // Dispose scroll controllers first
     _scrollControllers.dispose();
     super.dispose();
   }

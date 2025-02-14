@@ -106,6 +106,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // Add this at the top with other state variables
   final FocusNode _matchNumberFocusNode = FocusNode();
 
+  // Add this variable
+  bool _bluetoothEnabled = false;
+
   @override
   void initState() {
     super.initState();
@@ -128,6 +131,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
         FocusScope.of(context).unfocus();
       }
     });
+
+    // Add this method
+    _loadBluetoothSetting();
   }
 
   @override
@@ -147,6 +153,13 @@ class _ScoutingPageState extends State<ScoutingPage> {
     }
   }
 
+  Future<void> _loadBluetoothSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _bluetoothEnabled = prefs.getBool('bluetooth_enabled') ?? false;
+    });
+  }
+
   void updateTime() {
     setState(() {
       currentTime = DateFormat('HH:mm dd/MM/yyyy').format(DateTime.now());
@@ -155,35 +168,31 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
   void _onItemTapped(int index) {
     TelemetryService().logAction('navigation_changed', 'to index $index');
+    
+    // Calculate the actual maximum index
+    final maxIndex = _bluetoothEnabled ? 5 : 4;
+    
+    // Convert the tapped index to the actual page index
+    int actualIndex = index;
+    if (!_bluetoothEnabled && index >= 3) {
+      actualIndex = index + 1;  // Skip the Bluetooth tab index
+    }
+    
+    // Ensure the index is valid
+    if (actualIndex > maxIndex) {
+      actualIndex = maxIndex;
+    }
+    
     setState(() {
-      _currentIndex = index;
+      _currentIndex = actualIndex;
     });
-    // When switching to the DataPage (assumed index 1) refresh its records
-    if (index == 1) {
+    
+    if (actualIndex == 1) {
       _dataPageKey.currentState?.loadRecords();
     }
 
-    // Add this method to handle focus when switching tabs
+    // Ensure keyboard is dismissed when switching tabs
     FocusScope.of(context).unfocus();
-  }
-
-  String _getPageTitle(int index) {
-    switch (index) {
-      case 0:
-        return 'Scouting';
-      case 1:
-        return 'Data';
-      case 2:
-        return 'API';
-      case 3:
-        return 'Bluetooth';
-      case 4:
-        return 'Settings';
-      case 5:
-        return 'About';
-      default:
-        return 'Scouting';
-    }
   }
 
   Widget _getPage(int index) {
@@ -195,9 +204,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
       case 2:
         return ApiPage(key: ApiPageState.globalKey);
       case 3:
-        return BluetoothPage();
+        return _bluetoothEnabled ? BluetoothPage() : SettingsPage();
       case 4:
-        return SettingsPage();
+        return _bluetoothEnabled ? SettingsPage() : AboutPage();
       case 5:
         return AboutPage();
       default:
@@ -1102,8 +1111,28 @@ class _ScoutingPageState extends State<ScoutingPage> {
       bottomNavigationBar: NavBar(
         currentIndex: _currentIndex,
         onTap: _onItemTapped,
+        showBluetooth: _bluetoothEnabled,
       ),
     );
+  }
+
+  String _getPageTitle(int index) {
+    switch (index) {
+      case 0:
+        return 'Scouting';
+      case 1:
+        return 'Data';
+      case 2:
+        return 'API';
+      case 3:
+        return _bluetoothEnabled ? 'Bluetooth' : 'Settings';
+      case 4:
+        return _bluetoothEnabled ? 'Settings' : 'About';
+      case 5:
+        return 'About';
+      default:
+        return 'Scouting';
+    }
   }
 }
 
@@ -1499,9 +1528,6 @@ class _DrawingButtonState extends State<DrawingButton> {
         children: [
           ElevatedButton.icon(
             onPressed: () async {
-              // Unfocus before opening drawing page
-              FocusScope.of(context).unfocus();
-              
               final drawingData = await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -1509,20 +1535,13 @@ class _DrawingButtonState extends State<DrawingButton> {
                     isRedAlliance: widget.isRedAlliance,
                     readOnly: false,
                     initialDrawing: null,
+                    useDefaultImage: true,  // Use default image for new drawings
                   ),
                 ),
               );
               
-              // Ensure keyboard stays hidden after returning
-              if (context.mounted) {
-                FocusScope.of(context).unfocus();
-              }
-              
               if (drawingData != null) {
                 widget.onPathSaved(drawingData);
-                setState(() {
-                  hasPath = true;
-                });
               }
             },
             icon: Icon(hasPath ? Icons.edit : Icons.draw),

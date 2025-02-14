@@ -19,6 +19,7 @@ import 'services/ble_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'auto_path_photo_page.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -573,11 +574,13 @@ class DataPageState extends State<DataPage> {
   String _searchQuery = '';
   bool _isSelectionMode = false;
   bool _isLoading = false;
+  bool _isScoutingLeader = false;
 
   @override
   void initState() {
     super.initState();
     loadRecords();
+    _loadScoutingLeaderStatus();
   }
 
   Future<void> loadRecords() async {
@@ -598,6 +601,13 @@ class DataPageState extends State<DataPage> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _loadScoutingLeaderStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isScoutingLeader = prefs.getBool('scouting_leader_enabled') ?? false;
+    });
   }
 
   @override
@@ -755,21 +765,28 @@ class DataPageState extends State<DataPage> {
   Widget _buildRecordCard(ScoutingRecord record, int index) {
     final isSelected = selectedRecords.contains(index);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    
     return Card(
       elevation: isSelected ? 4 : 1,
       margin: const EdgeInsets.symmetric(vertical: 4),
       color: isSelected 
-          ? Theme.of(context).colorScheme.primaryContainer
+          ? (isDark 
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.3)  // Darker selected background
+              : Theme.of(context).colorScheme.primaryContainer)
           : isDark 
               ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
               : Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isDark
-              ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
-              : Colors.transparent,
+          color: isSelected
+              ? (isDark
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.primary.withOpacity(0.5))
+              : isDark
+                  ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                  : Colors.transparent,
+          width: isSelected ? 2 : 1,
         ),
       ),
       child: ListTile(
@@ -808,12 +825,16 @@ class DataPageState extends State<DataPage> {
             ? Container(
                 decoration: BoxDecoration(
                   color: isSelected 
-                      ? Colors.blue.withOpacity(0.2)
+                      ? (isDark
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                          : Colors.blue.withOpacity(0.2))
                       : Colors.grey.withOpacity(0.1),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isSelected 
-                        ? Colors.blue 
+                        ? (isDark
+                            ? Theme.of(context).colorScheme.primary
+                            : Colors.blue)
                         : Colors.grey.withOpacity(0.5),
                     width: 2,
                   ),
@@ -821,7 +842,9 @@ class DataPageState extends State<DataPage> {
                 child: Icon(
                   isSelected ? Icons.check_circle : Icons.circle_outlined,
                   color: isSelected 
-                      ? Colors.blue
+                      ? (isDark
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.blue)
                       : Colors.grey.withOpacity(0.7),
                 ),
               )
@@ -833,7 +856,9 @@ class DataPageState extends State<DataPage> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSurface,
+                color: isSelected && isDark
+                    ? Theme.of(context).colorScheme.primary
+                    : Theme.of(context).colorScheme.onSurface,
               ),
             ),
             const SizedBox(width: 8),
@@ -844,8 +869,8 @@ class DataPageState extends State<DataPage> {
               ),
               decoration: BoxDecoration(
                 color: record.isRedAlliance 
-                    ? AppColors.redAlliance.withOpacity(0.1)
-                    : AppColors.blueAlliance.withOpacity(0.1),
+                    ? AppColors.redAlliance.withOpacity(isDark ? 0.3 : 0.1)
+                    : AppColors.blueAlliance.withOpacity(isDark ? 0.3 : 0.1),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
@@ -982,9 +1007,68 @@ class DataPageState extends State<DataPage> {
                         isRedAlliance: record.isRedAlliance,
                         initialDrawing: record.robotPath,
                         readOnly: true,
+                        imagePath: record.robotPath?.firstOrNull?['imagePath'] as String?,
                       ),
                     ),
                   );
+                },
+              ),
+            if (_isScoutingLeader && record.robotPath == null)
+              ListTile(
+                leading: const Icon(Icons.camera_alt),
+                title: const Text('Take Auto Path Photo'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AutoPathPhotoPage(
+                        isRedAlliance: record.isRedAlliance,
+                      ),
+                    ),
+                  );
+                  if (result != null) {
+                    final records = await DatabaseHelper.instance.getAllRecords();
+                    records[index] = ScoutingRecord(
+                      timestamp: record.timestamp,
+                      matchNumber: record.matchNumber,
+                      matchType: record.matchType,
+                      teamNumber: record.teamNumber,
+                      isRedAlliance: record.isRedAlliance,
+                      cageType: record.cageType,
+                      coralPreloaded: record.coralPreloaded,
+                      taxis: record.taxis,
+                      algaeRemoved: record.algaeRemoved,
+                      coralPlaced: record.coralPlaced,
+                      rankingPoint: record.rankingPoint,
+                      canPickupCoral: record.canPickupCoral,
+                      canPickupAlgae: record.canPickupAlgae,
+                      algaeScoredInNet: record.algaeScoredInNet,
+                      coralRankingPoint: record.coralRankingPoint,
+                      algaeProcessed: record.algaeProcessed,
+                      processedAlgaeScored: record.processedAlgaeScored,
+                      processorCycles: record.processorCycles,
+                      coOpPoint: record.coOpPoint,
+                      returnedToBarge: record.returnedToBarge,
+                      cageHang: record.cageHang,
+                      bargeRankingPoint: record.bargeRankingPoint,
+                      breakdown: record.breakdown,
+                      comments: record.comments,
+                      autoAlgaeInNet: record.autoAlgaeInNet,
+                      autoAlgaeInProcessor: record.autoAlgaeInProcessor,
+                      coralPickupMethod: record.coralPickupMethod,
+                      coralOnReefHeight1: record.coralOnReefHeight1,
+                      coralOnReefHeight2: record.coralOnReefHeight2,
+                      coralOnReefHeight3: record.coralOnReefHeight3,
+                      coralOnReefHeight4: record.coralOnReefHeight4,
+                      feederStation: record.feederStation,
+                      robotPath: result,
+                    );
+                    await DatabaseHelper.instance.saveRecords(records);
+                    setState(() {
+                      loadRecords();
+                    });
+                  }
                 },
               ),
             ListTile(
