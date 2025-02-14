@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'dart:io' show Platform;
 import 'services/ble_service.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'services/telemetry_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:app_settings/app_settings.dart';
-import 'package:flutter/foundation.dart';
 
 class BluetoothPage extends StatefulWidget {
   @override
@@ -13,117 +11,19 @@ class BluetoothPage extends StatefulWidget {
 }
 
 class _BluetoothPageState extends State<BluetoothPage> {
-  late final BleService _bleService;
+  final BleService _bleService = BleService();
   List<DiscoveredDevice> _discoveredDevices = [];
   bool _isCentral = false;
   String? _connectionStatus;
-  bool _isInitialized = false;
-  String? _error;
-  bool _isSupported = false;
 
   @override
   void initState() {
     super.initState();
-    _bleService = BleService();
-    _checkSupport();
-  }
-
-  Future<void> _checkSupport() async {
-    if (!kIsWeb && (Platform.isIOS || Platform.isAndroid)) {
-      _isSupported = true;
-      _initializeBle();
-    } else {
+    _bleService.deviceStream.listen((device) {
       setState(() {
-        _isSupported = false;
-        _error = 'Bluetooth functionality is only supported on iOS and Android devices';
-      });
-    }
-  }
-
-  Future<bool> _isBleSupported() async {
-    try {
-      final ble = FlutterReactiveBle();
-      final status = await ble.statusStream.first;
-      
-      // On iOS, poweredOff just means Bluetooth needs to be turned on
-      if (Platform.isIOS) {
-        if (status == BleStatus.poweredOff) {
-          _showBluetoothSettings();
-          return false;
+        if (!_discoveredDevices.any((d) => d.id == device.id)) {
+          _discoveredDevices.add(device);
         }
-        // Consider unauthorized as supported but needing permission
-        if (status == BleStatus.unauthorized) {
-          return true;
-        }
-      }
-      
-      return status != BleStatus.unsupported;
-    } catch (e) {
-      TelemetryService().logError('bluetooth', 'Error checking BLE support: $e');
-      return false;
-    }
-  }
-
-  Future<void> _initializeBle() async {
-    try {
-      // For iOS, handle Bluetooth state first
-      if (Platform.isIOS) {
-        final ble = FlutterReactiveBle();
-        final bleStatus = await ble.statusStream.first;
-        
-        // If Bluetooth is off, show settings
-        if (bleStatus == BleStatus.poweredOff) {
-          setState(() => _error = 'Please enable Bluetooth to continue');
-          _showBluetoothSettings();
-          return;
-        }
-        
-        // If unauthorized, request permission
-        if (bleStatus == BleStatus.unauthorized) {
-          final status = await Permission.bluetooth.request();
-          if (!status.isGranted) {
-            setState(() => _error = 'Bluetooth permission is required');
-            return;
-          }
-        }
-        
-        // Add listener for Bluetooth state changes
-        ble.statusStream.listen((status) {
-          if (status == BleStatus.ready && _error != null) {
-            // Auto retry when Bluetooth becomes ready
-            setState(() => _error = null);
-            _initializeBle();
-          }
-        });
-      }
-
-      await _bleService.initialize();
-      _setupListeners();
-      setState(() => _isInitialized = true);
-    } catch (e) {
-      setState(() => _error = 'Failed to initialize Bluetooth: $e');
-      TelemetryService().logError('bluetooth_page', 'Initialization failed: $e');
-    }
-  }
-
-  void _setupListeners() {
-    _bleService.deviceStream.listen(
-      (device) {
-        setState(() {
-          if (!_discoveredDevices.any((d) => d.id == device.id)) {
-            _discoveredDevices.add(device);
-          }
-        });
-      },
-      onError: (e) {
-        TelemetryService().logError('bluetooth_page', 'Device stream error: $e');
-      },
-    );
-
-    // Listen for clear signals
-    _bleService.clearStream.listen((_) {
-      setState(() {
-        _discoveredDevices.clear();
       });
     });
 
@@ -157,102 +57,49 @@ class _BluetoothPageState extends State<BluetoothPage> {
     );
   }
 
-  void _showBluetoothSettings() async {
-    try {
-      if (Platform.isIOS) {
-        // On iOS, we need to direct users to the system settings
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text('Enable Bluetooth'),
-            content: Text(
-              'Please enable Bluetooth in your device settings to use this feature.\n\n'
-              'Settings → Bluetooth'
-            ),
-            actions: [
-              TextButton(
-                child: Text('Cancel'),
-                onPressed: () => Navigator.pop(context),
-              ),
-              TextButton(
-                child: Text('Open Settings'),
-                onPressed: () {
-                  Navigator.pop(context);
-                  AppSettings.openAppSettings(type: AppSettingsType.bluetooth);
-                },
-              ),
-            ],
-          ),
-        );
-      } else {
-        // On Android, we can directly open Bluetooth settings
-        await AppSettings.openAppSettings(type: AppSettingsType.bluetooth);
-      }
-    } catch (e) {
-      TelemetryService().logError('bluetooth_page', 'Error opening settings: $e');
-      _showSnackBar('Could not open Bluetooth settings', isError: true);
-    }
-  }
-
   Future<void> _checkAndRequestPermissions() async {
     TelemetryService().logInfo('bluetooth_page', 'Checking and requesting permissions');
     try {
       if (!await _bleService.hasRequiredPermissions()) {
-        if (Platform.isIOS) {
-          // iOS-specific permission handling
-          final status = await Permission.bluetooth.request();
-          if (!status.isGranted) {
-            _showBluetoothSettings();
-            return;
-          }
-          
-          // Check if Bluetooth is actually enabled
-          final ble = FlutterReactiveBle();
-          final bleStatus = await ble.statusStream.first;
-          if (bleStatus == BleStatus.poweredOff) {
-            _showBluetoothSettings();
-            return;
-          }
-        } else {
-          // Existing Android permission handling
-          if (_bleService.needsLocationPermission) {
-            TelemetryService().logInfo('bluetooth_page', 'Showing location permission dialog');
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text('Location Permission Required'),
-                content: Text(
-                  'This app needs location permission to scan for nearby Bluetooth devices. ' +
-                  'This is required by Android for Bluetooth scanning to work.\n\n' +
-                  'The app does not track or store your location.',
-                ),
-                actions: [
-                  TextButton(
-                    child: Text('Cancel'),
-                    onPressed: () {
-                      TelemetryService().logAction('bluetooth_permissions', 'User cancelled permission request');
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  TextButton(
-                    child: Text('Open Settings'),
-                    onPressed: () async {
-                      TelemetryService().logAction('bluetooth_permissions', 'User opened settings');
-                      Navigator.of(context).pop();
-                      await AppSettings.openAppSettings(type: AppSettingsType.bluetooth);
-                    },
-                  ),
-                ],
+        if (_bleService.needsLocationPermission) {
+          TelemetryService().logInfo('bluetooth_page', 'Showing location permission dialog');
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text('Location Permission Required'),
+              content: Text(
+                'This app needs location permission to scan for nearby Bluetooth devices. ' +
+                'This is required by Android for Bluetooth scanning to work.\n\n' +
+                'The app does not track or store your location.',
               ),
-            );
-            return;
-          }
-          await _bleService.initialize();
+              actions: [
+                TextButton(
+                  child: Text('Cancel'),
+                  onPressed: () {
+                    TelemetryService().logAction('bluetooth_permissions', 'User cancelled permission request');
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: Text('Open Settings'),
+                  onPressed: () async {
+                    TelemetryService().logAction('bluetooth_permissions', 'User opened settings');
+                    Navigator.of(context).pop();
+                    await openAppSettings();
+                  },
+                ),
+              ],
+            ),
+          );
+          return;
         }
+        TelemetryService().logInfo('bluetooth_page', 'Initializing BLE service and requesting permissions');
+        await _bleService.initialize();
         
         // Check permissions again after initialization
         if (!await _bleService.hasRequiredPermissions()) {
-          _showSnackBar('Please enable Bluetooth and grant required permissions', isError: true);
+          TelemetryService().logError('bluetooth_page', 'Permissions still not granted after initialization');
+          _showSnackBar('Please grant all required permissions in Settings', isError: true);
           return;
         }
       }
@@ -319,87 +166,6 @@ class _BluetoothPageState extends State<BluetoothPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Show unsupported platform message
-    if (!_isSupported) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Bluetooth'),
-        ),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.bluetooth_disabled,
-                  size: 64,
-                  color: Colors.grey,
-                ),
-                SizedBox(height: 16),
-                Text(
-                  'Bluetooth Not Supported',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Bluetooth functionality is only available on iOS and Android devices.',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Show error state if initialization failed
-    if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 48, color: Colors.red),
-              SizedBox(height: 16),
-              Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.red),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _error = null;
-                  });
-                  _initializeBle();
-                },
-                child: Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Show loading state while initializing
-    if (!_isInitialized) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Initializing Bluetooth...'),
-          ],
-        ),
-      );
-    }
-
     return Column(
       children: [
         Padding(
@@ -444,7 +210,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
                             child: Text('Open Settings'),
                             onPressed: () {
                               Navigator.pop(context);
-                              AppSettings.openAppSettings(type: AppSettingsType.bluetooth);
+                              openAppSettings();
                             },
                           ),
                         ],
@@ -513,26 +279,15 @@ class _BluetoothPageState extends State<BluetoothPage> {
                     itemCount: _discoveredDevices.length,
                     itemBuilder: (context, index) {
                       final device = _discoveredDevices[index];
-                      // Extract device role and ID from name
-                      final nameParts = device.name.split('_');
-                      final isValidDevice = device.name.startsWith(BleService.deviceNamePrefix);
-                      final role = nameParts.length > 1 ? nameParts[1] : 'Unknown';
-                      final deviceId = nameParts.length > 2 ? nameParts[2] : 'Unknown';
-                      
                       return ListTile(
-                        leading: Icon(
-                          Icons.bluetooth,
-                          color: isValidDevice ? Colors.blue : Colors.grey,
-                        ),
-                        title: Text(isValidDevice 
-                          ? 'Scouting Device ${deviceId.substring(deviceId.length - 4)}' 
-                          : device.name.isEmpty ? 'Unknown Device' : device.name
-                        ),
+                        leading: Icon(Icons.bluetooth),
+                        title: Text(device.name.isEmpty ? 'Unknown Device' : device.name),
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Role: ${role == "P" ? "Peripheral (Scouter)" : "Central (Leader)"}'),
-                            Text('Signal Strength: ${device.rssi} dBm'),
+                            Text('ID: ${device.id}'),
+                            Text('RSSI: ${device.rssi}'),
+                            Text('Services: ${device.serviceUuids.join(", ")}'),
                           ],
                         ),
                         trailing: ElevatedButton(
@@ -568,12 +323,7 @@ class _BluetoothPageState extends State<BluetoothPage> {
 
   @override
   void dispose() {
-    // Safely dispose of BLE service
-    try {
-      _bleService.dispose();
-    } catch (e) {
-      TelemetryService().logError('bluetooth_page', 'Error disposing BLE service: $e');
-    }
+    _bleService.dispose();
     super.dispose();
   }
 } 
