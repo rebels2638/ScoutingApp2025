@@ -646,40 +646,30 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 },
               ),
               SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 2,  // Give more space to the label
-                    child: Text(
-                      'Coral Pickup Method',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),  // Add spacing between label and dropdown
-                  Expanded(
-                    flex: 3,  // Give more space to the dropdown
-                    child: DropdownCard(
-                      label: 'Coral Pickup Method',
-                      value: coralPickupMethod,
-                      items: const [
-                        'None',
-                        'Ground',
-                        'Source',
-                        'Both',
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          coralPickupMethod = value!;
-                          _logStateChange('coralPickupMethod', coralPickupMethod, value);
-                        });
-                      },
-                    ),
-                  ),
-                ],
+              FormRow(
+                label: 'Coral Pickup',
+                input: DropdownCard(
+                  label: 'Method',
+                  value: coralPickupMethod,
+                  items: const [
+                    'None',
+                    'Ground',
+                    'Human',
+                    'Both',
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        coralPickupMethod = value;
+                        // If they can pickup from either location, set canPickupCoral to true
+                        if (value != 'None') {
+                          canPickupCoral = true;
+                        }
+                        _logStateChange('coralPickupMethod', coralPickupMethod, value);
+                      });
+                    }
+                  },
+                ),
               ),
             ],
           ),
@@ -902,7 +892,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         'breakdown': breakdown,
         'autoAlgaeInNet': autoAlgaeInNet,
         'autoAlgaeInProcessor': autoAlgaeInProcessor,
-        'coralPickupMethod': coralPickupMethod,
+        'coralPickupMethod': canPickupCoral ? coralPickupMethod : 'None',
         'feederStation': feederStation,
         'coralOnReefHeight1': coralOnReefHeight1,
         'coralOnReefHeight2': coralOnReefHeight2,
@@ -937,7 +927,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         comments: comments,
         autoAlgaeInNet: autoAlgaeInNet,
         autoAlgaeInProcessor: autoAlgaeInProcessor,
-        coralPickupMethod: coralPickupMethod,
+        coralPickupMethod: canPickupCoral ? coralPickupMethod : 'None',
         feederStation: feederStation,
         coralOnReefHeight1: coralOnReefHeight1,
         coralOnReefHeight2: coralOnReefHeight2,
@@ -987,6 +977,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         breakdown = false;
         autoAlgaeInNet = 0;
         autoAlgaeInProcessor = 0;
+        canPickupCoral = false;
         coralPickupMethod = 'None';
         drawingData = null;
         if (_drawingButtonKey.currentState != null) {
@@ -1087,6 +1078,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                           breakdown = false;
                           autoAlgaeInNet = 0;
                           autoAlgaeInProcessor = 0;
+                          canPickupCoral = false;
                           coralPickupMethod = 'None';
                           drawingData = null;
                           if (_drawingButtonKey.currentState != null) {

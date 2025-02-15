@@ -211,6 +211,12 @@ class ApiPageState extends State<ApiPage> {
     });
   }
 
+  void _handleDataRefresh() {
+    if (_savedTeamNumber != null) {
+      _loadTeamData(_savedTeamNumber!);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_prefsLoaded || _isLoading) {
@@ -250,37 +256,11 @@ class ApiPageState extends State<ApiPage> {
     }
 
     if (_teamData != null && _eventsData != null) {
-      return RefreshIndicator(
-        onRefresh: () async {
-          final shouldRefresh = await showDialog<bool>(
-            context: context,
-            builder: (context) => AlertDialog(
-              title: Text('Refresh Team Data'),
-              content: Text('Do you want to refresh the team data?'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  child: Text('Refresh'),
-                ),
-              ],
-            ),
-          );
-  
-          if (shouldRefresh == true) {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.remove(_teamDataKey);
-            await prefs.remove(_eventsDataKey);
-            await _loadTeamData(_savedTeamNumber!);
-          }
-        },
-        child: TeamInfoPage(
-          teamInfo: _teamData!,
-          events: _eventsData!,
-        ),
+      return TeamInfoPage(
+        teamInfo: _teamData!,
+        events: _eventsData!,
+        tbaService: _tbaService,
+        onDataRefreshed: _handleDataRefresh,
       );
     }
 
@@ -301,14 +281,14 @@ class ApiPageState extends State<ApiPage> {
             ),
           ),
           const SizedBox(height: 32),
-          SizedBox(
+          Container(
             height: 200,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(5, (index) {
                 return SizedBox(
                   width: 50,
-                  child: ListWheelScrollView.useDelegate(
+                  child: ListWheelScrollView(
                     itemExtent: 50,
                     perspective: 0.005,
                     diameterRatio: 1.2,
@@ -318,14 +298,17 @@ class ApiPageState extends State<ApiPage> {
                         _selectedDigits[index] = value;
                       });
                     },
-                    childDelegate: ListWheelChildBuilderDelegate(
-                      childCount: 10,
-                      builder: (context, index) => Center(
-                        child: Text(
-                          index.toString(),
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
+                    children: List.generate(
+                      10,
+                      (i) => Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            i.toString(),
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -371,63 +354,406 @@ class ApiPageState extends State<ApiPage> {
   }
 }
 
-class TeamInfoPage extends StatelessWidget {
+class TeamInfoPage extends StatefulWidget {
   final Map<String, dynamic> teamInfo;
   final List<dynamic> events;
+  final TBAService tbaService;
+  final Function() onDataRefreshed;
 
   const TeamInfoPage({
     Key? key,
     required this.teamInfo,
     required this.events,
+    required this.tbaService,
+    required this.onDataRefreshed,
   }) : super(key: key);
 
   @override
+  State<TeamInfoPage> createState() => _TeamInfoPageState();
+}
+
+class _TeamInfoPageState extends State<TeamInfoPage> {
+  bool _isRefreshing = false;
+
+  Future<void> _refreshAllData() async {
+    setState(() => _isRefreshing = true);
+    
+    try {
+      // Show confirmation dialog
+      final shouldRefresh = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Refresh Team Data'),
+          content: const Text(
+            'This will refresh all team and event data from The Blue Alliance. Continue?'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Refresh'),
+            ),
+          ],
+        ),
+      );
+
+      if (shouldRefresh != true) {
+        setState(() => _isRefreshing = false);
+        return;
+      }
+
+      // Refresh team info
+      final teamNumber = widget.teamInfo['team_number'];
+      final freshTeamInfo = await widget.tbaService.getTeamInfo(teamNumber);
+      
+      // Refresh events data
+      final currentYear = DateTime.now().year;
+      final freshEvents = await widget.tbaService.getTeamEvents(teamNumber, currentYear);
+      
+      if (freshEvents == null || freshTeamInfo == null) {
+        throw Exception('Failed to refresh data');
+      }
+
+      // Cache the fresh data
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('team_data', json.encode(freshTeamInfo));
+      await prefs.setString('events_data', json.encode(freshEvents));
+
+      // Notify parent to update its state
+      widget.onDataRefreshed();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Team data refreshed successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error refreshing data: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            teamInfo['nickname'] ?? 'Unknown Team',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${teamInfo['city']}, ${teamInfo['state_prov']}, ${teamInfo['country']}',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Events',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          ...events.map((event) => Card(
-            child: ListTile(
-              title: Text(event['name']),
-              subtitle: Text(event['start_date']),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                TelemetryService().logAction(
-                  'event_selected',
-                  'Event: ${event['key']}, Team: ${teamInfo['team_number']}'
-                );
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => EventDetailsPage(
-                      event: event,
-                      tbaService: TBAService(),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Stack(
+      children: [
+        RefreshIndicator(
+          onRefresh: _refreshAllData,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Team Header Card
+                Card(
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: isDark 
+                          ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                          : Colors.transparent,
                     ),
                   ),
-                );
-              },
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primaryContainer,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Team ${widget.teamInfo['team_number']}',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                    ),
+                                  ),
+                                ),
+                                if (widget.teamInfo['rookie_year'] != null) ...[
+                                  const SizedBox(width: 12),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.amber.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: Colors.amber.withOpacity(0.5),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      'Since ${widget.teamInfo['rookie_year']}',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.amber[800],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              widget.teamInfo['nickname'] ?? 'Unknown Team',
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on_outlined,
+                                  size: 18,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    '${widget.teamInfo['city']}, ${widget.teamInfo['state_prov']}, ${widget.teamInfo['country']}',
+                                    style: Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (widget.teamInfo['school_name'] != null) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.school_outlined,
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      widget.teamInfo['school_name'],
+                                      style: Theme.of(context).textTheme.titleMedium,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            if (widget.teamInfo['website'] != null) ...[
+                              const SizedBox(height: 16),
+                              OutlinedButton.icon(
+                                icon: const Icon(Icons.public),
+                                label: const Text('Visit Team Website'),
+                                onPressed: () async {
+                                  final url = Uri.parse(widget.teamInfo['website']);
+                                  try {
+                                    await launchUrl(url);
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(content: Text('Error opening website: $e')),
+                                      );
+                                    }
+                                  }
+                                },
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                            ),
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton.icon(
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Refresh All Data'),
+                              onPressed: _isRefreshing ? null : _refreshAllData,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Events Section
+                Text(
+                  '2025 Season Events',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...widget.events.map((event) => _buildEventCard(context, event)).toList(),
+              ],
             ),
-          )).toList(),
-        ],
+          ),
+        ),
+        if (_isRefreshing)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black54,
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildEventCard(BuildContext context, dynamic event) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final startDate = DateTime.parse(event['start_date']);
+    final endDate = DateTime.parse(event['end_date']);
+    final isUpcoming = startDate.isAfter(DateTime.now());
+    final isOngoing = startDate.isBefore(DateTime.now()) && 
+                      endDate.isAfter(DateTime.now());
+    
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      elevation: 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isOngoing
+              ? Theme.of(context).colorScheme.primary
+              : isDark
+                  ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
+                  : Colors.transparent,
+          width: isOngoing ? 2 : 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => EventDetailsPage(
+                event: event,
+                tbaService: widget.tbaService,
+              ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          event['short_name'] ?? event['name'],
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (isUpcoming || isOngoing)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isOngoing
+                                ? Colors.green.withOpacity(0.1)
+                                : Colors.blue.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                            border: Border.all(
+                              color: isOngoing
+                                  ? Colors.green.withOpacity(0.3)
+                                  : Colors.blue.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Text(
+                            isOngoing ? 'Ongoing' : 'Upcoming',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isOngoing ? Colors.green[700] : Colors.blue[700],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_today,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${_formatDate(startDate)} - ${_formatDate(endDate)}',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                      const SizedBox(width: 16),
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          '${event['city']}, ${event['state_prov']}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[date.month - 1]} ${date.day}';
   }
 }
 
@@ -445,34 +771,27 @@ class EventDetailsPage extends StatefulWidget {
   State<EventDetailsPage> createState() => _EventDetailsPageState();
 }
 
-class _EventDetailsPageState extends State<EventDetailsPage> {
+class _EventDetailsPageState extends State<EventDetailsPage> with SingleTickerProviderStateMixin {
   List<dynamic>? _teams;
   bool _isLoading = true;
   String? _error;
-
+  late TabController _tabController;
+  
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 3, vsync: this);
     _loadTeams();
   }
 
-  bool get _isChampionshipEvent {
-    final eventName = widget.event['name']?.toString().toLowerCase() ?? '';
-    final eventKey = widget.event['key']?.toString().toLowerCase() ?? '';
-    return (eventName.contains('championship') && eventName.contains('first')) || 
-           eventKey.startsWith('2025cmptx'); // This matches FIRST Championship events
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTeams() async {
-    if (_isChampionshipEvent) {
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-
     try {
-      TelemetryService().logInfo('Loading teams for event', widget.event['key']);
       final teams = await widget.tbaService.getEventTeams(widget.event['key']);
       if (mounted) {
         setState(() {
@@ -480,9 +799,7 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
           _isLoading = false;
         });
       }
-      TelemetryService().logInfo('Teams loaded', '${teams?.length ?? 0} teams found');
     } catch (e) {
-      TelemetryService().logError('Failed to load teams', e.toString());
       if (mounted) {
         setState(() {
           _error = e.toString();
@@ -494,160 +811,293 @@ class _EventDetailsPageState extends State<EventDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final startDate = DateTime.parse(widget.event['start_date']);
+    final endDate = DateTime.parse(widget.event['end_date']);
+    
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.event['short_name'] ?? widget.event['name']),
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Overview'),
+            Tab(text: 'Teams'),
+            Tab(text: 'Matches'),
+          ],
+        ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _isChampionshipEvent
-              ? _buildChampionshipView()
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Overview Tab
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildInfoCard(
+                  title: 'Event Details',
+                  content: [
+                    _buildInfoRow(Icons.event, 'Dates', 
+                      '${_formatDate(startDate)} - ${_formatDate(endDate)}'),
+                    _buildInfoRow(Icons.location_on, 'Location', 
+                      '${widget.event['city']}, ${widget.event['state_prov']}'),
+                    if (widget.event['venue'] != null)
+                      _buildInfoRow(Icons.business, 'Venue', 
+                        widget.event['venue']),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (_teams != null)
+                  _buildInfoCard(
+                    title: 'Quick Stats',
+                    content: [
+                      _buildInfoRow(Icons.groups, 'Teams', 
+                        '${_teams!.length} registered'),
+                      // Add more stats as needed
+                    ],
+                  ),
+              ],
+            ),
+          ),
+          
+          // Teams Tab
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
               : _error != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: Colors.red),
-                          SizedBox(height: 16),
-                          Text('Error: $_error'),
-                          SizedBox(height: 16),
-                          ElevatedButton(
-                            onPressed: _loadTeams,
-                            child: Text('Try Again'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : ListView(
-                      children: [
-                        // Event Info Card
-                        Card(
-                          margin: const EdgeInsets.all(16),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Event Information',
-                                  style: Theme.of(context).textTheme.titleLarge,
-                                ),
-                                const SizedBox(height: 8),
-                                Text('Date: ${widget.event['start_date']}'),
-                                if (widget.event['city'] != null)
-                                  Text('Location: ${widget.event['city']}, ${widget.event['state_prov']}'),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Teams List
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'Participating Teams',
-                            style: Theme.of(context).textTheme.titleLarge,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        ..._teams!.map((team) => Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                          child: ListTile(
-                            title: Text('Team ${team['team_number']} - ${team['nickname']}'),
-                            subtitle: Text('${team['city']}, ${team['state_prov']}'),
-                            trailing: const Icon(Icons.info_outline),
-                            onTap: () async {
-                              TelemetryService().logAction(
-                                'team_selected_from_event',
-                                'Team ${team['team_number']} at event ${widget.event['key']}'
-                              );
-                              
-                              try {
-                                final teamInfo = await widget.tbaService.getTeamInfo(team['team_number']);
-                                final events = await widget.tbaService.getTeamEvents(
-                                  team['team_number'],
-                                  DateTime.now().year
-                                );
-                                
-                                if (mounted && teamInfo != null && events != null) {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => TeamDetailsPage(
-                                        teamInfo: teamInfo,
-                                        events: events,
-                                        tbaService: widget.tbaService,
-                                      ),
-                                    ),
-                                  );
-                                }
-                              } catch (e) {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Error loading team data: $e')),
-                                  );
-                                }
-                              }
-                            },
-                          ),
-                        )).toList(),
-                      ],
-                    ),
+                  ? Center(child: Text('Error: $_error'))
+                  : _buildTeamsList(),
+          
+          // Matches Tab
+          _buildMatchesList(),
+        ],
+      ),
     );
+  }
+
+  Widget _buildInfoCard({required String title, required List<Widget> content}) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            ...content,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 8),
+          Text(
+            '$label: ',
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          Expanded(child: Text(value)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeamsList() {
+    if (_teams == null) return const Center(child: Text('No teams found'));
+    
+    final sortedTeams = List.from(_teams!)
+      ..sort((a, b) => (a['team_number'] as int).compareTo(b['team_number'] as int));
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      itemCount: sortedTeams.length,
+      itemBuilder: (context, index) {
+        final team = sortedTeams[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Padding(
+                  padding: const EdgeInsets.all(4.0),
+                  child: Text(
+                    team['team_number'].toString(),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            title: Text(
+              team['nickname'] ?? 'Team ${team['team_number']}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+            subtitle: Text('${team['city']}, ${team['state_prov']}'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              _navigateToTeamDetails(team);
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _navigateToTeamDetails(Map<String, dynamic> team) async {
+    try {
+      // Get team's events for the current year
+      final events = await widget.tbaService.getTeamEvents(
+        team['team_number'],
+        DateTime.now().year,
+      );
+      
+      if (!mounted) return;
+      
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => TeamDetailsPage(
+            teamInfo: team,
+            events: events ?? [],
+            tbaService: widget.tbaService,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading team data: $e')),
+      );
+    }
+  }
+
+  Widget _buildMatchesList() {
+    // TODO: Implement matches list from local database
+    return const Center(
+      child: Text('Match schedule coming soon'),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[date.month - 1]} ${date.day}';
+  }
+
+  bool get _isChampionshipEvent {
+    final eventName = widget.event['name']?.toString().toLowerCase() ?? '';
+    final eventKey = widget.event['key']?.toString().toLowerCase() ?? '';
+    return eventName.contains('championship') || 
+           eventKey.startsWith('2025cmptx') || 
+           eventKey.startsWith('2025cmpmi');
   }
 
   Widget _buildChampionshipView() {
     final eventKey = widget.event['key'];
-    final tbaUrl = 'https://www.thebluealliance.com/event/$eventKey';
+    final eventName = widget.event['name'] ?? 'FIRST Championship';
+    final startDate = DateTime.parse(widget.event['start_date']);
+    final endDate = DateTime.parse(widget.event['end_date']);
+    final venue = widget.event['venue'] ?? '';
+    final city = widget.event['city'] ?? '';
+    final stateProv = widget.event['state_prov'] ?? '';
     
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(
-              Icons.emoji_events,
-              size: 64,
-              color: Colors.amber,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'FIRST Championship Event',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'FIRST Championship',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildInfoRow(Icons.event, 'Event', eventName),
+                  _buildInfoRow(Icons.calendar_today, 'Dates', 
+                    '${_formatDate(startDate)} - ${_formatDate(endDate)}'),
+                  _buildInfoRow(Icons.location_on, 'Location', 
+                    '$city, $stateProv'),
+                  if (venue.isNotEmpty)
+                    _buildInfoRow(Icons.business, 'Venue', venue),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
-            const Text(
-              'Due to the large number of participating teams, '
-              'the team list is not available in the app. '
-              'Please visit The Blue Alliance website for complete event details.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, 
+                        color: Theme.of(context).colorScheme.primary),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Championship Event',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Due to the large number of participating teams, '
+                    'the team list is not available in the app. '
+                    'Please visit The Blue Alliance website for complete event details.',
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: FilledButton.icon(
+                      onPressed: () async {
+                        final url = Uri.parse('https://www.thebluealliance.com/event/$eventKey');
+                        try {
+                          await launchUrl(url);
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error opening link: $e')),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.public),
+                      label: const Text('View on TBA Website'),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: () async {
-                final url = Uri.parse(tbaUrl);
-                TelemetryService().logAction('championship_tba_link_clicked', eventKey);
-                try {
-                  if (!await launchUrl(url)) {
-                    throw Exception('Could not launch $url');
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error opening link: $e')),
-                    );
-                  }
-                }
-              },
-              icon: const Icon(Icons.public),
-              label: const Text('View on TBA Website'),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -670,169 +1120,265 @@ class TeamDetailsPage extends StatefulWidget {
 }
 
 class _TeamDetailsPageState extends State<TeamDetailsPage> {
-  bool _isLoading = false;
-  String? _error;
-  Map<String, dynamic>? _teamStats;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTeamStats();
-  }
-
-  Future<void> _loadTeamStats() async {
-    setState(() => _isLoading = true);
-    try {
-      // Get team stats for each event
-      final stats = <String, dynamic>{};
-      for (final event in widget.events) {
-        final eventKey = event['key'];
-        // You could add more stats from TBA API here
-        stats[eventKey] = {
-          'event_name': event['name'],
-          'date': event['start_date'],
-          'location': '${event['city']}, ${event['state_prov']}',
-        };
-      }
-      
-      setState(() {
-        _teamStats = stats;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
     return Scaffold(
       appBar: AppBar(
         title: Text('Team ${widget.teamInfo['team_number']}'),
       ),
-      body: _isLoading 
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text('Error: $_error'))
-              : SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Team Header
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.teamInfo['nickname'] ?? 'Unknown Team',
-                              style: Theme.of(context).textTheme.headlineMedium,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '${widget.teamInfo['city']}, ${widget.teamInfo['state_prov']}, ${widget.teamInfo['country']}',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ],
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Team Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(16),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.teamInfo['nickname'] ?? 'Unknown Team',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
+                  ),
+                  if (widget.teamInfo['rookie_year'] != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Colors.amber.withOpacity(0.5),
                         ),
                       ),
+                      child: Text(
+                        'Rookie Year: ${widget.teamInfo['rookie_year']}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.amber[800],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
 
-                      // Team Info
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Team Information',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 8),
-                            _buildInfoCard([
-                              if (widget.teamInfo['rookie_year'] != null)
-                                'Rookie Year: ${widget.teamInfo['rookie_year']}',
-                              if (widget.teamInfo['website'] != null)
-                                'Website: ${widget.teamInfo['website']}',
-                              if (widget.teamInfo['school_name'] != null)
-                                'School: ${widget.teamInfo['school_name']}',
-                            ]),
-                          ],
-                        ),
+            // Team Info Section
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildInfoSection(
+                    'Team Information',
+                    [
+                      _buildInfoRow(
+                        Icons.location_on,
+                        'Location',
+                        '${widget.teamInfo['city']}, ${widget.teamInfo['state_prov']}, ${widget.teamInfo['country']}',
                       ),
-
-                      // 2025 Season Events
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '2025 Season Events',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: 8),
-                            ...widget.events.map((event) => Card(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              child: ExpansionTile(
-                                title: Text(event['name']),
-                                subtitle: Text(event['start_date']),
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.all(16),
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text('Location: ${event['city']}, ${event['state_prov']}'),
-                                        const SizedBox(height: 8),
-                                        FilledButton.icon(
-                                          onPressed: () async {
-                                            final url = Uri.parse(
-                                              'https://www.thebluealliance.com/event/${event['key']}'
-                                            );
-                                            try {
-                                              await launchUrl(url);
-                                            } catch (e) {
-                                              if (mounted) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(content: Text('Error opening link: $e')),
-                                                );
-                                              }
-                                            }
-                                          },
-                                          icon: const Icon(Icons.public),
-                                          label: const Text('View on TBA'),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )).toList(),
-                          ],
+                      if (widget.teamInfo['school_name'] != null)
+                        _buildInfoRow(
+                          Icons.school,
+                          'School',
+                          widget.teamInfo['school_name'],
                         ),
-                      ),
+                      if (widget.teamInfo['website'] != null)
+                        _buildInfoRow(
+                          Icons.language,
+                          'Website',
+                          widget.teamInfo['website'],
+                          isLink: true,
+                        ),
                     ],
                   ),
-                ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Events Section
+                  _buildInfoSection(
+                    '2025 Events',
+                    widget.events.map((event) => _buildEventRow(event)).toList(),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Widget _buildInfoCard(List<String> items) {
+  Widget _buildInfoSection(String title, List<Widget> content) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: items.map((item) => Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4),
-            child: Text(item),
-          )).toList(),
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ...content,
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value, {bool isLink = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                if (isLink)
+                  InkWell(
+                    onTap: () async {
+                      try {
+                        await launchUrl(Uri.parse(value));
+                      } catch (e) {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error opening link: $e')),
+                          );
+                        }
+                      }
+                    },
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.primary,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  )
+                else
+                  Text(value),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEventRow(dynamic event) {
+    final startDate = DateTime.parse(event['start_date']);
+    final endDate = DateTime.parse(event['end_date']);
+    final isUpcoming = startDate.isAfter(DateTime.now());
+    final isOngoing = startDate.isBefore(DateTime.now()) && 
+                      endDate.isAfter(DateTime.now());
+    
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => EventDetailsPage(
+              event: event,
+              tbaService: widget.tbaService,
+            ),
+          ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event['short_name'] ?? event['name'],
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_formatDate(startDate)} - ${_formatDate(endDate)}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            if (isUpcoming || isOngoing)
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: isOngoing
+                      ? Colors.green.withOpacity(0.1)
+                      : Colors.blue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(
+                    color: isOngoing
+                        ? Colors.green.withOpacity(0.3)
+                        : Colors.blue.withOpacity(0.3),
+                  ),
+                ),
+                child: Text(
+                  isOngoing ? 'Ongoing' : 'Upcoming',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: isOngoing ? Colors.green[700] : Colors.blue[700],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return '${months[date.month - 1]} ${date.day}';
   }
 } 

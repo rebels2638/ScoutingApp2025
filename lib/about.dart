@@ -25,7 +25,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Version 0.6.9-Beta',
+                    'Version 0.7.5-Stable',
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
@@ -42,8 +42,8 @@ class AboutPage extends StatelessWidget {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildUpdateNote('0.6.9-Beta', [
-                  'Revamped UI for a modern look and improved usability.',
+                _buildUpdateNote('0.7.5-Stable', [
+                  'Revamped the entire API page both functionality and UI.',
                   'Enhanced performance with faster load times.',
                   'Updated dependencies and improved security measures.',
                   'Fixed too many bugs with API page.',
@@ -101,7 +101,7 @@ class AboutPage extends StatelessWidget {
                   padding: const EdgeInsets.only(left: 16, bottom: 16),
                   child: Text(
                     'Thank you to all our mentors for their continuous support '
-                    'and guidance throughout our robotics journey.',
+                    'and guidance through our robotics journey.',
                     style: TextStyle(height: 1.4),
                   ),
                 ),
