@@ -170,24 +170,18 @@ class _ScoutingPageState extends State<ScoutingPage> {
     TelemetryService().logAction('navigation_changed', 'to index $index');
     
     // Calculate the actual maximum index
-    final maxIndex = _bluetoothEnabled ? 5 : 4;
-    
-    // Convert the tapped index to the actual page index
-    int actualIndex = index;
-    if (!_bluetoothEnabled && index >= 3) {
-      actualIndex = index + 1;  // Skip the Bluetooth tab index
-    }
+    final maxIndex = _bluetoothEnabled ? 5 : 5;  // Max is always 5
     
     // Ensure the index is valid
-    if (actualIndex > maxIndex) {
-      actualIndex = maxIndex;
+    if (index > maxIndex) {
+      index = maxIndex;
     }
     
     setState(() {
-      _currentIndex = actualIndex;
+      _currentIndex = index;
     });
     
-    if (actualIndex == 1) {
+    if (index == 1) {
       _dataPageKey.currentState?.loadRecords();
     }
 
@@ -196,21 +190,40 @@ class _ScoutingPageState extends State<ScoutingPage> {
   }
 
   Widget _getPage(int index) {
-    switch (index) {
-      case 0:
-        return _buildScoutingPage();
-      case 1:
-        return DataPage(key: _dataPageKey);
-      case 2:
-        return ApiPage(key: ApiPageState.globalKey);
-      case 3:
-        return _bluetoothEnabled ? BluetoothPage() : SettingsPage();
-      case 4:
-        return _bluetoothEnabled ? SettingsPage() : AboutPage();
-      case 5:
-        return AboutPage();
-      default:
-        return _buildScoutingPage();
+    if (_bluetoothEnabled) {
+      // When Bluetooth is enabled, use normal order
+      switch (index) {
+        case 0:
+          return _buildScoutingPage();
+        case 1:
+          return DataPage(key: _dataPageKey);
+        case 2:
+          return ApiPage(key: ApiPageState.globalKey);
+        case 3:
+          return BluetoothPage();
+        case 4:
+          return SettingsPage();
+        case 5:
+          return AboutPage();
+        default:
+          return _buildScoutingPage();
+      }
+    } else {
+      // When Bluetooth is disabled, skip index 3
+      switch (index) {
+        case 0:
+          return _buildScoutingPage();
+        case 1:
+          return DataPage(key: _dataPageKey);
+        case 2:
+          return ApiPage(key: ApiPageState.globalKey);
+        case 4:
+          return SettingsPage();
+        case 5:
+          return AboutPage();
+        default:
+          return _buildScoutingPage();
+      }
     }
   }
 
@@ -1117,21 +1130,40 @@ class _ScoutingPageState extends State<ScoutingPage> {
   }
 
   String _getPageTitle(int index) {
-    switch (index) {
-      case 0:
-        return 'Scouting';
-      case 1:
-        return 'Data';
-      case 2:
-        return 'API';
-      case 3:
-        return _bluetoothEnabled ? 'Bluetooth' : 'Settings';
-      case 4:
-        return _bluetoothEnabled ? 'Settings' : 'About';
-      case 5:
-        return 'About';
-      default:
-        return 'Scouting';
+    if (_bluetoothEnabled) {
+      // When Bluetooth is enabled, use normal order
+      switch (index) {
+        case 0:
+          return 'Scouting';
+        case 1:
+          return 'Data';
+        case 2:
+          return 'API';
+        case 3:
+          return 'Bluetooth';
+        case 4:
+          return 'Settings';
+        case 5:
+          return 'About';
+        default:
+          return 'Scouting';
+      }
+    } else {
+      // When Bluetooth is disabled, skip index 3
+      switch (index) {
+        case 0:
+          return 'Scouting';
+        case 1:
+          return 'Data';
+        case 2:
+          return 'API';
+        case 4:
+          return 'Settings';
+        case 5:
+          return 'About';
+        default:
+          return 'Scouting';
+      }
     }
   }
 }

@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api.dart';
 import 'theme/app_theme.dart';
 import 'package:flutter/services.dart';
+import 'database_helper.dart';
+import 'dart:io';
 
 class SettingsPage extends StatefulWidget {
   @override
@@ -328,40 +330,62 @@ class _SettingsPageState extends State<SettingsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Reset Team Number'),
-        content: Text(
+        title: const Text('Reset Team Number'),
+        content: const Text(
           'This will:\n'
           '• Clear all cached team data\n'
           '• Reset your team number\n'
-          '• Restart the app\n\n'
+          '• Clear all saved match data\n\n'
           'Are you sure you want to continue?'
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text('Reset'),
+            child: const Text('Reset'),
           ),
         ],
       ),
     );
 
     if (confirmed == true) {
-      // Reset team data using the global key
-      await ApiPageState.globalKey.currentState?.resetTeamData();
-      
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Team number reset. Please restart the app to apply changes.'),
-            duration: Duration(seconds: 3),
-          ),
-        );
+      try {
+        // Clear all related data from SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_teamNumberKey);
+        await prefs.remove('team_data');
+        await prefs.remove('events_data');
+
+        // Also reset the API page state if it exists
+        await ApiPageState.globalKey.currentState?.resetTeamData();
+
+        // Clear all match records
+        await DatabaseHelper.instance.deleteAllRecords();
+
+        // Remove team number from settings state
+        setState(() {
+          _teamNumber = null;
+        });
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Team number has been reset. Please set a new team number in the API page.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error resetting data: $e'), backgroundColor: Colors.red),
+          );
+        }
       }
     }
   }

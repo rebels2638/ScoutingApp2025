@@ -25,6 +25,7 @@ class ApiPageState extends State<ApiPage> {
   String? _error;
   Map<String, dynamic>? _teamData;
   List<dynamic>? _eventsData;
+  bool _prefsLoaded = false;
 
   // Add this static key to access the state
   static final GlobalKey<ApiPageState> globalKey = GlobalKey<ApiPageState>();
@@ -38,27 +39,23 @@ class ApiPageState extends State<ApiPage> {
   Future<void> _loadSavedData() async {
     TelemetryService().logInfo('Loading saved team data');
     final prefs = await SharedPreferences.getInstance();
+    final savedTeamNumber = prefs.getInt(_teamNumberKey);
+    final teamDataStr = prefs.getString(_teamDataKey);
+    final eventsDataStr = prefs.getString(_eventsDataKey);
     setState(() {
-      _savedTeamNumber = prefs.getInt(_teamNumberKey);
-      
-      // Load cached data if available
-      final teamDataStr = prefs.getString(_teamDataKey);
-      final eventsDataStr = prefs.getString(_eventsDataKey);
-      
+      _savedTeamNumber = savedTeamNumber;
       if (teamDataStr != null) {
         _teamData = json.decode(teamDataStr);
-        TelemetryService().logInfo('Loaded cached team data', 'Team ${_teamData?['team_number']}');
       }
       if (eventsDataStr != null) {
         _eventsData = json.decode(eventsDataStr);
-        TelemetryService().logInfo('Loaded cached events data', '${_eventsData?.length} events');
       }
+      _prefsLoaded = true;
     });
-
-    // If we have a team number but no data, load it
-    if (_savedTeamNumber != null && (_teamData == null || _eventsData == null)) {
-      TelemetryService().logInfo('Missing cached data, loading from API');
-      _loadTeamData(_savedTeamNumber!);
+    if (savedTeamNumber != null) {
+      if (_teamData == null || _eventsData == null) {
+        _loadTeamData(savedTeamNumber);
+      }
     }
   }
 
@@ -195,29 +192,29 @@ class ApiPageState extends State<ApiPage> {
     }
   }
 
-  // Make resetTeamData public
   Future<void> resetTeamData() async {
-    TelemetryService().logAction('reset_team_data_started');
+    TelemetryService().logAction('reset_team_data', 'Resetting all team data');
     final prefs = await SharedPreferences.getInstance();
+    
+    // Clear all saved data
     await prefs.remove(_teamNumberKey);
     await prefs.remove(_teamDataKey);
     await prefs.remove(_eventsDataKey);
     
+    // Reset state
     setState(() {
       _savedTeamNumber = null;
       _teamData = null;
       _eventsData = null;
-      _selectedDigits.fillRange(0, 5, 0);
+      _error = null;
+      _prefsLoaded = true;
     });
-    TelemetryService().logAction('reset_team_data_completed');
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+    if (!_prefsLoaded || _isLoading) {
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
@@ -226,9 +223,9 @@ class ApiPageState extends State<ApiPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.error_outline, size: 48, color: Colors.red),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text('Error: $_error'),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () {
                 if (_savedTeamNumber != null) {
@@ -244,11 +241,17 @@ class ApiPageState extends State<ApiPage> {
       );
     }
 
-    // If we have team data, show the team info page with refresh button
+    if (_savedTeamNumber == null) {
+      return Center(
+        child: SingleChildScrollView(
+          child: _buildTeamNumberSelector(),
+        ),
+      );
+    }
+
     if (_teamData != null && _eventsData != null) {
       return RefreshIndicator(
         onRefresh: () async {
-          // Show confirmation dialog
           final shouldRefresh = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
@@ -266,8 +269,11 @@ class ApiPageState extends State<ApiPage> {
               ],
             ),
           );
-
-          if (shouldRefresh == true && _savedTeamNumber != null) {
+  
+          if (shouldRefresh == true) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove(_teamDataKey);
+            await prefs.remove(_eventsDataKey);
             await _loadTeamData(_savedTeamNumber!);
           }
         },
@@ -278,19 +284,7 @@ class ApiPageState extends State<ApiPage> {
       );
     }
 
-    // If we don't have a team number yet, show the centered team selector
-    if (_savedTeamNumber == null) {
-      return Center(
-        child: SingleChildScrollView(
-          child: _buildTeamNumberSelector(),
-        ),
-      );
-    }
-
-    // Loading saved team's data
-    return const Center(
-      child: CircularProgressIndicator(),
-    );
+    return const Center(child: CircularProgressIndicator());
   }
 
   Widget _buildTeamNumberSelector() {

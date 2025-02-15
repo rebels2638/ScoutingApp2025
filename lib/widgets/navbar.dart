@@ -50,22 +50,19 @@ class NavBar extends StatelessWidget {
       ),
     ]);
 
-    // Calculate actual index based on whether Bluetooth is shown
-    int adjustedIndex = currentIndex;
+    // Calculate display index based on whether Bluetooth is shown
+    int displayIndex = currentIndex;
     if (!showBluetooth && currentIndex >= 3) {
-      adjustedIndex = currentIndex - 1;
+      displayIndex--;
     }
 
     return BottomNavigationBar(
       items: items,
-      currentIndex: adjustedIndex,
+      currentIndex: displayIndex,
       onTap: (index) {
-        // Adjust the index if Bluetooth is hidden
-        if (!showBluetooth && index >= 3) {
-          onTap(index + 1);
-        } else {
-          onTap(index);
-        }
+        // Convert display index back to actual index
+        final actualIndex = (!showBluetooth && index >= 3) ? index + 1 : index;
+        onTap(actualIndex);
       },
       type: BottomNavigationBarType.fixed,
       selectedItemColor: Theme.of(context).colorScheme.primary,

@@ -25,7 +25,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Version 0.5.3-beta',
+                    'Version 0.6.9-Beta',
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
@@ -42,25 +42,19 @@ class AboutPage extends StatelessWidget {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildUpdateNote('0.5.3', [
-                  'Fixed team number search functionality',
-                  'Added save confirmation toggle',
-                  'Improved UI consistency',
-                  'Bug fixes and performance improvements',
+                _buildUpdateNote('0.6.9-Beta', [
+                  'Revamped UI for a modern look and improved usability.',
+                  'Enhanced performance with faster load times.',
+                  'Updated dependencies and improved security measures.',
+                  'Fixed too many bugs with API page.',
+                  'Bug fixes and minor improvements.',
                 ]),
                 const SizedBox(height: AppSpacing.md),
-                _buildUpdateNote('0.5.2', [
-                  'Added QR code scanning',
-                  'Added team comparison tools',
-                  'Added data export features',
-                  'Added dark mode support',
-                ]),
-                const SizedBox(height: AppSpacing.md),
-                _buildUpdateNote('0.5.1', [
-                  'Initial beta release',
-                  'Basic match scouting functionality',
-                  'Auto path drawing feature',
-                  'Local data storage',
+                _buildUpdateNote('0.6.8-Beta', [
+                  'Reworked dark mode to be more consistent.',
+                  'Overhauled team search functionality.',
+                  'Improved QR code scanning for reliability.',
+                  'Enhanced UI consistency.',
                 ]),
               ],
             ),
