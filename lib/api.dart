@@ -63,82 +63,121 @@ class ApiPageState extends State<ApiPage> {
     final teamNumber = int.parse(_selectedDigits.join());
     TelemetryService().logAction('save_team_number_initiated', teamNumber.toString());
     
-    // Show confirmation dialog
-    final bool? confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Team Number'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('Are you sure your team number is $teamNumber?'),
-            const SizedBox(height: 8),
-            const Text(
-              'This will be your team\'s scouting app',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
+    try {
+      // Check team change cooldown
+      final canChange = await _tbaService.canChangeTeam();
+      if (!canChange) {
+        throw Exception('Please wait 12 hours between changing team numbers');
+      }
+
+      // Show confirmation dialog with cooldown warnings
+      final bool? confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Confirm Team Number'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Are you sure your team number is $teamNumber?'),
+              const SizedBox(height: 8),
+              const Text(
+                'This will be your team\'s scouting app',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'Important Cooldown Periods:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '• Team Number Changes: 12 hours\n'
+                      '• Data Refreshes: 1 hour',
+                      style: TextStyle(
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Confirm'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
+      );
 
-    if (confirmed == true) {
-      TelemetryService().logAction('team_number_confirmed', teamNumber.toString());
-      
-      // Show loading indicator
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      try {
-        // Load and cache all data
-        final teamInfo = await _tbaService.getTeamInfo(teamNumber);
-        if (teamInfo == null) throw Exception('Could not find team $teamNumber');
-
-        final currentYear = DateTime.now().year;
-        final events = await _tbaService.getTeamEvents(teamNumber, currentYear);
-        if (events == null) throw Exception('Could not load events');
-
-        // Sort events by date
-        events.sort((a, b) => (a['start_date'] ?? '').compareTo(b['start_date'] ?? ''));
-
-        // Cache everything
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt(_teamNumberKey, teamNumber);
-        await prefs.setString(_teamDataKey, json.encode(teamInfo));
-        await prefs.setString(_eventsDataKey, json.encode(events));
-
-        // Update state
+      if (confirmed == true) {
+        TelemetryService().logAction('team_number_confirmed', teamNumber.toString());
+        
         setState(() {
-          _savedTeamNumber = teamNumber;
-          _teamData = teamInfo;
-          _eventsData = events;
-          _isLoading = false;
+          _isLoading = true;
+          _error = null;
         });
 
-        TelemetryService().logAction('team_setup_completed', 'Team $teamNumber');
-      } catch (e) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
-        TelemetryService().logError('team_setup_failed', e.toString());
+        try {
+          // Use new method to fetch and cache all data
+          final currentYear = DateTime.now().year;
+          await _tbaService.fetchAndCacheAllTeamData(teamNumber, currentYear);
+
+          // Update team change timestamp
+          await _tbaService.updateTeamChangeTimestamp();
+
+          // Load cached data into state
+          final prefs = await SharedPreferences.getInstance();
+          final teamInfo = await _tbaService.getTeamInfo(teamNumber);
+          final events = await _tbaService.getTeamEvents(teamNumber, currentYear);
+
+          // Cache everything
+          await prefs.setInt(_teamNumberKey, teamNumber);
+          await prefs.setString(_teamDataKey, json.encode(teamInfo));
+          await prefs.setString(_eventsDataKey, json.encode(events));
+
+          setState(() {
+            _savedTeamNumber = teamNumber;
+            _teamData = teamInfo;
+            _eventsData = events;
+            _isLoading = false;
+          });
+
+          TelemetryService().logAction('team_setup_completed', 'Team $teamNumber');
+        } catch (e) {
+          setState(() {
+            _error = e.toString();
+            _isLoading = false;
+          });
+          TelemetryService().logError('team_setup_failed', e.toString());
+        }
+      } else {
+        TelemetryService().logAction('team_number_cancelled', teamNumber.toString());
       }
-    } else {
-      TelemetryService().logAction('team_number_cancelled', teamNumber.toString());
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
     }
   }
 
@@ -379,6 +418,12 @@ class _TeamInfoPageState extends State<TeamInfoPage> {
     setState(() => _isRefreshing = true);
     
     try {
+      // Check refresh cooldown
+      final canRefresh = await widget.tbaService.canRefreshData();
+      if (!canRefresh) {
+        throw Exception('Please wait at least 1 hour between refreshes');
+      }
+
       // Show confirmation dialog
       final shouldRefresh = await showDialog<bool>(
         context: context,
@@ -405,12 +450,13 @@ class _TeamInfoPageState extends State<TeamInfoPage> {
         return;
       }
 
-      // Refresh team info
+      // Refresh all data
       final teamNumber = widget.teamInfo['team_number'];
-      final freshTeamInfo = await widget.tbaService.getTeamInfo(teamNumber);
-      
-      // Refresh events data
       final currentYear = DateTime.now().year;
+      await widget.tbaService.fetchAndCacheAllTeamData(teamNumber, currentYear);
+
+      // Update UI with fresh data
+      final freshTeamInfo = await widget.tbaService.getTeamInfo(teamNumber);
       final freshEvents = await widget.tbaService.getTeamEvents(teamNumber, currentYear);
       
       if (freshEvents == null || freshTeamInfo == null) {
