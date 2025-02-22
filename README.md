@@ -3,7 +3,7 @@
 # 🤖 Rebel Robotics Scouting App
 ### FRC 2025: REEFSCAPE
 
-[![Version](https://img.shields.io/badge/version-0.6.0--beta-blue)](https://github.com/rebel-robotics/scouting-app-2025/releases)
+[![Version](https://img.shields.io/badge/version-0.7.5--stable-blue)](https://github.com/rebel-robotics/scouting-app-2025/releases)
 [![BSD 3-Clause License](https://img.shields.io/badge/license-BSD%203--Clause-green.svg)](LICENSE)
 [![Flutter](https://img.shields.io/badge/flutter-%3E%3D3.0.0-blue.svg)](https://flutter.dev)
 [![Built by FRC 2638](https://img.shields.io/badge/built%20by-FRC%202638-red.svg)](https://www.rebel-robotics.org)
