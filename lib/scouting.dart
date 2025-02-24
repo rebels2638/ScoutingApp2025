@@ -1568,13 +1568,24 @@ class _DrawingButtonState extends State<DrawingButton> {
                 widget.onPathSaved(drawingData);
               }
             },
-            icon: Icon(hasPath ? Icons.edit : Icons.draw),
-            label: Text(hasPath ? 'Edit Auto Path' : 'Draw Auto Path'),
+            icon: Icon(
+              hasPath ? Icons.edit : Icons.draw,
+              // Make icon white when path exists
+              color: hasPath ? Colors.white : null,
+            ),
+            label: Text(
+              hasPath ? 'Edit Auto Path' : 'Draw Auto Path',
+              // Make text white when path exists
+              style: TextStyle(
+                color: hasPath ? Colors.white : null,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 12),
               backgroundColor: hasPath ? 
-                Theme.of(context).colorScheme.primaryContainer :
+                Theme.of(context).colorScheme.primary :  // Changed from primaryContainer to primary
                 null,
+              foregroundColor: hasPath ? Colors.white : null,  // Added explicit foreground color
             ),
           ),
           if (hasPath)
