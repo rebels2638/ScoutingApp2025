@@ -685,6 +685,10 @@ class _TeamInfoPageState extends State<TeamInfoPage> {
     final isOngoing = startDate.isBefore(DateTime.now()) && 
                       endDate.isAfter(DateTime.now());
     
+    // Check if this is the championship event
+    final isChampionshipEvent = event['key']?.toString().toLowerCase() == '2025cmptx';
+    final eventName = isChampionshipEvent ? 'FIRST Championship' : (event['short_name'] ?? event['name']);
+    
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       elevation: 1,
@@ -723,7 +727,7 @@ class _TeamInfoPageState extends State<TeamInfoPage> {
                     children: [
                       Expanded(
                         child: Text(
-                          event['short_name'] ?? event['name'],
+                          eventName,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -827,13 +831,22 @@ class _EventDetailsPageState extends State<EventDetailsPage> with SingleTickerPr
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    _loadTeams();
+    if (!_isChampionshipEvent) {
+      _loadTeams();
+    } else {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
+  }
+
+  bool get _isChampionshipEvent {
+    final eventKey = widget.event['key']?.toString().toLowerCase() ?? '';
+    return eventKey == '2025cmptx';
   }
 
   Future<void> _loadTeams() async {
@@ -857,6 +870,10 @@ class _EventDetailsPageState extends State<EventDetailsPage> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
+    if (_isChampionshipEvent) {
+      return _buildChampionshipView(context);
+    }
+
     final startDate = DateTime.parse(widget.event['start_date']);
     final endDate = DateTime.parse(widget.event['end_date']);
     
@@ -900,7 +917,6 @@ class _EventDetailsPageState extends State<EventDetailsPage> with SingleTickerPr
                     content: [
                       _buildInfoRow(Icons.groups, 'Teams', 
                         '${_teams!.length} registered'),
-                      // Add more stats as needed
                     ],
                   ),
               ],
@@ -1047,103 +1063,94 @@ class _EventDetailsPageState extends State<EventDetailsPage> with SingleTickerPr
     return '${months[date.month - 1]} ${date.day}';
   }
 
-  bool get _isChampionshipEvent {
-    final eventName = widget.event['name']?.toString().toLowerCase() ?? '';
-    final eventKey = widget.event['key']?.toString().toLowerCase() ?? '';
-    return eventName.contains('championship') || 
-           eventKey.startsWith('2025cmptx') || 
-           eventKey.startsWith('2025cmpmi');
-  }
-
-  Widget _buildChampionshipView() {
-    final eventKey = widget.event['key'];
-    final eventName = widget.event['name'] ?? 'FIRST Championship';
+  Widget _buildChampionshipView(BuildContext context) {
     final startDate = DateTime.parse(widget.event['start_date']);
     final endDate = DateTime.parse(widget.event['end_date']);
-    final venue = widget.event['venue'] ?? '';
-    final city = widget.event['city'] ?? '';
-    final stateProv = widget.event['state_prov'] ?? '';
     
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'FIRST Championship',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildInfoRow(Icons.event, 'Event', eventName),
-                  _buildInfoRow(Icons.calendar_today, 'Dates', 
-                    '${_formatDate(startDate)} - ${_formatDate(endDate)}'),
-                  _buildInfoRow(Icons.location_on, 'Location', 
-                    '$city, $stateProv'),
-                  if (venue.isNotEmpty)
-                    _buildInfoRow(Icons.business, 'Venue', venue),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.info_outline, 
-                        color: Theme.of(context).colorScheme.primary),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Championship Event',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('FIRST Championship'),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Event Details',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Due to the large number of participating teams, '
-                    'the team list is not available in the app. '
-                    'Please visit The Blue Alliance website for complete event details.',
-                    style: TextStyle(fontSize: 14),
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: FilledButton.icon(
-                      onPressed: () async {
-                        final url = Uri.parse('https://www.thebluealliance.com/event/$eventKey');
-                        try {
-                          await launchUrl(url);
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Error opening link: $e')),
-                            );
-                          }
-                        }
-                      },
-                      icon: const Icon(Icons.public),
-                      label: const Text('View on TBA Website'),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 16),
+                    _buildInfoRow(Icons.calendar_today, 'Dates', 
+                      '${_formatDate(startDate)} - ${_formatDate(endDate)}'),
+                    _buildInfoRow(Icons.location_on, 'Location', 
+                      '${widget.event["city"]}, ${widget.event["state_prov"]}'),
+                    if (widget.event['venue'] != null)
+                      _buildInfoRow(Icons.business, 'Venue', widget.event['venue']),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, 
+                          color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Championship Event',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Due to the large number of participating teams, '
+                      'detailed event information is not available in the app. '
+                      'Please visit The Blue Alliance website for complete event details.',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    const SizedBox(height: 16),
+                    Center(
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          final url = Uri.parse('https://www.thebluealliance.com/event/${widget.event["key"]}');
+                          try {
+                            await launchUrl(url);
+                          } catch (e) {
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error opening link: $e')),
+                              );
+                            }
+                          }
+                        },
+                        icon: const Icon(Icons.public),
+                        label: const Text('View on TBA Website'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -20,6 +20,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'auto_path_photo_page.dart';
+import 'visualization_page.dart';
+import 'qr_code_dialog.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -189,6 +191,7 @@ class ScoutingRecord {
                 'points': lineMap['points'],
                 'color': lineMap['color'],
                 'strokeWidth': lineMap['strokeWidth'],
+                'imagePath': lineMap['imagePath'],
               };
             }).toList()
           : null,
@@ -286,6 +289,7 @@ class ScoutingRecord {
           }).toList(),
           'color': line['c'],
           'strokeWidth': line['w'],
+          'imagePath': line['i'],
         };
       }).toList() : null,
       feederStation: json['fs'] as String,
@@ -771,7 +775,7 @@ class DataPageState extends State<DataPage> {
       margin: const EdgeInsets.symmetric(vertical: 4),
       color: isSelected 
           ? (isDark 
-              ? Theme.of(context).colorScheme.primary.withOpacity(0.3)  // Darker selected background
+              ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
               : Theme.of(context).colorScheme.primaryContainer)
           : isDark 
               ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
@@ -970,6 +974,16 @@ class DataPageState extends State<DataPage> {
           label: 'Team Analysis',
           onTap: () => _showTeamAnalysis(context),
         ),
+        SpeedDialChild(
+          child: const Icon(Icons.bar_chart),
+          label: 'Visualizations',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => VisualizationPage(records: _records),
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -1000,6 +1014,12 @@ class DataPageState extends State<DataPage> {
                 title: const Text('View Auto Path'),
                 onTap: () {
                   Navigator.pop(context);
+                  // Find the first path with an image
+                  final imagePath = record.robotPath?.firstWhere(
+                    (path) => path['imagePath'] != null && File(path['imagePath'] as String).existsSync(),
+                    orElse: () => {'imagePath': null},
+                  )['imagePath'] as String?;
+                  
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -1007,13 +1027,13 @@ class DataPageState extends State<DataPage> {
                         isRedAlliance: record.isRedAlliance,
                         initialDrawing: record.robotPath,
                         readOnly: true,
-                        imagePath: record.robotPath?.firstOrNull?['imagePath'] as String?,
+                        imagePath: imagePath,
                       ),
                     ),
                   );
                 },
               ),
-            if (_isScoutingLeader && record.robotPath == null)
+            if (_isScoutingLeader && (record.robotPath == null || record.robotPath!.isEmpty))
               ListTile(
                 leading: const Icon(Icons.camera_alt),
                 title: const Text('Take Auto Path Photo'),
@@ -1027,9 +1047,18 @@ class DataPageState extends State<DataPage> {
                       ),
                     ),
                   );
-                  if (result != null) {
-                    final records = await DatabaseHelper.instance.getAllRecords();
-                    records[index] = ScoutingRecord(
+                  
+                  if (result != null && mounted) {
+                    // Get existing path data if any
+                    List<Map<String, dynamic>> updatedPath = [];
+                    if (record.robotPath != null) {
+                      updatedPath.addAll(record.robotPath!);
+                    }
+                    // Add new path data
+                    updatedPath.addAll(result as List<Map<String, dynamic>>);
+                    
+                    // Create updated record with new path
+                    final updatedRecord = ScoutingRecord(
                       timestamp: record.timestamp,
                       matchNumber: record.matchNumber,
                       matchType: record.matchType,
@@ -1062,12 +1091,32 @@ class DataPageState extends State<DataPage> {
                       coralOnReefHeight3: record.coralOnReefHeight3,
                       coralOnReefHeight4: record.coralOnReefHeight4,
                       feederStation: record.feederStation,
-                      robotPath: result,
+                      robotPath: updatedPath,
+                      telemetry: record.telemetry,
                     );
+
+                    // Update the record in the database
+                    final records = await DatabaseHelper.instance.getAllRecords();
+                    records[index] = updatedRecord;
                     await DatabaseHelper.instance.saveRecords(records);
+                    
+                    // Refresh the UI
                     setState(() {
-                      loadRecords();
+                      _records = records;
                     });
+
+                    // Show success message if the context is still valid
+                    if (mounted && context.mounted) {
+                      // Use a post-frame callback to ensure we're in a safe state
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Auto path photo saved successfully'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      });
+                    }
                   }
                 },
               ),
@@ -1096,105 +1145,9 @@ class DataPageState extends State<DataPage> {
   }
 
   void _showQRCodeDialog(BuildContext context, ScoutingRecord record) {
-    // Create a minimal array format to reduce data size
-    final List<dynamic> qrData = [
-      record.timestamp,
-      record.matchNumber,
-      record.matchType,
-      record.teamNumber,
-      record.isRedAlliance ? 1 : 0,
-      record.cageType,
-      record.coralPreloaded ? 1 : 0,
-      record.taxis ? 1 : 0,
-      record.algaeRemoved,
-      record.coralPlaced,
-      record.rankingPoint ? 1 : 0,
-      record.canPickupCoral ? 1 : 0,
-      record.canPickupAlgae ? 1 : 0,
-      record.autoAlgaeInNet,
-      record.autoAlgaeInProcessor,
-      record.coralPickupMethod,
-      record.coralOnReefHeight1,
-      record.coralOnReefHeight2,
-      record.coralOnReefHeight3,
-      record.coralOnReefHeight4,
-      record.feederStation,
-      record.algaeScoredInNet,
-      record.coralRankingPoint ? 1 : 0,
-      record.algaeProcessed,
-      record.processedAlgaeScored,
-      record.processorCycles,
-      record.coOpPoint ? 1 : 0,
-      record.returnedToBarge ? 1 : 0,
-      record.cageHang,
-      record.bargeRankingPoint ? 1 : 0,
-      record.breakdown ? 1 : 0,
-      record.comments,
-    ];
-
-    // Convert to compact JSON string
-    final jsonStr = jsonEncode(qrData);
-
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Theme.of(context).brightness == Brightness.dark 
-            ? Colors.grey[900] // Darker background for QR visibility
-            : Colors.white,
-        child: SingleChildScrollView(
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Team ${record.teamNumber}\nMatch ${record.matchNumber}',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white, // Always white background for QR
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Colors.grey.withOpacity(0.2),
-                    ),
-                  ),
-                  child: QrImageView(
-                    data: jsonStr,
-                    version: QrVersions.auto,
-                    size: 280,
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    errorCorrectionLevel: QrErrorCorrectLevel.L,
-                    gapless: true,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Scan this QR code to import the match data',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Close'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      builder: (context) => QRCodeDialog(record: record),
     );
   }
 
@@ -1226,8 +1179,17 @@ class DataPageState extends State<DataPage> {
         final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(contents);
         if (rows.length <= 1) throw Exception('No data found in file');
         
-        final records = rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
-        await DatabaseHelper.instance.saveRecords(records);
+        // Get existing records
+        final existingRecords = await DatabaseHelper.instance.getAllRecords();
+        
+        // Convert new records from CSV
+        final newRecords = rows.skip(1).map((row) => ScoutingRecord.fromCsvRow(row)).toList();
+        
+        // Combine existing and new records
+        final allRecords = [...existingRecords, ...newRecords];
+        
+        // Save combined records
+        await DatabaseHelper.instance.saveRecords(allRecords);
         
         setState(() {
           loadRecords();
@@ -1235,7 +1197,10 @@ class DataPageState extends State<DataPage> {
         
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Data imported successfully')),
+          SnackBar(
+            content: Text('Successfully imported ${newRecords.length} records'),
+            duration: const Duration(seconds: 2),
+          ),
         );
       }
     } catch (e) {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'scouting.dart';
 import 'widgets/telemetry_overlay.dart';
+import 'widgets/telemetry_container.dart';
 import '../services/telemetry_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -257,16 +258,18 @@ class MyAppState extends State<MyApp> {
               children: [
                 _buildScoutingPage(),
                 if (telemetryVisible)
-                  Positioned(
-                    right: 16,
-                    bottom: 16,
-                    child: TelemetryOverlay(
-                      telemetryData: _telemetryData,
-                      onClose: () {
-                        setState(() {
-                          telemetryVisible = false;
-                        });
-                      },
+                  SizedBox.expand(
+                    child: Stack(
+                      children: [
+                        TelemetryContainer(
+                          telemetryData: _telemetryData,
+                          onClose: () {
+                            setState(() {
+                              telemetryVisible = false;
+                            });
+                          },
+                        ),
+                      ],
                     ),
                   ),
               ],

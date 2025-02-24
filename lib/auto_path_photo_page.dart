@@ -43,7 +43,7 @@ class _AutoPathPhotoPageState extends State<AutoPathPhotoPage> {
       
       // Navigate to DrawingPage immediately after taking photo
       if (mounted) {
-        final result = await Navigator.pushReplacement(
+        final result = await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => DrawingPage(
@@ -55,7 +55,16 @@ class _AutoPathPhotoPageState extends State<AutoPathPhotoPage> {
         );
         
         if (result != null) {
-          Navigator.pop(context, result);
+          // Make sure each line in the path has the image path
+          final pathData = (result as List<Map<String, dynamic>>).map((line) => {
+            ...line,
+            'imagePath': photo.path,
+          }).toList();
+          // Pop directly with the path data
+          Navigator.pop(context, pathData);
+        } else {
+          // If drawing was cancelled, also pop this page
+          Navigator.pop(context);
         }
       }
     } else {

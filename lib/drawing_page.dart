@@ -7,11 +7,13 @@ class DrawingLine {
   final List<Offset> points;
   final Color color;
   final double strokeWidth;
+  final String? imagePath;
 
   DrawingLine({
     required this.points,
     required this.color,
     required this.strokeWidth,
+    this.imagePath,
   });
 
   Map<String, dynamic> toJson() {
@@ -19,6 +21,7 @@ class DrawingLine {
       'points': points.map((p) => {'x': p.dx, 'y': p.dy}).toList(),
       'color': color.value,
       'strokeWidth': strokeWidth,
+      'imagePath': imagePath,
     };
   }
 
@@ -34,22 +37,20 @@ class DrawingLine {
     };
   }
 
-  static DrawingLine fromJson(Map<String, dynamic> json) {
-    List<Offset> points = [];
-    if (json['points'] != null) {
-      points = (json['points'] as List).map((p) {
-        final point = p as Map<String, dynamic>;
-        return Offset(
-          (point['x'] as num).toDouble(),
-          (point['y'] as num).toDouble(),
-        );
-      }).toList();
-    }
-    
+  factory DrawingLine.fromJson(Map<String, dynamic> json) {
+    final List<dynamic> pointsData = json['points'] as List;
+    final List<Offset> points = pointsData.map((point) {
+      return Offset(
+        (point['x'] as num).toDouble(),
+        (point['y'] as num).toDouble(),
+      );
+    }).toList();
+
     return DrawingLine(
       points: points,
       color: Color(json['color'] as int),
       strokeWidth: (json['strokeWidth'] as num).toDouble(),
+      imagePath: json['imagePath'] as String?,
     );
   }
 
@@ -64,6 +65,7 @@ class DrawingLine {
       }).toList(),
       color: Color(json['c'] as int),
       strokeWidth: (json['w'] as num).toDouble(),
+      imagePath: json['imagePath'] as String?,
     );
   }
 
@@ -72,6 +74,7 @@ class DrawingLine {
       'points': points.map((p) => {'x': p.dx, 'y': p.dy}).toList(),
       'color': color.value,
       'strokeWidth': strokeWidth,
+      'imagePath': imagePath,
     };
   }
 }
@@ -103,15 +106,24 @@ class _DrawingPageState extends State<DrawingPage> {
   bool isErasing = false;
   double strokeWidth = 5.0;
   DrawingLine? currentLine;
+  String? imagePath;
 
   @override
   void initState() {
     super.initState();
     currentColor = widget.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance;
+    imagePath = widget.imagePath;
     
     // Initialize lines from either initialLines or initialDrawing
     if (widget.initialDrawing != null) {
-      lines = widget.initialDrawing!.map((map) => DrawingLine.fromJson(map)).toList();
+      lines = widget.initialDrawing!.map((map) {
+        final line = DrawingLine.fromJson(map);
+        // If the line has an image path and we don't have one yet, use it
+        if (imagePath == null && line.imagePath != null) {
+          imagePath = line.imagePath;
+        }
+        return line;
+      }).toList();
     } else {
       lines = [];
     }
@@ -146,7 +158,11 @@ class _DrawingPageState extends State<DrawingPage> {
             IconButton(
               icon: Icon(Icons.save),
               onPressed: () {
-                Navigator.pop(context, lines.map((line) => line.toMap()).toList());
+                final pathData = lines.map((line) => {
+                  ...line.toMap(),
+                  'imagePath': imagePath,
+                }).toList();
+                Navigator.pop(context, pathData);
               },
               tooltip: 'Save Drawing',
             ),
@@ -156,9 +172,9 @@ class _DrawingPageState extends State<DrawingPage> {
         children: [
           // Background image logic
           Positioned.fill(
-            child: widget.imagePath != null
+            child: imagePath != null && File(imagePath!).existsSync()
                 ? Image.file(
-                    File(widget.imagePath!),
+                    File(imagePath!),
                     fit: BoxFit.contain,
                   )
                 : widget.useDefaultImage
@@ -170,7 +186,6 @@ class _DrawingPageState extends State<DrawingPage> {
           ),
           // Drawing area
           Container(
-            // You can remove the hard-coded color if desired.
             child: CustomPaint(
               painter: DrawingPainter(
                 lines: lines,
@@ -186,34 +201,38 @@ class _DrawingPageState extends State<DrawingPage> {
                     ),
             ),
           ),
-          if (!widget.readOnly)
-            Positioned(
-              left: AppSpacing.md,
-              bottom: AppSpacing.md,
-              child: Card(
-                elevation: 4,
-                child: Padding(
-                  padding: EdgeInsets.all(AppSpacing.sm),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Stroke Width'),
-                      Slider(
-                        value: strokeWidth,
-                        min: 1.0,
-                        max: 20.0,
-                        onChanged: (value) {
-                          setState(() {
-                            strokeWidth = value;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
         ],
+      ),
+      bottomNavigationBar: widget.readOnly ? null : BottomAppBar(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.color_lens),
+              onPressed: _showColorPicker,
+            ),
+            IconButton(
+              icon: const Icon(Icons.line_weight),
+              onPressed: _showStrokeWidth,
+            ),
+            IconButton(
+              icon: const Icon(Icons.undo),
+              onPressed: lines.isEmpty ? null : () {
+                setState(() {
+                  lines.removeLast();
+                });
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: lines.isEmpty ? null : () {
+                setState(() {
+                  lines.clear();
+                });
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -239,6 +258,7 @@ class _DrawingPageState extends State<DrawingPage> {
       points: [details.localPosition],
       color: currentColor,
       strokeWidth: strokeWidth,
+      imagePath: imagePath,
     );
     setState(() {});
   }
@@ -272,6 +292,81 @@ class _DrawingPageState extends State<DrawingPage> {
     }
     currentLine = null;
     setState(() {});
+  }
+
+  void _showColorPicker() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Color'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  Colors.red,
+                  Colors.blue,
+                  Colors.green,
+                  Colors.yellow,
+                  Colors.purple,
+                  Colors.orange,
+                  Colors.teal,
+                  Colors.pink,
+                ].map((color) => GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      currentColor = color;
+                    });
+                    Navigator.pop(context);
+                  },
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                )).toList(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showStrokeWidth() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Stroke Width'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Slider(
+              value: strokeWidth,
+              min: 1.0,
+              max: 20.0,
+              onChanged: (value) {
+                setState(() {
+                  strokeWidth = value;
+                });
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -7,24 +7,62 @@ enum TelemetryType {
   error,
   action,
   stateChange,
-  info
+  info,
+  performance,
+  navigation,
+  lifecycle
 }
 
 class TelemetryEvent {
   final DateTime timestamp;
   final TelemetryType type;
   final String message;
+  final Map<String, dynamic>? metadata;
   final dynamic data;
+  final String? screen;
+  final Duration? duration;
 
   TelemetryEvent({
     required this.type,
     required this.message,
+    this.metadata,
     this.data,
+    this.screen,
+    this.duration,
   }) : timestamp = DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+    'timestamp': timestamp.toIso8601String(),
+    'type': type.name,
+    'message': message,
+    if (metadata != null) 'metadata': metadata,
+    if (data != null) 'data': data,
+    if (screen != null) 'screen': screen,
+    if (duration != null) 'duration': duration?.inMilliseconds,
+  };
 
   @override
   String toString() {
-    return '[${timestamp.toIso8601String()}] ${type.name.toUpperCase()}: $message ${data != null ? '- $data' : ''}';
+    final parts = <String>[
+      '[${timestamp.toIso8601String()}]',
+      type.name.toUpperCase(),
+      if (screen != null) '[$screen]',
+      message,
+    ];
+
+    if (duration != null) {
+      parts.add('(${duration!.inMilliseconds}ms)');
+    }
+
+    if (metadata != null) {
+      parts.add('metadata: $metadata');
+    }
+
+    if (data != null) {
+      parts.add('data: $data');
+    }
+
+    return parts.join(' ');
   }
 }
 
@@ -45,6 +83,8 @@ class TelemetryService {
   static const String _devModeKey = 'dev_mode_enabled';
   static const String _telemetryKey = 'telemetry_enabled';
 
+  // Performance tracking
+  final Map<String, DateTime> _performanceMarkers = {};
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -53,39 +93,114 @@ class TelemetryService {
     _devModeController.add(devMode);
   }
 
-  void logError(String message, [dynamic error]) {
+  void startPerformanceMarker(String markerId) {
+    _performanceMarkers[markerId] = DateTime.now();
+  }
+
+  void endPerformanceMarker(String markerId, {String? description, Map<String, dynamic>? metadata}) {
+    final startTime = _performanceMarkers.remove(markerId);
+    if (startTime != null) {
+      final duration = DateTime.now().difference(startTime);
+      logPerformance(
+        description ?? 'Performance marker: $markerId',
+        duration: duration,
+        metadata: {...?metadata, 'markerId': markerId},
+      );
+    }
+  }
+
+  void logPerformance(String message, {
+    required Duration duration,
+    Map<String, dynamic>? metadata,
+    String? screen,
+  }) {
+    if (!_isEnabled) return;
+    _eventController.add(TelemetryEvent(
+      type: TelemetryType.performance,
+      message: message,
+      duration: duration,
+      metadata: metadata,
+      screen: screen,
+    ));
+  }
+
+  void logNavigation(String route, {
+    String? previousRoute,
+    Map<String, dynamic>? parameters,
+    Map<String, dynamic>? metadata,
+  }) {
+    if (!_isEnabled) return;
+    _eventController.add(TelemetryEvent(
+      type: TelemetryType.navigation,
+      message: 'Navigation: $route',
+      metadata: {
+        ...?metadata,
+        if (previousRoute != null) 'previousRoute': previousRoute,
+        if (parameters != null) 'parameters': parameters,
+      },
+      screen: route,
+    ));
+  }
+
+  void logLifecycle(String message, {
+    required String screen,
+    Map<String, dynamic>? metadata,
+    dynamic data,
+  }) {
+    if (!_isEnabled) return;
+    _eventController.add(TelemetryEvent(
+      type: TelemetryType.lifecycle,
+      message: message,
+      metadata: metadata,
+      data: data,
+      screen: screen,
+    ));
+  }
+
+  void logError(String message, [dynamic error, StackTrace? stackTrace, String? screen, Map<String, dynamic>? metadata]) {
     if (!_isEnabled) return;
     _eventController.add(TelemetryEvent(
       type: TelemetryType.error,
       message: message,
+      metadata: {
+        ...?metadata,
+        if (stackTrace != null) 'stackTrace': stackTrace.toString(),
+      },
       data: error?.toString(),
+      screen: screen,
     ));
   }
 
-  void logAction(String message, [dynamic data]) {
+  void logAction(String message, [dynamic data, String? screen, Map<String, dynamic>? metadata]) {
     if (!_isEnabled) return;
     _eventController.add(TelemetryEvent(
       type: TelemetryType.action,
       message: message,
+      metadata: metadata,
       data: data,
+      screen: screen,
     ));
   }
 
-  void logStateChange(String message, [dynamic data]) {
+  void logStateChange(String message, [dynamic data, String? screen, Map<String, dynamic>? metadata]) {
     if (!_isEnabled) return;
     _eventController.add(TelemetryEvent(
       type: TelemetryType.stateChange,
       message: message,
+      metadata: metadata,
       data: data,
+      screen: screen,
     ));
   }
 
-  void logInfo(String message, [dynamic data]) {
+  void logInfo(String message, [dynamic data, String? screen, Map<String, dynamic>? metadata]) {
     if (!_isEnabled) return;
     _eventController.add(TelemetryEvent(
       type: TelemetryType.info,
       message: message,
+      metadata: metadata,
       data: data,
+      screen: screen,
     ));
   }
 
