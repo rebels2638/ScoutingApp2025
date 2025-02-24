@@ -33,7 +33,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
   // state variables for match info
   int matchNumber = 0;
-  String matchType = 'Practice';
+  String matchType = 'Qualification';
   String currentTime = '';
 
   // state vars for team info
