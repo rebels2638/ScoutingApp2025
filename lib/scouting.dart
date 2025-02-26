@@ -46,7 +46,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
   bool taxis = false;
   int algaeRemoved = 0;
   String coralPlaced = 'No';
-  bool rankingPoint = false;
 
   // state vars for tele-op
   int algaeScoredInNet = 0;
@@ -264,8 +263,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
                   value: matchNumber,
                   onChanged: (value) {
                     setState(() {
+                      final oldValue = matchNumber;
                       matchNumber = value;
-                      _logStateChange('matchNumber', matchNumber, value);
+                      _logStateChange('matchNumber', oldValue, value);
                     });
                   },
                   autofocus: false,
@@ -302,8 +302,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
                         onChanged: (value) {
                           if (value != null) {
                             setState(() {
+                              final oldValue = matchType;
                               matchType = value;
-                              _logStateChange('matchType', matchType, value);
+                              _logStateChange('matchType', oldValue, value);
                             });
                           }
                         },
@@ -322,14 +323,16 @@ class _ScoutingPageState extends State<ScoutingPage> {
             isRedAlliance: isRedAlliance,
             onTeamChanged: (value) {
               setState(() {
+                final oldValue = teamNumber;
                 teamNumber = value;
-                _logStateChange('teamNumber', teamNumber, value);
+                _logStateChange('teamNumber', oldValue, value);
               });
             },
             onAllianceChanged: (value) {
               setState(() {
+                final oldValue = isRedAlliance;
                 isRedAlliance = value;
-                _logStateChange('isRedAlliance', isRedAlliance, value);
+                _logStateChange('isRedAlliance', oldValue, value);
               });
             },
           ),
@@ -354,8 +357,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: taxis,
             onChanged: (value) {
               setState(() {
+                final oldValue = taxis;
                 taxis = value;
-                _logStateChange('taxis', taxis, value);
+                _logStateChange('taxis', oldValue, value);
               });
             },
           ),
@@ -407,8 +411,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: algaeRemoved,
             onChanged: (value) {
               setState(() {
+                final oldValue = algaeRemoved;
                 algaeRemoved = value;
-                _logStateChange('algaeRemoved', algaeRemoved, value);
+                _logStateChange('algaeRemoved', oldValue, value);
               });
             },
           ),
@@ -417,8 +422,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: autoAlgaeInNet,
             onChanged: (value) {
               setState(() {
+                final oldValue = autoAlgaeInNet;
                 autoAlgaeInNet = value;
-                _logStateChange('autoAlgaeInNet', autoAlgaeInNet, value);
+                _logStateChange('autoAlgaeInNet', oldValue, value);
               });
             },
           ),
@@ -427,8 +433,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: autoAlgaeInProcessor,
             onChanged: (value) {
               setState(() {
+                final oldValue = autoAlgaeInProcessor;
                 autoAlgaeInProcessor = value;
-                _logStateChange('autoAlgaeInProcessor', autoAlgaeInProcessor, value);
+                _logStateChange('autoAlgaeInProcessor', oldValue, value);
               });
             },
           ),
@@ -449,8 +456,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
               ],
               onChanged: (value) {
                 setState(() {
+                  final oldValue = cageType;
                   cageType = value!;
-                  _logStateChange('cageType', cageType, value);
+                  _logStateChange('cageType', oldValue, value);
                 });
               },
             ),
@@ -460,8 +468,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: coralPreloaded,
             onChanged: (value) {
               setState(() {
+                final oldValue = coralPreloaded;
                 coralPreloaded = value;
-                _logStateChange('coralPreloaded', coralPreloaded, value);
+                _logStateChange('coralPreloaded', oldValue, value);
               });
             },
           ),
@@ -477,8 +486,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
               ],
               onChanged: (value) {
                 setState(() {
+                  final oldValue = coralPlaced;
                   coralPlaced = value!;
-                  _logStateChange('coralPlaced', coralPlaced, value);
+                  _logStateChange('coralPlaced', oldValue, value);
                 });
               },
             ),
@@ -506,8 +516,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: algaeScoredInNet,
             onChanged: (value) {
               setState(() {
+                final oldValue = algaeScoredInNet;
                 algaeScoredInNet = value;
-                _logStateChange('algaeScoredInNet', algaeScoredInNet, value);
+                _logStateChange('algaeScoredInNet', oldValue, value);
               });
             },
           ),
@@ -516,8 +527,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: algaeProcessed,
             onChanged: (value) {
               setState(() {
+                final oldValue = algaeProcessed;
                 algaeProcessed = value;
-                _logStateChange('algaeProcessed', algaeProcessed, value);
+                _logStateChange('algaeProcessed', oldValue, value);
               });
             },
           ),
@@ -526,8 +538,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: processedAlgaeScored,
             onChanged: (value) {
               setState(() {
+                final oldValue = processedAlgaeScored;
                 processedAlgaeScored = value;
-                _logStateChange('processedAlgaeScored', processedAlgaeScored, value);
+                _logStateChange('processedAlgaeScored', oldValue, value);
               });
             },
           ),
@@ -536,8 +549,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: processorCycles,
             onChanged: (value) {
               setState(() {
+                final oldValue = processorCycles;
                 processorCycles = value;
-                _logStateChange('processorCycles', processorCycles, value);
+                _logStateChange('processorCycles', oldValue, value);
               });
             },
           ),
@@ -552,8 +566,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: coralOnReefHeight1,
             onChanged: (value) {
               setState(() {
+                final oldValue = coralOnReefHeight1;
                 coralOnReefHeight1 = value;
-                _logStateChange('coralOnReefHeight1', coralOnReefHeight1, value);
+                _logStateChange('coralOnReefHeight1', oldValue, value);
               });
             },
           ),
@@ -562,8 +577,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: coralOnReefHeight2,
             onChanged: (value) {
               setState(() {
+                final oldValue = coralOnReefHeight2;
                 coralOnReefHeight2 = value;
-                _logStateChange('coralOnReefHeight2', coralOnReefHeight2, value);
+                _logStateChange('coralOnReefHeight2', oldValue, value);
               });
             },
           ),
@@ -572,20 +588,21 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: coralOnReefHeight3,
             onChanged: (value) {
               setState(() {
+                final oldValue = coralOnReefHeight3;
                 coralOnReefHeight3 = value;
-                _logStateChange('coralOnReefHeight3', coralOnReefHeight3, value);
+                _logStateChange('coralOnReefHeight3', oldValue, value);
               });
             },
           ),
           CounterRow(
             label: 'Height 4',
             value: coralOnReefHeight4,
-            onChanged: (newValue) {
-              final oldValue = coralOnReefHeight4;
+            onChanged: (value) {
               setState(() {
-                coralOnReefHeight4 = newValue;
+                final oldValue = coralOnReefHeight4;
+                coralOnReefHeight4 = value;
+                _logStateChange('coralOnReefHeight4', oldValue, value);
               });
-              _logStateChange('coralOnReefHeight4', oldValue, newValue);
             },
           ),
           Padding(
@@ -595,11 +612,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
               options: ['YES', 'NO'],
               selectedIndex: coralRankingPoint ? 0 : 1,
               onSelected: (index) {
-                final oldValue = coralRankingPoint;
                 setState(() {
+                  final oldValue = coralRankingPoint;
                   coralRankingPoint = (index == 0);
+                  _logStateChange('coralRankingPoint', oldValue, coralRankingPoint);
                 });
-                _logStateChange('coralRankingPoint', oldValue, coralRankingPoint);
               },
             ),
           ),
@@ -617,8 +634,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 value: canPickupAlgae,
                 onChanged: (value) {
                   setState(() {
+                    final oldValue = canPickupAlgae;
                     canPickupAlgae = value;
-                    _logStateChange('canPickupAlgae', canPickupAlgae, value);
+                    _logStateChange('canPickupAlgae', oldValue, value);
                   });
                 },
               ),
@@ -628,8 +646,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 value: canPickupCoral,
                 onChanged: (value) {
                   setState(() {
+                    final oldValue = canPickupCoral;
                     canPickupCoral = value;
-                    _logStateChange('canPickupCoral', canPickupCoral, value);
+                    _logStateChange('canPickupCoral', oldValue, value);
                   });
                 },
               ),
@@ -648,12 +667,13 @@ class _ScoutingPageState extends State<ScoutingPage> {
                   onChanged: (value) {
                     if (value != null) {
                       setState(() {
+                        final oldValue = coralPickupMethod;
                         coralPickupMethod = value;
                         // If they can pickup from either location, set canPickupCoral to true
                         if (value != 'None') {
                           canPickupCoral = true;
                         }
-                        _logStateChange('coralPickupMethod', coralPickupMethod, value);
+                        _logStateChange('coralPickupMethod', oldValue, value);
                       });
                     }
                   },
@@ -672,8 +692,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: coOpPoint,
             onChanged: (value) {
               setState(() {
+                final oldValue = coOpPoint;
                 coOpPoint = value;
-                _logStateChange('coOpPoint', coOpPoint, value);
+                _logStateChange('coOpPoint', oldValue, value);
               });
             },
           ),
@@ -682,11 +703,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: coralRankingPoint,
             onChanged: (value) {
               setState(() {
-                // Store old value before updating
                 final oldValue = coralRankingPoint;
-                // Update state
                 coralRankingPoint = value;
-                // Log with correct order of old and new values
                 _logStateChange('coralRankingPoint', oldValue, value);
               });
             },
@@ -714,8 +732,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: returnedToBarge,
             onChanged: (value) {
               setState(() {
+                final oldValue = returnedToBarge;
                 returnedToBarge = value;
-                _logStateChange('returnedToBarge', returnedToBarge, value);
+                _logStateChange('returnedToBarge', oldValue, value);
               });
             },
           ),
@@ -737,8 +756,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
               ],
               onChanged: (value) {
                 setState(() {
+                  final oldValue = cageHang;
                   cageHang = value!;
-                  _logStateChange('cageHang', cageHang, value);
+                  _logStateChange('cageHang', oldValue, value);
                 });
               },
             ),
@@ -748,8 +768,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: bargeRankingPoint,
             onChanged: (value) {
               setState(() {
+                final oldValue = bargeRankingPoint;
                 bargeRankingPoint = value;
-                _logStateChange('bargeRankingPoint', bargeRankingPoint, value);
+                _logStateChange('bargeRankingPoint', oldValue, value);
               });
             },
           ),
@@ -776,8 +797,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: breakdown,
             onChanged: (value) {
               setState(() {
+                final oldValue = breakdown;
                 breakdown = value;
-                _logStateChange('breakdown', breakdown, value);
+                _logStateChange('breakdown', oldValue, value);
               });
             },
           ),
@@ -808,8 +830,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
                   style: TextStyle(fontSize: 14),
                   onChanged: (value) {
                     setState(() {
+                      final oldValue = comments;
                       comments = value;
-                      _logStateChange('comments', 'updated', 'new comment');
+                      _logStateChange('comments', oldValue, 'new comment');
                     });
                   },
                 ),
@@ -961,7 +984,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
         cageHang = 'None';
         comments = '';
         taxis = false;
-        rankingPoint = false;
         coralRankingPoint = false;
         coOpPoint = false;
         returnedToBarge = false;
@@ -1062,7 +1084,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
                           cageHang = 'None';
                           comments = '';
                           taxis = false;
-                          rankingPoint = false;
                           coralRankingPoint = false;
                           coOpPoint = false;
                           returnedToBarge = false;
