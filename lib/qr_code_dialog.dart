@@ -104,7 +104,7 @@ class _QRCodeDialogState extends State<QRCodeDialog> {
                       Text(
                         'Warning: Auto path drawing will not be included in QR code',
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.onSurface,
+                          color: Theme.of(context).colorScheme.error,
                           fontWeight: FontWeight.bold,
                         ),
                         textAlign: TextAlign.center,

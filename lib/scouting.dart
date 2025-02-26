@@ -483,18 +483,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
               },
             ),
           ),
-          
-          // Ranking point
-          SwitchCard(
-            label: 'Ranking Point',
-            value: rankingPoint,
-            onChanged: (value) {
-              setState(() {
-                rankingPoint = value;
-                _logStateChange('rankingPoint', rankingPoint, value);
-              });
-            },
-          ),
         ],
       ),
     );
@@ -694,8 +682,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
             value: coralRankingPoint,
             onChanged: (value) {
               setState(() {
+                // Store old value before updating
+                final oldValue = coralRankingPoint;
+                // Update state
                 coralRankingPoint = value;
-                _logStateChange('coralRankingPoint', coralRankingPoint, value);
+                // Log with correct order of old and new values
+                _logStateChange('coralRankingPoint', oldValue, value);
               });
             },
           ),
@@ -882,7 +874,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
       TelemetryService().logInfo('save_record_debug', {
         'coralPreloaded': coralPreloaded,
         'taxis': taxis,
-        'rankingPoint': rankingPoint,
+        'rankingPoint': coralRankingPoint,
         'canPickupCoral': canPickupCoral,
         'canPickupAlgae': canPickupAlgae,
         'coralRankingPoint': coralRankingPoint,
@@ -911,7 +903,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         taxis: taxis,
         algaeRemoved: algaeRemoved,
         coralPlaced: coralPlaced,
-        rankingPoint: rankingPoint,
+        rankingPoint: coralRankingPoint,
         canPickupCoral: canPickupCoral,
         canPickupAlgae: canPickupAlgae,
         algaeScoredInNet: algaeScoredInNet,
