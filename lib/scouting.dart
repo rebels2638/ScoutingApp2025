@@ -605,20 +605,16 @@ class _ScoutingPageState extends State<ScoutingPage> {
               });
             },
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8.0),
-            child: ToggleRow(
-              label: 'Coral Ranking Point?',
-              options: ['YES', 'NO'],
-              selectedIndex: coralRankingPoint ? 0 : 1,
-              onSelected: (index) {
-                setState(() {
-                  final oldValue = coralRankingPoint;
-                  coralRankingPoint = (index == 0);
-                  _logStateChange('coralRankingPoint', oldValue, coralRankingPoint);
-                });
-              },
-            ),
+          SwitchCard(
+            label: 'Coral Ranking Point',
+            value: coralRankingPoint,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = coralRankingPoint;
+                coralRankingPoint = value;
+                _logStateChange('coralRankingPoint', oldValue, value);
+              });
+            },
           ),
           
           // Robot capabilities section
@@ -680,34 +676,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 ),
               ),
             ],
-          ),
-          
-          // Points section
-          SectionHeader(
-            title: 'Points',
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          SwitchCard(
-            label: 'Co-Op Point',
-            value: coOpPoint,
-            onChanged: (value) {
-              setState(() {
-                final oldValue = coOpPoint;
-                coOpPoint = value;
-                _logStateChange('coOpPoint', oldValue, value);
-              });
-            },
-          ),
-          SwitchCard(
-            label: 'Coral Ranking Point',
-            value: coralRankingPoint,
-            onChanged: (value) {
-              setState(() {
-                final oldValue = coralRankingPoint;
-                coralRankingPoint = value;
-                _logStateChange('coralRankingPoint', oldValue, value);
-              });
-            },
           ),
         ],
       ),
@@ -787,6 +755,19 @@ class _ScoutingPageState extends State<ScoutingPage> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Co-Op Point at the top
+          SwitchCard(
+            label: 'Co-Op Point',
+            value: coOpPoint,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = coOpPoint;
+                coOpPoint = value;
+                _logStateChange('coOpPoint', oldValue, value);
+              });
+            },
+          ),
+          
           // Robot status
           SectionHeader(
             title: 'Robot Status',
