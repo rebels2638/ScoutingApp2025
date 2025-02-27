@@ -1,0 +1,2 @@
+C:/Users/admin/Documents/ScoutingApp2025/android/app/.cxx/Debug/6r2v4t6m/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/admin/Documents/ScoutingApp2025/android/app/.cxx/Debug/6r2v4t6m/x86_64/CMakeFiles/rebuild_cache.dir
