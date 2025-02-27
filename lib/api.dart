@@ -27,6 +27,24 @@ class ApiPageState extends State<ApiPage> {
   List<dynamic>? _eventsData;
   bool _prefsLoaded = false;
 
+  // Add loading state tracking
+  Map<String, bool> _loadingStates = {
+    'team': false,
+    'events': false,
+    'eventTeams': false,
+    'matches': false,
+  };
+  Map<String, String> _loadingMessages = {
+    'team': 'Loading team information...',
+    'events': 'Loading team events...',
+    'eventTeams': 'Loading event participants...',
+    'matches': 'Loading match schedules...',
+  };
+  int _totalItemsToLoad = 0;
+  int _itemsLoaded = 0;
+  String _currentOperation = '';
+  DateTime? _loadStartTime;
+
   // Add this static key to access the state
   static final GlobalKey<ApiPageState> globalKey = GlobalKey<ApiPageState>();
 
@@ -186,10 +204,21 @@ class ApiPageState extends State<ApiPage> {
     setState(() {
       _isLoading = true;
       _error = null;
+      _loadStartTime = DateTime.now();
+      _itemsLoaded = 0;
+      _currentOperation = 'Initializing...';
+      _loadingStates.updateAll((key, value) => false);
     });
 
     try {
       final currentYear = DateTime.now().year;
+      
+      // Load team info
+      setState(() {
+        _loadingStates['team'] = true;
+        _currentOperation = 'Loading team information...';
+      });
+      
       TelemetryService().logInfo('Fetching team info', 'Team $teamNumber');
       final teamInfo = await _tbaService.getTeamInfo(teamNumber);
       
@@ -197,17 +226,56 @@ class ApiPageState extends State<ApiPage> {
         TelemetryService().logError('team_not_found', 'Team $teamNumber');
         throw Exception('Could not find team $teamNumber');
       }
+
+      setState(() {
+        _loadingStates['team'] = false;
+        _itemsLoaded++;
+        _loadingStates['events'] = true;
+        _currentOperation = 'Loading team events...';
+      });
       
+      // Load team events
       TelemetryService().logInfo('Fetching team events', 'Team $teamNumber, Year $currentYear');
       final events = await _tbaService.getTeamEvents(teamNumber, currentYear);
       
       if (events == null) {
         TelemetryService().logError('events_not_found', 'Team $teamNumber');
-        throw Exception('Could not load events for team $teamNumber');
+        throw Exception('Could not load events');
       }
 
       events.sort((a, b) => (a['start_date'] ?? '').compareTo(b['start_date'] ?? ''));
       TelemetryService().logInfo('Events loaded', '${events.length} events found');
+
+      setState(() {
+        _loadingStates['events'] = false;
+        _itemsLoaded++;
+        _loadingStates['eventTeams'] = true;
+        _totalItemsToLoad = 2 + events.length * 2; // Team + Events + (Teams & Matches per event)
+        _currentOperation = 'Loading event participants...';
+      });
+
+      // Load all event teams and matches in parallel
+      final eventDataFutures = events.map((event) async {
+        final eventKey = event['key'];
+        
+        // Get and cache event teams
+        final teams = await _tbaService.getEventTeams(eventKey);
+        setState(() {
+          _itemsLoaded++;
+          _currentOperation = 'Loading matches for ${event['short_name'] ?? event['name']}...';
+        });
+        
+        // Get and cache event matches
+        await _tbaService.getEventMatches(eventKey);
+        setState(() => _itemsLoaded++);
+        
+        return {
+          'event': event,
+          'teams': teams,
+        };
+      }).toList();
+
+      await Future.wait(eventDataFutures);
 
       // Cache the data
       final prefs = await SharedPreferences.getInstance();
@@ -219,6 +287,7 @@ class ApiPageState extends State<ApiPage> {
         _teamData = teamInfo;
         _eventsData = events;
         _isLoading = false;
+        _loadStartTime = null;
       });
       
       TelemetryService().logAction('load_team_data_completed', 'Team $teamNumber');
@@ -227,6 +296,7 @@ class ApiPageState extends State<ApiPage> {
       setState(() {
         _error = e.toString();
         _isLoading = false;
+        _loadStartTime = null;
       });
     }
   }
@@ -259,7 +329,7 @@ class ApiPageState extends State<ApiPage> {
   @override
   Widget build(BuildContext context) {
     if (!_prefsLoaded || _isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return _buildLoadingScreen();
     }
 
     if (_error != null) {
@@ -389,6 +459,122 @@ class ApiPageState extends State<ApiPage> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLoadingScreen() {
+    if (!_prefsLoaded) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    // Calculate progress and estimated time
+    final progress = _totalItemsToLoad > 0 ? _itemsLoaded / _totalItemsToLoad : 0.0;
+    String? estimatedTimeRemaining;
+    
+    if (_loadStartTime != null && _itemsLoaded > 0) {
+      final elapsed = DateTime.now().difference(_loadStartTime!);
+      final estimatedTotal = elapsed * (_totalItemsToLoad / _itemsLoaded);
+      final remaining = estimatedTotal - elapsed;
+      
+      if (remaining.inSeconds < 60) {
+        estimatedTimeRemaining = '${remaining.inSeconds}s remaining';
+      } else {
+        estimatedTimeRemaining = '${(remaining.inSeconds / 60).ceil()}m remaining';
+      }
+    }
+
+    return Scaffold(
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.cloud_download_outlined,
+                size: 48,
+                color: Colors.blue,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Loading Data',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _currentOperation,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 24),
+              LinearProgressIndicator(
+                value: progress,
+                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+              ),
+              const SizedBox(height: 16),
+              if (estimatedTimeRemaining != null)
+                Text(
+                  estimatedTimeRemaining,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
+                ),
+              const SizedBox(height: 24),
+              _buildLoadingStatesList(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingStatesList() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _loadingStates.entries.map((entry) {
+        final isActive = entry.value;
+        final isDone = !isActive && _loadingMessages.containsKey(entry.key);
+        
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              if (isActive)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                  ),
+                )
+              else if (isDone)
+                const Icon(
+                  Icons.check_circle_outline,
+                  size: 16,
+                  color: Colors.green,
+                )
+              else
+                const SizedBox(width: 16),
+              const SizedBox(width: 12),
+              Text(
+                _loadingMessages[entry.key] ?? '',
+                style: TextStyle(
+                  color: isActive
+                      ? Theme.of(context).colorScheme.primary
+                      : isDone
+                          ? Colors.green
+                          : Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }

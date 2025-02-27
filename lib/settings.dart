@@ -18,7 +18,6 @@ class _SettingsPageState extends State<SettingsPage> {
   int? _teamNumber;
   bool _autoIncrementMatch = true;
   bool _confirmBeforeSaving = true;
-  String _defaultMatchType = 'Qualification';
   bool _vibrateOnAction = true;
   bool _bluetoothEnabled = false;
   bool _scoutingLeaderEnabled = false;
@@ -26,7 +25,6 @@ class _SettingsPageState extends State<SettingsPage> {
   static const String _teamNumberKey = 'selected_team_number';
   static const String _autoIncrementKey = 'auto_increment_match';
   static const String _confirmSaveKey = 'confirm_before_saving';
-  static const String _defaultMatchTypeKey = 'default_match_type';
   static const String _vibrateKey = 'vibrate_on_action';
   static const String _bluetoothEnabledKey = 'bluetooth_enabled';
   static const String _scoutingLeaderKey = 'scouting_leader_enabled';
@@ -46,7 +44,6 @@ class _SettingsPageState extends State<SettingsPage> {
       _teamNumber = prefs.getInt(_teamNumberKey);
       _autoIncrementMatch = prefs.getBool(_autoIncrementKey) ?? true;
       _confirmBeforeSaving = prefs.getBool(_confirmSaveKey) ?? true;
-      _defaultMatchType = prefs.getString(_defaultMatchTypeKey) ?? 'Qualification';
       _vibrateOnAction = prefs.getBool(_vibrateKey) ?? true;
       _bluetoothEnabled = prefs.getBool(_bluetoothEnabledKey) ?? false;
       _scoutingLeaderEnabled = prefs.getBool(_scoutingLeaderKey) ?? false;
@@ -122,12 +119,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 await _saveSetting(_confirmSaveKey, value);
                 setState(() => _confirmBeforeSaving = value);
               },
-            ),
-            ListTile(
-              title: const Text('Default Match Type'),
-              subtitle: Text(_defaultMatchType),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-              onTap: () => _showMatchTypeDialog(),
             ),
             SwitchListTile(
               title: const Text('Haptic Feedback'),
@@ -271,50 +262,6 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           ...children,
         ],
-      ),
-    );
-  }
-
-  void _showMatchTypeDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Default Match Type'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              title: const Text('Practice'),
-              value: 'Practice',
-              groupValue: _defaultMatchType,
-              onChanged: (value) async {
-                await _saveSetting(_defaultMatchTypeKey, value);
-                setState(() => _defaultMatchType = value!);
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('Qualification'),
-              value: 'Qualification',
-              groupValue: _defaultMatchType,
-              onChanged: (value) async {
-                await _saveSetting(_defaultMatchTypeKey, value);
-                setState(() => _defaultMatchType = value!);
-                Navigator.pop(context);
-              },
-            ),
-            RadioListTile<String>(
-              title: const Text('Playoff'),
-              value: 'Playoff',
-              groupValue: _defaultMatchType,
-              onChanged: (value) async {
-                await _saveSetting(_defaultMatchTypeKey, value);
-                setState(() => _defaultMatchType = value!);
-                Navigator.pop(context);
-              },
-            ),
-          ],
-        ),
       ),
     );
   }
