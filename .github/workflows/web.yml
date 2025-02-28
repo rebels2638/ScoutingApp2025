@@ -18,9 +18,9 @@ jobs:
     - name: Build Flutter Web
       run: |
         if [ -f "CNAME" ]; then
-          flutter build web --base-href "/" --verbose
+          flutter build web --base-href "/" --no-tree-shake-icons
         else
-          flutter build web --base-href "/ScoutingApp2025/" --verbose
+          flutter build web --base-href "/ScoutingApp2025/" --no-tree-shake-icons
         fi
     - uses: peaceiris/actions-gh-pages@v3
       with:
