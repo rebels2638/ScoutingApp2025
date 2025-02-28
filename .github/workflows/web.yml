@@ -22,10 +22,13 @@ jobs:
         else
           flutter build web --base-href "/ScoutingApp2025/" --no-tree-shake-icons
         fi
+    - name: Create CNAME file
+      run: echo "scoutingapp2025.wchiming.com" > build/web/CNAME
     - uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./build/web
+        cname: scoutingapp2025.wchiming.com
     - run: flutter build web --release --no-tree-shake-icons
     - name: Copy fonts to build
       run: |
