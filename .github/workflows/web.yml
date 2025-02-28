@@ -18,9 +18,9 @@ jobs:
     - name: Build Flutter Web
       run: |
         if [ -f "CNAME" ]; then
-          flutter build web --base-href "/" --no-tree-shake-icons
+          flutter build web --base-href "/" --release
         else
-          flutter build web --base-href "/ScoutingApp2025/" --no-tree-shake-icons
+          flutter build web --base-href "/ScoutingApp2025/" --release
         fi
     - name: Create CNAME file
       run: echo "scoutingapp2025.wchiming.com" > build/web/CNAME
@@ -29,8 +29,3 @@ jobs:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./build/web
         cname: scoutingapp2025.wchiming.com
-    - run: flutter build web --release --no-tree-shake-icons
-    - name: Copy fonts to build
-      run: |
-        mkdir -p build/web/fonts
-        cp fonts/MaterialIcons-Regular.otf build/web/fonts/
