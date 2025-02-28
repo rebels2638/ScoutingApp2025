@@ -18,9 +18,20 @@ jobs:
     - name: Build Flutter Web
       run: |
         if [ -f "CNAME" ]; then
-          flutter build web --base-href "/" --release
+          flutter build web --base-href "/" --release \
+            --dart-define=FLUTTER_WEB_CANVASKIT_URL=canvaskit/ \
+            --web-renderer canvaskit
         else
-          flutter build web --base-href "/ScoutingApp2025/" --release
+          flutter build web --base-href "/ScoutingApp2025/" --release \
+            --dart-define=FLUTTER_WEB_CANVASKIT_URL=canvaskit/ \
+            --web-renderer canvaskit
+        fi
+    # Ensure fonts directory exists and copy fonts
+    - name: Setup Web Fonts
+      run: |
+        mkdir -p build/web/fonts
+        if [ -d "build/web/assets/fonts" ]; then
+          cp -r build/web/assets/fonts/* build/web/fonts/
         fi
     - name: Create CNAME file
       run: echo "scoutingapp2025.wchiming.com" > build/web/CNAME
