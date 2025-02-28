@@ -35,64 +35,62 @@ const preloadAssets = async () => {
   await Promise.all(preloadPromises);
 };
 
-// Initialize Flutter app with better error handling
+// Initialize Flutter app
 const initFlutterApp = async () => {
-  loadingProgress.textContent = 'Initializing Flutter...';
-  
+  loadingProgress.textContent = 'Loading Flutter engine...';
+
   try {
-    // Load Flutter engine
+    // Load the Flutter engine
     await _flutter.loader.loadEntrypoint({
+      serviceWorker: {
+        serviceWorkerVersion: serviceWorkerVersion,
+      },
       onEntrypointLoaded: async function(engineInitializer) {
-        loadingProgress.textContent = 'Starting app...';
+        loadingProgress.textContent = 'Initializing engine...';
+        
         try {
-          // Initialize engine with basic settings
-          const appRunner = await engineInitializer.initializeEngine();
-          
-          // Run the app
+          const appRunner = await engineInitializer.initializeEngine({
+            useColorEmoji: true,
+            renderer: "canvaskit"
+          });
+
+          loadingProgress.textContent = 'Starting app...';
           await appRunner.runApp();
           
-          // Remove loading indicator
+          // Remove loading indicator with fade
           if (loading) {
+            loading.style.transition = 'opacity 0.5s ease-out';
             loading.style.opacity = '0';
             setTimeout(() => loading.remove(), 500);
           }
         } catch (error) {
-          console.error('Flutter app initialization failed:', error);
-          loadingProgress.textContent = 'App initialization failed. Please check console and refresh.';
+          console.error('Failed to initialize engine:', error);
+          loadingProgress.textContent = 'Failed to initialize engine. Please refresh the page.';
           throw error;
         }
       }
     });
   } catch (error) {
-    console.error('Flutter engine loading failed:', error);
-    loadingProgress.textContent = 'Engine loading failed. Please check console and refresh.';
-    throw error;
-  }
-};
-
-// Main initialization
-window.addEventListener('load', async () => {
-  try {
-    await preloadAssets();
-    await initFlutterApp();
-  } catch (error) {
-    console.error('App initialization failed:', error);
-    // Show detailed error in UI
+    console.error('Failed to load Flutter engine:', error);
+    loadingProgress.textContent = 'Failed to load Flutter engine. Please refresh the page.';
     const errorDetails = document.createElement('pre');
     errorDetails.style.color = 'red';
     errorDetails.style.margin = '16px';
-    errorDetails.style.maxWidth = '800px';
-    errorDetails.style.whiteSpace = 'pre-wrap';
-    errorDetails.textContent = `Error: ${error.message}\n\nStack: ${error.stack}`;
+    errorDetails.textContent = error.toString();
     loading.appendChild(errorDetails);
   }
-});
+};
 
-// Service worker registration
+// Start initialization when the page is loaded
+window.addEventListener('load', initFlutterApp);
+
+// Register service worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('flutter_service_worker.js', {
       scope: './'
+    }).then(function(registration) {
+      console.log('Service Worker registered');
     }).catch(function(error) {
       console.error('Service Worker registration failed:', error);
     });

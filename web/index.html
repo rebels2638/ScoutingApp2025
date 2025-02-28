@@ -34,11 +34,12 @@
 
   <script>
     // The value below is injected by flutter build, do not touch.
-    const serviceWorkerVersion = null;
+    const serviceWorkerVersion = '{{flutter_service_worker_version}}';
   </script>
-  
-  <!-- This script adds the flutter initialization JS code -->
-  <script src="flutter.js" defer></script>
+
+  <!-- Preload Flutter and Material Icons -->
+  <link rel="preload" href="flutter.js" as="script">
+  <link rel="preload" href="fonts/MaterialIcons-Regular.otf" as="font" type="font/otf" crossorigin="anonymous">
 
   <style>
     .loading {
@@ -72,11 +73,7 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-  </style>
 
-  <!-- Add these lines before the closing </head> tag -->
-  <link rel="preload" href="fonts/MaterialIcons-Regular.otf" as="font" type="font/otf" crossorigin="anonymous">
-  <style>
     @font-face {
       font-family: 'MaterialIcons';
       src: url('fonts/MaterialIcons-Regular.otf') format('opentype');
@@ -84,27 +81,14 @@
       font-style: normal;
       font-display: block;
     }
-    
-    .material-icons {
-      font-family: 'MaterialIcons';
-      font-weight: normal;
-      font-style: normal;
-      font-size: 24px;
-      line-height: 1;
-      letter-spacing: normal;
-      text-transform: none;
-      display: inline-block;
-      white-space: nowrap;
-      word-wrap: normal;
-      direction: ltr;
-    }
   </style>
 </head>
 <body>
-  <div id="loading" class="loading">
+  <div id="loading">
     <div class="loader"></div>
   </div>
-  
+
+  <script src="flutter.js" defer></script>
   <script src="flutter_bootstrap.js" defer></script>
 </body>
 </html>

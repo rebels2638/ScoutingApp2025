@@ -104,11 +104,13 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-  assets:
-    - assets/appicon.png
-    - assets/field_image.png
-
   fonts:
     - family: MaterialIcons
       fonts:
         - asset: fonts/MaterialIcons-Regular.otf
+
+  assets:
+    - assets/appicon.png
+    - assets/field_image.png
+    - assets/
+    # Add any other specific assets you need
