@@ -26,3 +26,8 @@ jobs:
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./build/web
+    - run: flutter build web --release --no-tree-shake-icons
+    - name: Copy fonts to build
+      run: |
+        mkdir -p build/web/fonts
+        cp fonts/MaterialIcons-Regular.otf build/web/fonts/
