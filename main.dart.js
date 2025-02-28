@@ -31940,10 +31940,10 @@ this.b=b},
 aj9:function aj9(a){this.a=a},
 bjR(a){var s=A.bcM(self.window.localStorage)
 return new A.aN(s,new A.aQP(a),A.Y(s).h("aN<1>"))},
-bjo(a){var s=B.aI.fa(0,a)
-if(t.j.b(s))return J.hw(s,t.N)
-s.toString
-return s},
+bjo(a){var s,r=null
+try{r=B.aI.fa(0,a)}catch(s){if(t.bE.b(A.ab(s)))return null
+else throw s}if(t.j.b(r))return J.hw(r,t.N)
+return r},
 awq:function awq(){},
 awr:function awr(a){this.a=a},
 aQP:function aQP(a){this.a=a},
@@ -33057,7 +33057,7 @@ A.aQy.prototype={
 $1(a){var s=A.fF().b
 if(s==null)s=null
 else{s=s.canvasKitBaseUrl
-if(s==null)s=null}return(s==null?"https://www.gstatic.com/flutter-canvaskit/f73bfc4522dd0bc87bbcdb4bb3088082755c5e87/":s)+a},
+if(s==null)s=null}return(s==null?"canvaskit/":s)+a},
 $S:59}
 A.ac3.prototype={
 dm(a){B.c.ar(this.a.a.save())},
@@ -47950,7 +47950,7 @@ gu(a){return a.length}}
 A.YL.prototype={}
 A.BT.prototype={
 H(a){var s=this,r=null,q=A.V("Scouting App 2025",r,r,r,r,A.aR(r,r,B.w,r,r,r,r,r,r,r,r,24,r,r,B.N,r,r,!0,r,r,r,r,r,r,r,r),r,r),p=A.l(a).p1.Q,o=t.p,n=t.s
-return A.f_(A.aD(A.a([A.h4(new A.ay(B.am,A.aD(A.a([q,B.aS,A.V("Version 0.7.5-Stable",r,r,r,r,A.aR(r,r,p==null?r:p.b,r,r,r,r,r,r,r,r,r,r,r,r,r,r,!0,r,r,r,r,r,r,r,r),r,r)],o),B.G,B.k,B.l,B.p),r),r,r,r,r),A.bR(r,16,r),s.SR(a,A.aD(A.a([s.Iz("0.7.5-Stable",A.a(["Added Bluetooth connectivity support with device scanning and management.","Fixed iOS and Android Bluetooth permissions and functionality.","Fixed taking a path photo with the camera.","Improved API page with refreshing data and limits.","Enhanced dark mode/light mode handling.","Added QR code export without drawing.","Added Team Data Visualization.","Fixed various bugs and improved stability."],n)),B.ar,s.Iz("0.7.4-Beta",A.a(["Fixed major bugs and improved performance.","Enhanced record detail view.","Added new data team analysis features.","Added blue alliance API scraping.","Improved dark mode appearance."],n)),B.ar,s.Iz("0.7.3-Beta",A.a(["Made record detail view more user-friendly.","Added more settings and customization options.","Implemented comprehensive data analysis tools.","Enhanced UI consistency and visual appeal."],n))],o),B.G,B.k,B.l,B.p),B.N7,"Update Notes"),A.bR(r,16,r),s.SR(a,A.aD(A.a([A.V("Developers",r,r,r,r,A.aR(r,r,B.w,r,r,r,r,r,r,r,r,16,r,r,B.N,r,r,!0,r,r,r,r,r,r,r,r),r,r),B.aS,new A.ay(B.pD,A.aD(A.a([A.V("Ethan Kang - Developer",r,r,r,r,r,r,r),A.V("Chiming Wang - Developer",r,r,r,r,r,r,r),A.V("Richard Xu - Developer",r,r,r,r,r,r,r)],o),B.G,B.k,B.l,B.p),r),A.V("Special Thanks",r,r,r,r,A.aR(r,r,B.w,r,r,r,r,r,r,r,r,16,r,r,B.N,r,r,!0,r,r,r,r,r,r,r,r),r,r),B.aS,new A.ay(B.pD,A.V("Thank you to all our mentors for their continuous support and guidance through our robotics journey.",r,r,r,r,A.aR(r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,1.4,!0,r,r,r,r,r,r,r,r),r,r),r),A.V("Team Recognition",r,r,r,r,A.aR(r,r,B.w,r,r,r,r,r,r,r,r,16,r,r,B.N,r,r,!0,r,r,r,r,r,r,r,r),r,r),B.aS,new A.ay(B.ig,A.V("Thank you to all members of Team 2638 Rebel Robotics for their support, testing, and feedback throughout the development of this app.",r,r,r,r,A.aR(r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,1.4,!0,r,r,r,r,r,r,r,r),r,r),r)],o),B.G,B.k,B.l,B.p),B.MT,"Credits")],o),B.G,B.k,B.l,B.p),r,B.L,new A.a9(16,16,16,16),r,B.a2)},
+return A.f_(A.aD(A.a([A.h4(new A.ay(B.am,A.aD(A.a([q,B.aS,A.V("Version 0.7.5-Stable",r,r,r,r,A.aR(r,r,p==null?r:p.b,r,r,r,r,r,r,r,r,r,r,r,r,r,r,!0,r,r,r,r,r,r,r,r),r,r)],o),B.G,B.k,B.l,B.p),r),r,r,r,r),A.bR(r,16,r),s.SR(a,A.aD(A.a([s.Iz("0.7.5-Stable",A.a(["Added Bluetooth connectivity support with device scanning and management.","Fixed iOS and Android Bluetooth permissions and functionality.","Fixed taking a path photo with the camera.","Improved API page with refreshing data and limits.","Enhanced dark mode/light mode handling.","Added QR code export without drawing.","Added Team Data Visualization.","Fixed various bugs and improved stability."],n)),B.ar,s.Iz("0.7.4-Beta",A.a(["Fixed major bugs and improved performance.","Enhanced record detail view.","Added new data team analysis features.","Added blue alliance API scraping.","Improved dark mode appearance."],n)),B.ar,s.Iz("0.7.3-Beta",A.a(["Made record detail view more user-friendly.","Added more settings and customization options.","Implemented comprehensive data analysis tools.","Enhanced UI consistency and visual appeal."],n))],o),B.G,B.k,B.l,B.p),B.N7,"Update Notes"),A.bR(r,16,r),s.SR(a,A.aD(A.a([A.V("Developers",r,r,r,r,A.aR(r,r,B.w,r,r,r,r,r,r,r,r,16,r,r,B.N,r,r,!0,r,r,r,r,r,r,r,r),r,r),B.aS,new A.ay(B.pD,A.aD(A.a([A.V("Chiming Wang - Developer",r,r,r,r,r,r,r),A.V("Richard Xu - Developer",r,r,r,r,r,r,r),A.V("Ethan Kang - Developer",r,r,r,r,r,r,r)],o),B.G,B.k,B.l,B.p),r),A.V("Special Thanks",r,r,r,r,A.aR(r,r,B.w,r,r,r,r,r,r,r,r,16,r,r,B.N,r,r,!0,r,r,r,r,r,r,r,r),r,r),B.aS,new A.ay(B.pD,A.V("Thank you to all our mentors for their continuous support and guidance through our robotics journey.",r,r,r,r,A.aR(r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,1.4,!0,r,r,r,r,r,r,r,r),r,r),r),A.V("Team Recognition",r,r,r,r,A.aR(r,r,B.w,r,r,r,r,r,r,r,r,16,r,r,B.N,r,r,!0,r,r,r,r,r,r,r,r),r,r),B.aS,new A.ay(B.ig,A.V("Thank you to all members of Team 2638 Rebel Robotics for their support, testing, and feedback throughout the development of this app.",r,r,r,r,A.aR(r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,1.4,!0,r,r,r,r,r,r,r,r),r,r),r)],o),B.G,B.k,B.l,B.p),B.MT,"Credits")],o),B.G,B.k,B.l,B.p),r,B.L,new A.a9(16,16,16,16),r,B.a2)},
 SR(a,b,c,d){var s=null,r=t.p
 return A.h4(new A.ay(new A.a9(16,16,16,16),A.aD(A.a([A.bw(A.a([A.cK(c,B.w,s,s,s),A.bR(s,s,8),A.V(d,s,s,s,s,A.aR(s,s,s,s,s,s,s,s,s,s,s,20,s,s,B.N,s,s,!0,s,s,s,s,s,s,s,s),s,s)],r),B.q,B.k,B.l),A.bR(s,16,s),b],r),B.G,B.k,B.l,B.p),s),s,s,s,s)},
 Iz(a,b){var s=null,r=A.a([A.V("Version "+a,s,s,s,s,B.a4N,s,s),B.aS],t.p)
@@ -110468,14 +110468,15 @@ break
 case 1:return A.y(q,r)}})
 return A.z($async$py,r)},
 Hg(a){return this.a64(a)},
-a64(a){var s=0,r=A.A(t.nf),q,p=this,o,n,m,l,k,j
+a64(a){var s=0,r=A.A(t.nf),q,p=this,o,n,m,l,k,j,i
 var $async$Hg=A.u(function(b,c){if(b===1)return A.x(c,r)
-while(true)switch(s){case 0:k=a.a
-j=A.K(t.N,t.K)
-for(o=p.aj0(k.a,k.b),n=J.b_(o.a),o=new A.kd(n,o.b,o.$ti.h("kd<1>"));o.B();){m=n.gO(n)
+while(true)switch(s){case 0:j=a.a
+i=A.K(t.N,t.K)
+for(o=p.aj0(j.a,j.b),n=J.b_(o.a),o=new A.kd(n,o.b,o.$ti.h("kd<1>"));o.B();){m=n.gO(n)
 l=self.window.localStorage.getItem(m)
 l.toString
-j.n(0,m,A.bjo(l))}q=j
+k=A.bjo(l)
+if(k!=null)i.n(0,m,k)}q=i
 s=1
 break
 case 1:return A.y(q,r)}})
