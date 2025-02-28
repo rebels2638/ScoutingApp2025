@@ -51,7 +51,7 @@ const initFlutterApp = async () => {
         try {
           const appRunner = await engineInitializer.initializeEngine({
             useColorEmoji: true,
-            renderer: "canvaskit"
+            renderer: "html"
           });
 
           loadingProgress.textContent = 'Starting app...';
@@ -82,7 +82,7 @@ const initFlutterApp = async () => {
 };
 
 // Start initialization when the page is loaded
-window.addEventListener('load', initFlutterApp);
+window.addEventListener('DOMContentLoaded', initFlutterApp);
 
 // Register service worker
 if ('serviceWorker' in navigator) {
