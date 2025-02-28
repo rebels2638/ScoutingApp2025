@@ -14,13 +14,13 @@ jobs:
         channel: 'stable'
     - run: flutter config --enable-web
     - run: flutter pub get
-    # Build with different base-href depending on custom domain
+    - run: flutter clean
     - name: Build Flutter Web
       run: |
         if [ -f "CNAME" ]; then
-          flutter build web --base-href "/"
+          flutter build web --base-href "/" --verbose
         else
-          flutter build web --base-href "/ScoutingApp2025/"
+          flutter build web --base-href "/ScoutingApp2025/" --verbose
         fi
     - uses: peaceiris/actions-gh-pages@v3
       with:
