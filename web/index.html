@@ -35,6 +35,7 @@
     @font-face {
       font-family: 'MaterialIcons';
       src: url('fonts/MaterialIcons-Regular.otf') format('opentype');
+      font-display: swap;
     }
     
     .material-icons {
@@ -50,8 +51,53 @@
       direction: ltr;
     }
   </style>
+  <link rel="preload" href="fonts/MaterialIcons-Regular.otf" as="font" type="font/otf" crossorigin>
 </head>
 <body>
+  <!-- loading indicator -->
+  <div id="loading">
+    <style>
+      body {
+        inset: 0;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        position: fixed;
+      }
+      #loading {
+        align-items: center;
+        display: flex;
+        height: 100%;
+        justify-content: center;
+        width: 100%;
+      }
+      #loading img {
+        animation: 1s ease-in-out 0s infinite rotate;
+        opacity: 0.8;
+      }
+      @keyframes rotate {
+        from {
+          transform: rotate(0deg);
+        }
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+    <img src="favicon.png" alt="Loading indicator..." />
+  </div>
+
   <script src="flutter_bootstrap.js" async></script>
+  
+  <!-- service worker caching optimization for web -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('flutter_service_worker.js', {
+          scope: './'
+        });
+      });
+    }
+  </script>
 </body>
 </html>
