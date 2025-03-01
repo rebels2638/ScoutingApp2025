@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 
 class NavBar extends StatelessWidget {
   final int currentIndex;
@@ -16,8 +17,11 @@ class NavBar extends StatelessWidget {
   Widget build(BuildContext context) {
     // Create base items list
     final items = <BottomNavigationBarItem>[
-      const BottomNavigationBarItem(
-        icon: Icon(Icons.edit_note),
+      BottomNavigationBarItem(
+        icon: Icon(
+          // Use a different icon on iOS that's better supported
+          Platform.isIOS ? Icons.assignment : Icons.edit_note,
+        ),
         label: 'Scout',
       ),
       const BottomNavigationBarItem(
