@@ -1,7 +1,7 @@
 name: Flutter Web
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   build:
@@ -14,8 +14,27 @@ jobs:
         channel: 'stable'
     - run: flutter config --enable-web
     - run: flutter pub get
-    - run: flutter build web --base-href "/${{ github.event.repository.name }}/"
+    - run: flutter clean
+    - name: Build Flutter Web
+      run: |
+        if [ -f "CNAME" ]; then
+          flutter build web --base-href "/" --release \
+            --no-tree-shake-icons \
+            --dart-define=FLUTTER_WEB_CANVASKIT_URL=canvaskit/
+        else
+          flutter build web --base-href "/ScoutingApp2025/" --release \
+            --no-tree-shake-icons \
+            --dart-define=FLUTTER_WEB_CANVASKIT_URL=canvaskit/
+        fi
+    # Ensure fonts directory exists and copy fonts
+    - name: Setup Web Fonts
+      run: |
+        mkdir -p build/web/fonts
+        cp -r build/web/assets/fonts/* build/web/fonts/ || true
+    - name: Create CNAME file
+      run: echo "scoutingapp2025.wchiming.com" > build/web/CNAME
     - uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./build/web
+        cname: scoutingapp2025.wchiming.com

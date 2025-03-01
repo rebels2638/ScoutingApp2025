@@ -92,9 +92,9 @@ class AboutPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Ethan Kang - Developer'),
                       Text('Chiming Wang - Developer'),
                       Text('Richard Xu - Developer'),
+                      Text('Ethan Kang - Developer'),
                     ],
                   ),
                 ),
