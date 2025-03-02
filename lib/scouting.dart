@@ -32,7 +32,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
   int _currentIndex = 0; // for managing navbar
 
   // state variables for match info
-  int matchNumber = 0;
+  int matchNumber = 1;
   String matchType = 'Qualification';  // Default for new forms
   String currentTime = '';
 
@@ -1563,7 +1563,7 @@ class _DrawingButtonState extends State<DrawingButton> {
               }
             },
             icon: Icon(
-              hasPath ? Icons.edit : Icons.draw,
+              hasPath ? Icons.edit : Icons.brush,
               // Make icon white when path exists
               color: hasPath ? Colors.white : null,
             ),

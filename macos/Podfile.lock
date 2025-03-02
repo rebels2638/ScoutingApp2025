@@ -4,7 +4,7 @@ PODS:
   - file_selector_macos (0.0.1):
     - FlutterMacOS
   - FlutterMacOS (1.0.0)
-  - mobile_scanner (6.0.2):
+  - mobile_scanner (3.5.6):
     - FlutterMacOS
   - path_provider_foundation (0.0.1):
     - Flutter
@@ -64,7 +64,7 @@ SPEC CHECKSUMS:
   device_info_plus: b0fafc687fb901e2af612763340f1b0d4352f8e5
   file_selector_macos: 6280b52b459ae6c590af5d78fc35c7267a3c4b31
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
-  mobile_scanner: 0e365ed56cad24f28c0fd858ca04edefb40dfac3
+  mobile_scanner: 2f0c13d5ef778c4e5121348d775dce17f18e79d0
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   Protobuf: e2de96d939c642ce8da186343ff8929b35223212
   reactive_ble_mobile: ea97709e18fa6f0b0592909725d7ae7e1c595b64
