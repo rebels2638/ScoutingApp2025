@@ -1,0 +1,20 @@
+{
+  "buildFiles": [
+    "/Users/chiming/development/flutter/packages/flutter_tools/gradle/src/main/groovy/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/chiming/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/Users/chiming/Documents/Dev/ScoutingApp2025/android/app/.cxx/Debug/4m3g6t3m/x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/chiming/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/Users/chiming/Documents/Dev/ScoutingApp2025/android/app/.cxx/Debug/4m3g6t3m/x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {}
+}

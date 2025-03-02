@@ -1,0 +1,2 @@
+/Users/chiming/Documents/Dev/ScoutingApp2025/android/app/.cxx/Debug/4m3g6t3m/x86_64/CMakeFiles/edit_cache.dir
+/Users/chiming/Documents/Dev/ScoutingApp2025/android/app/.cxx/Debug/4m3g6t3m/x86_64/CMakeFiles/rebuild_cache.dir

@@ -20,7 +20,8 @@ class NavBar extends StatelessWidget {
       BottomNavigationBarItem(
         icon: Icon(
           // Use a different icon on iOS that's better supported
-          Platform.isIOS ? Icons.assignment : Icons.edit_note,
+          //Platform.isIOS ? Icons.assignment : Icons.edit_note,
+           Icons.assignment,  // Using a well-supported icon for scouting
         ),
         label: 'Scout',
       ),
