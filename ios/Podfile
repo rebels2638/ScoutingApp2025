@@ -34,7 +34,7 @@ target 'Runner' do
   use_frameworks!
   use_modular_headers!
   
-  # Update MLKitVision version
+  # Update MLKitVision version to match mobile_scanner requirements
   pod 'GoogleMLKit/BarcodeScanning', '~> 4.0.0'
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
