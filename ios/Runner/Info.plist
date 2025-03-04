@@ -40,16 +40,21 @@
 	<string>We need access to save exported data files</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!--
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>
 		<string>bluetooth-peripheral</string>
+		
 		<string>audio</string>
+		<string>remote-notification</string>
+		
 	</array>
+	-->
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
-	<string>I</string>
+	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<key>UISupportedInterfaceOrientations</key>
