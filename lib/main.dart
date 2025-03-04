@@ -118,161 +118,178 @@ class MyAppState extends State<MyApp> {
       child: Builder(
         builder: (context) {
           final isDarkMode = ThemeProvider.of(context).isDarkMode;
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            title: 'Scouting App 2025',
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-              brightness: Brightness.light,
-            ),
-            darkTheme: ThemeData(
-              brightness: Brightness.dark,
-              scaffoldBackgroundColor: Colors.black,
-              appBarTheme: const AppBarTheme(
-                backgroundColor: Colors.black,
-                elevation: 0,
-                titleTextStyle: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                ),
-                iconTheme: IconThemeData(color: Colors.white),
+          return GestureDetector(
+            onTap: () {
+              // Dismiss keyboard when tapping anywhere on the screen
+              FocusManager.instance.primaryFocus?.unfocus();
+            },
+            behavior: HitTestBehavior.translucent,
+            child: MaterialApp(
+              debugShowCheckedModeBanner: false,
+              title: 'Scouting App 2025',
+              theme: ThemeData(
+                primarySwatch: Colors.blue,
+                brightness: Brightness.light,
               ),
-              bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-                backgroundColor: Colors.black,
-                selectedItemColor: Colors.blue,
-                unselectedItemColor: Colors.grey,
-                elevation: 8,
-              ),
-              toggleButtonsTheme: ToggleButtonsThemeData(
-                fillColor: Colors.blue.withOpacity(0.3),
-                selectedColor: Colors.blue,
-                color: Colors.grey,
-                borderColor: Colors.grey.withOpacity(0.3),
-              ),
-              inputDecorationTheme: InputDecorationTheme(
-                border: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
-                ),
-                focusedBorder: const OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blue),
-                ),
-                fillColor: Colors.black,
-                filled: true,
-                hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6)),
-              ),
-              dividerColor: Colors.grey[850],
-              cardColor: Colors.black,
-              dialogBackgroundColor: Colors.black,
-              colorScheme: ColorScheme.dark(
-                background: Colors.black,
-                surface: Colors.black,
-                primary: Colors.blue,
-                secondary: Colors.blueAccent,
-                onBackground: Colors.white,
-                onSurface: Colors.white,
-                error: Colors.redAccent,
-                onError: Colors.white,
-                outline: Colors.grey.withOpacity(0.2),
-              ),
-              cardTheme: CardTheme(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.withOpacity(0.2)),
-                ),
-                color: Colors.black,
-                shadowColor: Colors.blue.withOpacity(0.2),
-              ),
-              dialogTheme: DialogTheme(
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.withOpacity(0.2)),
-                ),
-              ),
-              listTileTheme: ListTileThemeData(
-                selectedTileColor: Colors.blue.withOpacity(0.15),
-                selectedColor: Colors.white,
-                iconColor: Colors.white,
-                textColor: Colors.white,
-              ),
-              checkboxTheme: CheckboxThemeData(
-                fillColor: MaterialStateProperty.resolveWith((states) {
-                  if (states.contains(MaterialState.selected)) {
-                    return Colors.blue;
-                  }
-                  return Colors.grey.withOpacity(0.3);
-                }),
-                side: BorderSide(color: Colors.grey.withOpacity(0.5)),
-              ),
-              textSelectionTheme: const TextSelectionThemeData(
-                cursorColor: Colors.blue,
-                selectionColor: Colors.blue,
-                selectionHandleColor: Colors.blue,
-              ),
-              switchTheme: SwitchThemeData(
-                thumbColor: MaterialStateProperty.resolveWith((states) {
-                  if (states.contains(MaterialState.selected)) {
-                    return Colors.blue;
-                  }
-                  return Colors.grey[400];
-                }),
-                trackColor: MaterialStateProperty.resolveWith((states) {
-                  if (states.contains(MaterialState.selected)) {
-                    return Colors.blue.withOpacity(0.3);
-                  }
-                  return Colors.grey.withOpacity(0.2);
-                }),
-              ),
-              sliderTheme: SliderThemeData(
-                activeTrackColor: Colors.blue,
-                inactiveTrackColor: Colors.grey.withOpacity(0.3),
-                thumbColor: Colors.blue,
-                overlayColor: Colors.blue.withOpacity(0.2),
-              ),
-              popupMenuTheme: PopupMenuThemeData(
-                color: Colors.grey[900],
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey.withOpacity(0.2)),
-                ),
-              ),
-              textButtonTheme: TextButtonThemeData(
-                style: TextButton.styleFrom(
-                  foregroundColor: Colors.blue,
-                ),
-              ),
-              floatingActionButtonTheme: const FloatingActionButtonThemeData(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                elevation: 8,
-              ),
-            ),
-            themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
-            home: Stack(
-              children: [
-                _buildScoutingPage(),
-                if (telemetryVisible)
-                  SizedBox.expand(
-                    child: Stack(
-                      children: [
-                        TelemetryContainer(
-                          telemetryData: _telemetryData,
-                          onClose: () {
-                            setState(() {
-                              telemetryVisible = false;
-                            });
-                          },
-                        ),
-                      ],
-                    ),
+              darkTheme: ThemeData(
+                brightness: Brightness.dark,
+                scaffoldBackgroundColor: Colors.black,
+                appBarTheme: const AppBarTheme(
+                  backgroundColor: Colors.black,
+                  elevation: 0,
+                  titleTextStyle: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
                   ),
-              ],
+                  iconTheme: IconThemeData(color: Colors.white),
+                ),
+                bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+                  backgroundColor: Colors.black,
+                  selectedItemColor: Colors.blue,
+                  unselectedItemColor: Colors.grey,
+                  elevation: 8,
+                ),
+                toggleButtonsTheme: ToggleButtonsThemeData(
+                  fillColor: Colors.blue.withOpacity(0.3),
+                  selectedColor: Colors.blue,
+                  color: Colors.grey,
+                  borderColor: Colors.grey.withOpacity(0.3),
+                ),
+                inputDecorationTheme: InputDecorationTheme(
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                  ),
+                  focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.blue),
+                  ),
+                  fillColor: Colors.black,
+                  filled: true,
+                  hintStyle: TextStyle(color: Colors.grey.withOpacity(0.6)),
+                ),
+                dividerColor: Colors.grey[850],
+                cardColor: Colors.black,
+                dialogBackgroundColor: Colors.black,
+                colorScheme: ColorScheme.dark(
+                  background: Colors.black,
+                  surface: Colors.black,
+                  primary: Colors.blue,
+                  secondary: Colors.blueAccent,
+                  onBackground: Colors.white,
+                  onSurface: Colors.white,
+                  error: Colors.redAccent,
+                  onError: Colors.white,
+                  outline: Colors.grey.withOpacity(0.2),
+                ),
+                cardTheme: CardTheme(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                  ),
+                  color: Colors.black,
+                  shadowColor: Colors.blue.withOpacity(0.2),
+                ),
+                dialogTheme: DialogTheme(
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                  ),
+                ),
+                listTileTheme: ListTileThemeData(
+                  selectedTileColor: Colors.blue.withOpacity(0.15),
+                  selectedColor: Colors.white,
+                  iconColor: Colors.white,
+                  textColor: Colors.white,
+                ),
+                checkboxTheme: CheckboxThemeData(
+                  fillColor: MaterialStateProperty.resolveWith((states) {
+                    if (states.contains(MaterialState.selected)) {
+                      return Colors.blue;
+                    }
+                    return Colors.grey.withOpacity(0.3);
+                  }),
+                  side: BorderSide(color: Colors.grey.withOpacity(0.5)),
+                ),
+                textSelectionTheme: const TextSelectionThemeData(
+                  cursorColor: Colors.blue,
+                  selectionColor: Colors.blue,
+                  selectionHandleColor: Colors.blue,
+                ),
+                switchTheme: SwitchThemeData(
+                  thumbColor: MaterialStateProperty.resolveWith((states) {
+                    if (states.contains(MaterialState.selected)) {
+                      return Colors.blue;
+                    }
+                    return Colors.grey[400];
+                  }),
+                  trackColor: MaterialStateProperty.resolveWith((states) {
+                    if (states.contains(MaterialState.selected)) {
+                      return Colors.blue.withOpacity(0.3);
+                    }
+                    return Colors.grey.withOpacity(0.2);
+                  }),
+                ),
+                sliderTheme: SliderThemeData(
+                  activeTrackColor: Colors.blue,
+                  inactiveTrackColor: Colors.grey.withOpacity(0.3),
+                  thumbColor: Colors.blue,
+                  overlayColor: Colors.blue.withOpacity(0.2),
+                ),
+                popupMenuTheme: PopupMenuThemeData(
+                  color: Colors.grey[900],
+                  elevation: 8,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+                  ),
+                ),
+                textButtonTheme: TextButtonThemeData(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.blue,
+                  ),
+                ),
+                floatingActionButtonTheme: const FloatingActionButtonThemeData(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  elevation: 8,
+                ),
+              ),
+              themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
+              builder: (context, child) {
+                return GestureDetector(
+                  onTap: () {
+                    // Dismiss keyboard when tapping anywhere on the screen
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
+                  behavior: HitTestBehavior.translucent,
+                  child: child!,
+                );
+              },
+              home: Stack(
+                children: [
+                  _buildScoutingPage(),
+                  if (telemetryVisible)
+                    SizedBox.expand(
+                      child: Stack(
+                        children: [
+                          TelemetryContainer(
+                            telemetryData: _telemetryData,
+                            onClose: () {
+                              setState(() {
+                                telemetryVisible = false;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           );
         },

@@ -108,6 +108,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
   // Add this variable
   bool _bluetoothEnabled = false;
 
+  // Add a global focus node at the top of the class
+  final FocusNode _globalFocusNode = FocusNode();
+
   @override
   void initState() {
     super.initState();
@@ -140,6 +143,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
     _devModeSubscription?.cancel();
     _focusNode.dispose();
     _matchNumberFocusNode.dispose();
+    _globalFocusNode.dispose(); // Dispose the global focus node
     super.dispose();
   }
 
@@ -167,6 +171,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
   void _onItemTapped(int index) {
     TelemetryService().logAction('navigation_changed', 'to index $index');
+    
+    // Dismiss keyboard when switching tabs
+    FocusScope.of(context).unfocus();
     
     // Calculate the actual maximum index
     final maxIndex = _bluetoothEnabled ? 5 : 5;  // Max is always 5
@@ -227,18 +234,25 @@ class _ScoutingPageState extends State<ScoutingPage> {
   }
 
   Widget _buildScoutingPage() {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildMatchInfoSection(),
-            _buildAutoSection(),
-            _buildTeleopSection(),
-            _buildEndgameSection(),
-            _buildOtherSection(),
-          ],
+    return GestureDetector(
+      onTap: () {
+        // Dismiss keyboard when tapping anywhere on the screen
+        FocusScope.of(context).unfocus();
+      },
+      behavior: HitTestBehavior.translucent,
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildMatchInfoSection(),
+              _buildAutoSection(),
+              _buildTeleopSection(),
+              _buildEndgameSection(),
+              _buildOtherSection(),
+            ],
+          ),
         ),
       ),
     );
@@ -809,12 +823,25 @@ class _ScoutingPageState extends State<ScoutingPage> {
                     contentPadding: EdgeInsets.all(AppSpacing.sm),
                   ),
                   style: TextStyle(fontSize: 14),
+                  textInputAction: TextInputAction.done,
                   onChanged: (value) {
                     setState(() {
                       final oldValue = comments;
                       comments = value;
                       _logStateChange('comments', oldValue, 'new comment');
                     });
+                  },
+                  onEditingComplete: () {
+                    // Dismiss keyboard when done editing
+                    FocusScope.of(context).unfocus();
+                  },
+                  onTapOutside: (_) {
+                    // Dismiss keyboard when tapping outside
+                    FocusScope.of(context).unfocus();
+                  },
+                  onSubmitted: (_) {
+                    // Dismiss keyboard when submitting
+                    FocusScope.of(context).unfocus();
                   },
                 ),
               ],
@@ -1024,93 +1051,100 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_getPageTitle(_currentIndex)),
-        actions: _currentIndex == 0 ? [
-          // Only show these buttons on the scouting page
-          IconButton(
-            icon: const Icon(Icons.save),
-            tooltip: 'Save Record',
-            onPressed: _saveRecord,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Reset Form',
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Reset Form?'),
-                  content: const Text('This will clear all fields. Are you sure?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        setState(() {
-                          algaeRemoved = 0;
-                          algaeScoredInNet = 0;
-                          coralOnReefHeight1 = 0;
-                          coralOnReefHeight2 = 0;
-                          coralOnReefHeight3 = 0;
-                          coralOnReefHeight4 = 0;
-                          algaeProcessed = 0;
-                          processedAlgaeScored = 0;
-                          processorCycles = 0;
-                          coralPlaced = 'No';
-                          cageHang = 'None';
-                          comments = '';
-                          taxis = false;
-                          coralRankingPoint = false;
-                          coOpPoint = false;
-                          returnedToBarge = false;
-                          bargeRankingPoint = false;
-                          breakdown = false;
-                          autoAlgaeInNet = 0;
-                          autoAlgaeInProcessor = 0;
-                          canPickupCoral = false;
-                          coralPickupMethod = 'None';
-                          drawingData = null;
-                          if (_drawingButtonKey.currentState != null) {
-                            _drawingButtonKey.currentState!.resetPath();
-                          }
-                          updateTime();
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Form reset')),
-                        );
-                      },
-                      style: TextButton.styleFrom(foregroundColor: Colors.red),
-                      child: const Text('Reset'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-          // Only show telemetry button if dev mode is enabled
-          if (_isDevMode)
+    return GestureDetector(
+      onTap: () {
+        // Dismiss keyboard when tapping anywhere on the screen
+        FocusScope.of(context).unfocus();
+      },
+      behavior: HitTestBehavior.translucent,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(_getPageTitle(_currentIndex)),
+          actions: _currentIndex == 0 ? [
+            // Only show these buttons on the scouting page
             IconButton(
-              icon: const Icon(Icons.bug_report),
-              tooltip: 'Toggle Telemetry',
+              icon: const Icon(Icons.save),
+              tooltip: 'Save Record',
+              onPressed: _saveRecord,
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Reset Form',
               onPressed: () {
-                final myAppState = context.findAncestorStateOfType<MyAppState>();
-                if (myAppState != null) {
-                  myAppState.toggleTelemetry(!myAppState.telemetryVisible);
-                }
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Reset Form?'),
+                    content: const Text('This will clear all fields. Are you sure?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          setState(() {
+                            algaeRemoved = 0;
+                            algaeScoredInNet = 0;
+                            coralOnReefHeight1 = 0;
+                            coralOnReefHeight2 = 0;
+                            coralOnReefHeight3 = 0;
+                            coralOnReefHeight4 = 0;
+                            algaeProcessed = 0;
+                            processedAlgaeScored = 0;
+                            processorCycles = 0;
+                            coralPlaced = 'No';
+                            cageHang = 'None';
+                            comments = '';
+                            taxis = false;
+                            coralRankingPoint = false;
+                            coOpPoint = false;
+                            returnedToBarge = false;
+                            bargeRankingPoint = false;
+                            breakdown = false;
+                            autoAlgaeInNet = 0;
+                            autoAlgaeInProcessor = 0;
+                            canPickupCoral = false;
+                            coralPickupMethod = 'None';
+                            drawingData = null;
+                            if (_drawingButtonKey.currentState != null) {
+                              _drawingButtonKey.currentState!.resetPath();
+                            }
+                            updateTime();
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Form reset')),
+                          );
+                        },
+                        style: TextButton.styleFrom(foregroundColor: Colors.red),
+                        child: const Text('Reset'),
+                      ),
+                    ],
+                  ),
+                );
               },
             ),
-        ] : null,
-      ),
-      body: _getPage(_currentIndex),
-      bottomNavigationBar: NavBar(
-        currentIndex: _currentIndex,
-        onTap: _onItemTapped,
-        showBluetooth: _bluetoothEnabled,
+            // Only show telemetry button if dev mode is enabled
+            if (_isDevMode)
+              IconButton(
+                icon: const Icon(Icons.bug_report),
+                tooltip: 'Toggle Telemetry',
+                onPressed: () {
+                  final myAppState = context.findAncestorStateOfType<MyAppState>();
+                  if (myAppState != null) {
+                    myAppState.toggleTelemetry(!myAppState.telemetryVisible);
+                  }
+                },
+              ),
+          ] : null,
+        ),
+        body: _getPage(_currentIndex),
+        bottomNavigationBar: NavBar(
+          currentIndex: _currentIndex,
+          onTap: _onItemTapped,
+          showBluetooth: _bluetoothEnabled,
+        ),
       ),
     );
   }
@@ -1693,6 +1727,15 @@ class _NumberInputState extends State<NumberInput> {
   }
 
   @override
+  void didUpdateWidget(NumberInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update controller text if the value changes externally
+    if (widget.value.toString() != _controller.text) {
+      _controller.text = widget.value.toString();
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     if (widget.focusNode == null) {
@@ -1732,7 +1775,7 @@ class _NumberInputState extends State<NumberInput> {
             controller: _controller,
             focusNode: _focusNode,
             keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.next,
+            textInputAction: TextInputAction.done,
             autofocus: widget.autofocus,
             decoration: InputDecoration(
               isDense: true,
@@ -1760,6 +1803,14 @@ class _NumberInputState extends State<NumberInput> {
             },
             onEditingComplete: () {
               // Explicitly unfocus when editing is complete
+              FocusScope.of(context).unfocus();
+            },
+            onTapOutside: (_) {
+              // Dismiss keyboard when tapping outside the text field
+              FocusScope.of(context).unfocus();
+            },
+            onSubmitted: (_) {
+              // Dismiss keyboard when submitting
               FocusScope.of(context).unfocus();
             },
           ),
