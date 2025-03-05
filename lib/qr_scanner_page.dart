@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'data.dart';
 import 'package:csv/csv.dart';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class QrScannerPage extends StatefulWidget {
   @override
@@ -12,10 +13,32 @@ class QrScannerPage extends StatefulWidget {
 class _QrScannerPageState extends State<QrScannerPage> {
   MobileScannerController controller = MobileScannerController();
   bool _isProcessing = false;
+  DateTime? _lastScanTime;
+  int _qrRateLimit = 1500; // Default value in milliseconds
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRateLimit();
+  }
+
+  Future<void> _loadRateLimit() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _qrRateLimit = prefs.getInt('qr_rate_limit') ?? 1500;
+    });
+  }
+
+  bool _canScan() {
+    if (_lastScanTime == null) return true;
+    final timeSinceLastScan = DateTime.now().difference(_lastScanTime!).inMilliseconds;
+    return timeSinceLastScan >= _qrRateLimit;
+  }
 
   void _processScannedData(String? rawData) {
-    if (rawData == null || _isProcessing) return;
+    if (rawData == null || _isProcessing || !_canScan()) return;
     
+    _lastScanTime = DateTime.now();
     _isProcessing = true;
 
     try {
@@ -119,9 +142,6 @@ class _QrScannerPageState extends State<QrScannerPage> {
       );
       */
 
-        // resume scanning
-        controller.start();
-        // allow processing new QR codes
         _isProcessing = false;
       }).catchError((error) {
         ScaffoldMessenger.of(context).showSnackBar(
