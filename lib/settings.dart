@@ -21,6 +21,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _vibrateOnAction = true;
   bool _bluetoothEnabled = false;
   bool _scoutingLeaderEnabled = false;
+  TextEditingController _qrRateLimitController = TextEditingController();
   
   static const String _teamNumberKey = 'selected_team_number';
   static const String _autoIncrementKey = 'auto_increment_match';
@@ -28,11 +29,18 @@ class _SettingsPageState extends State<SettingsPage> {
   static const String _vibrateKey = 'vibrate_on_action';
   static const String _bluetoothEnabledKey = 'bluetooth_enabled';
   static const String _scoutingLeaderKey = 'scouting_leader_enabled';
+  static const String _qrRateLimitKey = 'qr_rate_limit';
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+  }
+
+  @override
+  void dispose() {
+    _qrRateLimitController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSettings() async {
@@ -47,6 +55,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _vibrateOnAction = prefs.getBool(_vibrateKey) ?? true;
       _bluetoothEnabled = prefs.getBool(_bluetoothEnabledKey) ?? false;
       _scoutingLeaderEnabled = prefs.getBool(_scoutingLeaderKey) ?? false;
+      _qrRateLimitController.text = (prefs.getInt(_qrRateLimitKey) ?? 1500).toString();
     });
   }
 
@@ -56,6 +65,14 @@ class _SettingsPageState extends State<SettingsPage> {
       await prefs.setBool(key, value);
     } else if (value is String) {
       await prefs.setString(key, value);
+    }
+  }
+
+  Future<void> _saveQrRateLimit(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    final intValue = int.tryParse(value);
+    if (intValue != null && intValue > 0) {
+      await prefs.setInt(_qrRateLimitKey, intValue);
     }
   }
 
@@ -128,6 +145,24 @@ class _SettingsPageState extends State<SettingsPage> {
                 await _saveSetting(_vibrateKey, value);
                 setState(() => _vibrateOnAction = value);
               },
+            ),
+            ListTile(
+              title: const Text('QR Scan Rate Limit (ms)'),
+              subtitle: const Text('Minimum time between scans. Default value is 1500ms.'),
+              trailing: SizedBox(
+                width: 100,
+                child: TextField(
+                  controller: _qrRateLimitController,
+                  keyboardType: TextInputType.number,
+                  textAlign: TextAlign.center,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    hintText: '1500',
+                  ),
+                  onChanged: _saveQrRateLimit,
+                ),
+              ),
             ),
           ],
         ),
