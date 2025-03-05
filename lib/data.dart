@@ -984,6 +984,13 @@ class DataPageState extends State<DataPage> {
             ),
           ),
         ),
+        SpeedDialChild(
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          child: const Icon(Icons.delete_forever),
+          label: 'Delete All Data',
+          onTap: () => _showDeleteAllConfirmation(context),
+        ),
       ],
     );
   }
@@ -1406,6 +1413,55 @@ class DataPageState extends State<DataPage> {
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAllConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete All Data?'),
+        content: const Text(
+          'This will permanently delete all scouting records. This action cannot be undone.\n\n'
+          'Make sure you have exported your data if you want to keep it.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            onPressed: () async {
+              try {
+                await DatabaseHelper.instance.deleteAllRecords();
+                if (mounted) {
+                  Navigator.pop(context);
+                  setState(() {
+                    _records.clear();
+                    selectedRecords.clear();
+                    _isSelectionMode = false;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('All data deleted successfully')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting data: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text(
+              'Delete All',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ],
       ),
