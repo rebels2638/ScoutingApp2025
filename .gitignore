@@ -157,6 +157,10 @@ coverage/
 **/android/app/debug
 **/android/app/profile
 **/android/app/release
+# Android NDK build related
+**/android/**/.cxx/
+**/android/**/configure_fingerprint.bin
+**/android/**/*.so
 
 # macOS related
 **/macos/Flutter/GeneratedPluginRegistrant.*
