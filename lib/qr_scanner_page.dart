@@ -196,6 +196,24 @@ class _QrScannerPageState extends State<QrScannerPage> {
 
   @override
   Widget build(BuildContext context) {
+    String statusText;
+    Color textColor;
+    
+    // determine status text and color based on border color
+    switch (_borderColor) {
+      case Colors.green:
+        statusText = "QR Code Scanned";
+        textColor = Colors.green;
+        break;
+      case Colors.red:
+        statusText = "Rate Limited";
+        textColor = Colors.red;
+        break;
+      default:
+        statusText = "Waiting for QR Code...";
+        textColor = Colors.yellow;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Scan QR Code'),
@@ -232,6 +250,32 @@ class _QrScannerPageState extends State<QrScannerPage> {
               border: Border.all(
                 color: _borderColor,
                 width: 4.0,
+              ),
+            ),
+          ),
+          // status text overlay
+          Positioned(
+            top: 16,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              color: Colors.black54,
+              child: Text(
+                statusText,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(0, 1),
+                      blurRadius: 3.0,
+                      color: Colors.black,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
