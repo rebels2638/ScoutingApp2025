@@ -11,9 +11,12 @@ class QrScannerPage extends StatefulWidget {
 
 class _QrScannerPageState extends State<QrScannerPage> {
   MobileScannerController controller = MobileScannerController();
+  bool _isProcessing = false;
 
   void _processScannedData(String? rawData) {
-    if (rawData == null) return;
+    if (rawData == null || _isProcessing) return;
+    
+    _isProcessing = true;
 
     try {
       // Parse the JSON array
@@ -56,8 +59,23 @@ class _QrScannerPageState extends State<QrScannerPage> {
         robotPath: null,
       );
 
-      
-
+      // OLD SCAN POPUP STUFF BELOW
+      /*  
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Match Info'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Team ${record.teamNumber}'),
+                Text('Match ${record.matchNumber}'),
+                Text('Type: ${record.matchType}'),
+                Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
+              ],
+      */
 
       // Save the record directly
       DataManager.saveRecord(record).then((_) {
@@ -75,20 +93,48 @@ class _QrScannerPageState extends State<QrScannerPage> {
           ),
         );
 
-        // Resume scanning
+        // OLD SCAN POPUP STUFF BELOW
+        /*
+        actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await DataManager.saveRecord(record);
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Record saved successfully')),
+                  );
+                },
+                child: Text('Save'),
+              ),
+            ],
+          );
+        },
+      );
+      */
+
+        // resume scanning
         controller.start();
+        // allow processing new QR codes
+        _isProcessing = false;
       }).catchError((error) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error saving record: $error')),
         );
-        controller.start();
+        _isProcessing = false;
       });
 
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: Invalid QR code format')),
       );
-      controller.start();
+      _isProcessing = false;
     }
   }
 
@@ -116,7 +162,6 @@ class _QrScannerPageState extends State<QrScannerPage> {
           final List<Barcode> barcodes = capture.barcodes;
           for (final barcode in barcodes) {
             if (barcode.rawValue != null) {
-              controller.stop();
               _processScannedData(barcode.rawValue);
               break;
             }

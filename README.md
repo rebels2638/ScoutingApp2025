@@ -74,25 +74,26 @@
 
 ---
 
+## Installation
+
+- iOS/iPadOS:
+  - You can download this app from the App Store here: [https://apps.apple.com/us/app/2638-scout/id1460336620](https://apps.apple.com/us/app/2638-scout/id1460336620).
+- Android:
+  - You can download the .apk from the [Releases page](https://github.com/rebels2638/ScoutingApp2025/releases).
+
+---
+
 ## 👥 Team
 
 ### 🔧 Developers
 <table>
   <tr>
     <td align="center">
-      <a href="https://github.com/cresqnt-sys">
-        <img src="https://github.com/cresqnt-sys.png" width="100px;" style="border-radius: 50%;" alt="Ethan Kang"/><br />
-        <sub><b>Ethan Kang</b></sub>
-      </a>
-      <br />
-      <sub></sub>
-    </td>
-    <td align="center">
       <a href="https://github.com/2bf">
         <img src="https://github.com/2bf.png" width="100px;" style="border-radius: 50%;" alt="Chiming Wang"/><br />
         <sub><b>Chiming Wang</b></sub>
       </a>
-      <br />
+      <br/>
       <sub></sub>
     </td>
     <td align="center">
@@ -100,7 +101,15 @@
         <img src="https://github.com/Richard28277.png" width="100px;" style="border-radius: 50%;" alt="Richard Xu"/><br />
         <sub><b>Richard Xu</b></sub>
       </a>
-      <br />
+      <br/>
+      <sub></sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/cresqnt-sys">
+        <img src="https://github.com/cresqnt-sys.png" width="100px;" style="border-radius: 50%;" alt="Ethan Kang"/><br />
+        <sub><b>Ethan Kang</b></sub>
+      </a>
+      <br/>
       <sub></sub>
     </td>
   </tr>
