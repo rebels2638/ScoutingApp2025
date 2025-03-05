@@ -4,6 +4,7 @@ import 'data.dart';
 import 'package:csv/csv.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
 
 class QrScannerPage extends StatefulWidget {
   @override
@@ -15,11 +16,32 @@ class _QrScannerPageState extends State<QrScannerPage> {
   bool _isProcessing = false;
   DateTime? _lastScanTime;
   int _qrRateLimit = 1500; // Default value in milliseconds
+  static const int qrSuccessIndicatorDuration = 200; // Duration to show green border in milliseconds
+  Color _borderColor = Colors.yellow;
+  Timer? _statusCheckTimer;
 
   @override
   void initState() {
     super.initState();
     _loadRateLimit();
+    
+    // Start periodic status check
+    _statusCheckTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (_lastScanTime != null) {
+        final timeSinceLastScan = DateTime.now().difference(_lastScanTime!).inMilliseconds;
+        if (timeSinceLastScan >= _qrRateLimit && mounted) {
+          setState(() {
+            _borderColor = Colors.yellow;
+          });
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusCheckTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadRateLimit() async {
@@ -40,6 +62,20 @@ class _QrScannerPageState extends State<QrScannerPage> {
     
     _lastScanTime = DateTime.now();
     _isProcessing = true;
+
+    // Show success indicator
+    setState(() {
+      _borderColor = Colors.green;
+    });
+
+    // Reset border color after success duration
+    Future.delayed(Duration(milliseconds: qrSuccessIndicatorDuration), () {
+      if (mounted) {
+        setState(() {
+          _borderColor = Colors.red; // Will be updated by _canScan() when ready
+        });
+      }
+    });
 
     try {
       // Parse the JSON array
@@ -176,17 +212,30 @@ class _QrScannerPageState extends State<QrScannerPage> {
           ),
         ],
       ),
-      body: MobileScanner(
-        controller: controller,
-        onDetect: (capture) {
-          final List<Barcode> barcodes = capture.barcodes;
-          for (final barcode in barcodes) {
-            if (barcode.rawValue != null) {
-              _processScannedData(barcode.rawValue);
-              break;
-            }
-          }
-        },
+      body: Stack(
+        children: [
+          MobileScanner(
+            controller: controller,
+            onDetect: (capture) {
+              final List<Barcode> barcodes = capture.barcodes;
+              for (final barcode in barcodes) {
+                if (barcode.rawValue != null) {
+                  _processScannedData(barcode.rawValue);
+                  break;
+                }
+              }
+            },
+          ),
+          // Animated border overlay
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: _borderColor,
+                width: 4.0,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
