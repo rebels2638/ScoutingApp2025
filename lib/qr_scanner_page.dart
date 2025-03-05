@@ -56,47 +56,39 @@ class _QrScannerPageState extends State<QrScannerPage> {
         robotPath: null,
       );
 
-      showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: Text('Match Info'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Team ${record.teamNumber}'),
-                Text('Match ${record.matchNumber}'),
-                Text('Type: ${record.matchType}'),
-                Text('Alliance: ${record.isRedAlliance ? "Red" : "Blue"}'),
-              ],
+      
+
+
+      // Save the record directly
+      DataManager.saveRecord(record).then((_) {
+        // Show a brief success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Team ${record.teamNumber} Match ${record.matchNumber} saved'),
+            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            margin: EdgeInsets.only(
+              bottom: MediaQuery.of(context).size.height - 100,
+              left: 16,
+              right: 16,
             ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () async {
-                  await DataManager.saveRecord(record);
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Record saved successfully')),
-                  );
-                },
-                child: Text('Save'),
-              ),
-            ],
-          );
-        },
-      );
+          ),
+        );
+
+        // Resume scanning
+        controller.start();
+      }).catchError((error) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving record: $error')),
+        );
+        controller.start();
+      });
+
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error: Invalid QR code format')),
       );
+      controller.start();
     }
   }
 
