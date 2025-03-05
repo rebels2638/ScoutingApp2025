@@ -1717,10 +1717,12 @@ class _NumberInputState extends State<NumberInput> {
     _controller = TextEditingController(text: widget.value.toString());
     _focusNode = widget.focusNode ?? FocusNode();
     
-    // Add listener to handle focus changes
+    // add listener to handle focus changes
     _focusNode.addListener(() {
       if (!_focusNode.hasFocus) {
-        // When focus is lost, ensure the keyboard stays dismissed
+        // when focus is lost, revert to the last valid number
+        _controller.text = widget.value.toString();
+        // ensure the keyboard stays dismissed
         FocusScope.of(context).unfocus();
       }
     });
@@ -1729,7 +1731,7 @@ class _NumberInputState extends State<NumberInput> {
   @override
   void didUpdateWidget(NumberInput oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Update controller text if the value changes externally
+    // update controller text if the value changes externally
     if (widget.value.toString() != _controller.text) {
       _controller.text = widget.value.toString();
     }
@@ -1748,74 +1750,81 @@ class _NumberInputState extends State<NumberInput> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? Colors.black : Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(
-          color: isDark
-              ? Colors.grey.withOpacity(0.3)
-              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.label,
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
-        boxShadow: isDark ? [] : AppShadows.small,
-      ),
-      padding: EdgeInsets.all(AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            widget.label,
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.primary,
+        const SizedBox(height: 4),
+        TextField(
+          controller: _controller,
+          focusNode: _focusNode,
+          keyboardType: TextInputType.number,
+          textInputAction: TextInputAction.done,
+          autofocus: widget.autofocus,
+          // add input formatter to only allow digits
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+          ],
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: AppSpacing.sm,
+              vertical: AppSpacing.xs,
             ),
-          ),
-          SizedBox(height: AppSpacing.xs),
-          TextField(
-            controller: _controller,
-            focusNode: _focusNode,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.done,
-            autofocus: widget.autofocus,
-            decoration: InputDecoration(
-              isDense: true,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.sm,
-                vertical: AppSpacing.xs,
+            border: OutlineInputBorder(
+              borderSide: BorderSide(
+                color: isDark
+                    ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                    : Theme.of(context).colorScheme.outline.withOpacity(0.2),
               ),
-              border: OutlineInputBorder(
-                borderSide: BorderSide(
-                  color: isDark
-                      ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
-                      : Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
-              ),
-              fillColor: isDark
-                  ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
-                  : Theme.of(context).colorScheme.surface,
-              filled: true,
             ),
-            onChanged: (text) {
-              final newValue = int.tryParse(text);
-              if (newValue != null) {
-                widget.onChanged(newValue);
-              }
-            },
-            onEditingComplete: () {
-              // Explicitly unfocus when editing is complete
-              FocusScope.of(context).unfocus();
-            },
-            onTapOutside: (_) {
-              // Dismiss keyboard when tapping outside the text field
-              FocusScope.of(context).unfocus();
-            },
-            onSubmitted: (_) {
-              // Dismiss keyboard when submitting
-              FocusScope.of(context).unfocus();
-            },
+            fillColor: isDark
+                ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
+                : Theme.of(context).colorScheme.surface,
+            filled: true,
           ),
-        ],
-      ),
+          onChanged: (text) {
+            if (text.isEmpty) {
+              // if field is empty, dont update the value
+              return;
+            }
+            final newValue = int.tryParse(text);
+            if (newValue != null) {
+              widget.onChanged(newValue);
+            }
+          },
+          onEditingComplete: () {
+            // revert to last valid number if current text is invalid
+            if (_controller.text.isEmpty || int.tryParse(_controller.text) == null) {
+              _controller.text = widget.value.toString();
+            }
+            // explicitly unfocus when editing is complete
+            FocusScope.of(context).unfocus();
+          },
+          onTapOutside: (_) {
+            // revert to last valid number if current text is invalid
+            if (_controller.text.isEmpty || int.tryParse(_controller.text) == null) {
+              _controller.text = widget.value.toString();
+            }
+            // dismiss keyboard when tapping outside the text field
+            FocusScope.of(context).unfocus();
+          },
+          onSubmitted: (_) {
+            // revert to last valid number if current text is invalid
+            if (_controller.text.isEmpty || int.tryParse(_controller.text) == null) {
+              _controller.text = widget.value.toString();
+            }
+            // dismiss keyboard when submitting
+            FocusScope.of(context).unfocus();
+          },
+        ),
+      ],
     );
   }
 }

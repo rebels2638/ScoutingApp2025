@@ -16,7 +16,7 @@ class AboutPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Scouting App 2025',
+                    'FRC 2638 - Scouting App 2025',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -52,6 +52,7 @@ class AboutPage extends StatelessWidget {
                   'Added Team Data Visualization.',
                   'Fixed various bugs and improved stability.',
                 ]),
+                /*
                 const SizedBox(height: AppSpacing.md),
                 _buildUpdateNote('0.7.4-Beta', [
                   'Fixed major bugs and improved performance.',
@@ -67,6 +68,7 @@ class AboutPage extends StatelessWidget {
                   'Implemented comprehensive data analysis tools.',
                   'Enhanced UI consistency and visual appeal.',
                 ]),
+                */
               ],
             ),
           ),
@@ -111,8 +113,7 @@ class AboutPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 16, bottom: 16),
                   child: Text(
-                    'Thank you to all our mentors for their continuous support '
-                    'and guidance through our robotics journey.',
+                    'Thank you to all our mentors for their continuous support and guidance through our robotics journey.',
                     style: TextStyle(height: 1.4),
                   ),
                 ),
@@ -129,9 +130,7 @@ class AboutPage extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 16),
                   child: Text(
-                    'Thank you to all members of Team 2638 Rebel Robotics '
-                    'for their support, testing, and feedback throughout '
-                    'the development of this app.',
+                    'Thank you to all members of FRC Team 2638, Rebel Robotics, for their support, testing, and feedback throughout the development of this app.',
                     style: TextStyle(height: 1.4),
                   ),
                 ),
