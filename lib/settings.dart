@@ -21,6 +21,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _vibrateOnAction = true;
   bool _bluetoothEnabled = false;
   bool _scoutingLeaderEnabled = false;
+  bool _refreshButtonEnabled = false;
   TextEditingController _qrRateLimitController = TextEditingController();
   
   static const String _teamNumberKey = 'selected_team_number';
@@ -30,6 +31,7 @@ class _SettingsPageState extends State<SettingsPage> {
   static const String _bluetoothEnabledKey = 'bluetooth_enabled';
   static const String _scoutingLeaderKey = 'scouting_leader_enabled';
   static const String _qrRateLimitKey = 'qr_rate_limit';
+  static const String _refreshButtonKey = 'refresh_button_enabled';
 
   @override
   void initState() {
@@ -55,6 +57,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _vibrateOnAction = prefs.getBool(_vibrateKey) ?? true;
       _bluetoothEnabled = prefs.getBool(_bluetoothEnabledKey) ?? false;
       _scoutingLeaderEnabled = prefs.getBool(_scoutingLeaderKey) ?? false;
+      _refreshButtonEnabled = prefs.getBool(_refreshButtonKey) ?? false;
       _qrRateLimitController.text = (prefs.getInt(_qrRateLimitKey) ?? 1500).toString();
     });
   }
@@ -144,6 +147,15 @@ class _SettingsPageState extends State<SettingsPage> {
               onChanged: (value) async {
                 await _saveSetting(_vibrateKey, value);
                 setState(() => _vibrateOnAction = value);
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Enable Refresh Button'),
+              subtitle: const Text('Show refresh button on data page'),
+              value: _refreshButtonEnabled,
+              onChanged: (value) async {
+                await _saveSetting(_refreshButtonKey, value);
+                setState(() => _refreshButtonEnabled = value);
               },
             ),
             ListTile(

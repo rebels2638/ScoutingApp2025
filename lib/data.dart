@@ -579,12 +579,21 @@ class DataPageState extends State<DataPage> {
   bool _isSelectionMode = false;
   bool _isLoading = false;
   bool _isScoutingLeader = false;
+  bool _refreshButtonEnabled = false;
 
   @override
   void initState() {
     super.initState();
     loadRecords();
     _loadScoutingLeaderStatus();
+    _loadRefreshButtonSetting();
+  }
+
+  Future<void> _loadRefreshButtonSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _refreshButtonEnabled = prefs.getBool('refresh_button_enabled') ?? false;
+    });
   }
 
   Future<void> loadRecords() async {
@@ -655,7 +664,6 @@ class DataPageState extends State<DataPage> {
         child: Row(
           children: [
             Expanded(
-              // ADDED THIS MATCH DATA REFRESH BUTTON!
               child: TextField(
                 decoration: InputDecoration(
                   hintText: 'Search by team number...',
@@ -667,14 +675,6 @@ class DataPageState extends State<DataPage> {
                     color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                   ),
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: isDark
-                          ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
-                          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                     borderSide: BorderSide(
                       color: isDark
@@ -695,20 +695,22 @@ class DataPageState extends State<DataPage> {
                 },
               ),
             ),
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh data',
-              onPressed: () {
-                loadRecords();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Records refreshed'),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
-            ),
+            if (_refreshButtonEnabled) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Refresh data',
+                onPressed: () {
+                  loadRecords();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Records refreshed'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),
