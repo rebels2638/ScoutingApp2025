@@ -777,11 +777,14 @@ class DataPageState extends State<DataPage> {
       return record.teamNumber.toString().contains(_searchQuery);
     }).toList();
 
+    // Reverse the list so newer entries appear at the top
+    final reversedRecords = filteredRecords.reversed.toList();
+
     return ListView.builder(
       padding: const EdgeInsets.all(8),
-      itemCount: filteredRecords.length,
+      itemCount: reversedRecords.length,
       itemBuilder: (context, index) {
-        final record = filteredRecords[index];
+        final record = reversedRecords[index];
         return _buildRecordCard(record, index);
       },
     );
