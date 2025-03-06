@@ -41,6 +41,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
   @override
   void dispose() {
     _statusCheckTimer?.cancel();
+    controller.dispose();
     super.dispose();
   }
 
