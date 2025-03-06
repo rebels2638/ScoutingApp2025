@@ -652,43 +652,64 @@ class DataPageState extends State<DataPage> {
       ),
       child: Padding(
         padding: const EdgeInsets.all(8),
-        child: TextField(
-          decoration: InputDecoration(
-            hintText: 'Search by team number...',
-            hintStyle: TextStyle(
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            ),
-            prefixIcon: Icon(
-              Icons.search,
-              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: isDark
-                    ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
-                    : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        child: Row(
+          children: [
+            Expanded(
+              // ADDED THIS MATCH DATA REFRESH BUTTON!
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Search by team number...',
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: isDark
+                          ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(
+                      color: isDark
+                          ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                    ),
+                  ),
+                  filled: true,
+                  fillColor: isDark
+                      ? Theme.of(context).colorScheme.surface
+                      : Theme.of(context).colorScheme.surface,
+                ),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+                onChanged: (value) {
+                  setState(() => _searchQuery = value);
+                },
               ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(
-                color: isDark
-                    ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
-                    : Theme.of(context).colorScheme.outline.withOpacity(0.2),
-              ),
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh data',
+              onPressed: () {
+                loadRecords();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Records refreshed'),
+                    duration: Duration(seconds: 1),
+                  ),
+                );
+              },
             ),
-            filled: true,
-            fillColor: isDark
-                ? Theme.of(context).colorScheme.surface
-                : Theme.of(context).colorScheme.surface,
-          ),
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurface,
-          ),
-          onChanged: (value) {
-            setState(() => _searchQuery = value);
-          },
+          ],
         ),
       ),
     );
