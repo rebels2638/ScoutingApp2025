@@ -976,11 +976,13 @@ class DataPageState extends State<DataPage> {
         SpeedDialChild(
           child: const Icon(Icons.qr_code_scanner),
           label: 'Scan QR Code',
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => QrScannerPage()),
             );
+            // refresh match data records when qr code scanner is closed
+            loadRecords();
           },
         ),
         SpeedDialChild(
