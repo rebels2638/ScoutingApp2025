@@ -45,7 +45,9 @@ class AboutPage extends StatelessWidget {
                 _buildUpdateNote('0.7.6-Stable', [
                   'Decreased friction and improved UX for QR code scanning.',
                   'Added features in data and settings pages.',
-                  'Fixed scouting page bug that allowed users to enter strings into an integer field.'
+                  'Fixed scouting page bug that allowed users to enter strings into an integer field.',
+                  'Changed order for match data records to show newest first.',
+                  'Added a refresh button to the match data page.',
                 ]),
                 const SizedBox(height: AppSpacing.md),
                 _buildUpdateNote('0.7.5-Stable', [
