@@ -25,7 +25,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Version 0.7.5-Stable',
+                    'Version 0.7.6-Stable',
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
@@ -42,6 +42,12 @@ class AboutPage extends StatelessWidget {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildUpdateNote('0.7.6-Stable', [
+                  'Decreased friction and improved UX for QR code scanning.',
+                  'Added features in data and settings pages.',
+                  'Fixed scouting page bug that allowed users to enter strings into an integer field.'
+                ]),
+                const SizedBox(height: AppSpacing.md),
                 _buildUpdateNote('0.7.5-Stable', [
                   'Added Bluetooth connectivity support with device scanning and management.',
                   'Fixed iOS and Android Bluetooth permissions and functionality.',
