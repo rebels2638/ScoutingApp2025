@@ -247,45 +247,80 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
       // Calculate averages for multiple matches
       var matches = entry.value;
       return ScoutingRecord(
-        teamNumber: entry.key,
+        timestamp: matches.first.timestamp,
         matchNumber: matches.first.matchNumber,
         matchType: '${matches.length} Matches (Avg)',
+        teamNumber: entry.key,
         isRedAlliance: matches.first.isRedAlliance,
-        timestamp: matches.first.timestamp,
-        // Required fields
-        cageType: matches.first.cageType,
+        
+        // Auto
+        autoTaxis: _mostCommon(matches.map((r) => r.autoTaxis)),
+        autoCoralPreloaded: _mostCommon(matches.map((r) => r.autoCoralPreloaded)),
+        autoAlgaeRemoved: _average(matches.map((r) => r.autoAlgaeRemoved)).round(),
+        autoCoralHeight4Success: _average(matches.map((r) => r.autoCoralHeight4Success)).round(),
+        autoCoralHeight4Failure: _average(matches.map((r) => r.autoCoralHeight4Failure)).round(),
+        autoCoralHeight3Success: _average(matches.map((r) => r.autoCoralHeight3Success)).round(),
+        autoCoralHeight3Failure: _average(matches.map((r) => r.autoCoralHeight3Failure)).round(),
+        autoCoralHeight2Success: _average(matches.map((r) => r.autoCoralHeight2Success)).round(),
+        autoCoralHeight2Failure: _average(matches.map((r) => r.autoCoralHeight2Failure)).round(),
+        autoCoralHeight1Success: _average(matches.map((r) => r.autoCoralHeight1Success)).round(),
+        autoCoralHeight1Failure: _average(matches.map((r) => r.autoCoralHeight1Failure)).round(),
+        autoAlgaeInNet: _average(matches.map((r) => r.autoAlgaeInNet)).round(),
+        autoAlgaeInProcessor: _average(matches.map((r) => r.autoAlgaeInProcessor)).round(),
+
+        // Teleop
+        teleopCoralHeight4Success: _average(matches.map((r) => r.teleopCoralHeight4Success)).round(),
+        teleopCoralHeight4Failure: _average(matches.map((r) => r.teleopCoralHeight4Failure)).round(),
+        teleopCoralHeight3Success: _average(matches.map((r) => r.teleopCoralHeight3Success)).round(),
+        teleopCoralHeight3Failure: _average(matches.map((r) => r.teleopCoralHeight3Failure)).round(),
+        teleopCoralHeight2Success: _average(matches.map((r) => r.teleopCoralHeight2Success)).round(),
+        teleopCoralHeight2Failure: _average(matches.map((r) => r.teleopCoralHeight2Failure)).round(),
+        teleopCoralHeight1Success: _average(matches.map((r) => r.teleopCoralHeight1Success)).round(),
+        teleopCoralHeight1Failure: _average(matches.map((r) => r.teleopCoralHeight1Failure)).round(),
+        teleopCoralRankingPoint: _mostCommon(matches.map((r) => r.teleopCoralRankingPoint)),
+        teleopAlgaeRemoved: _average(matches.map((r) => r.teleopAlgaeRemoved)).round(),
+        teleopAlgaeProcessorAttempts: _average(matches.map((r) => r.teleopAlgaeProcessorAttempts)).round(),
+        teleopAlgaeProcessed: _average(matches.map((r) => r.teleopAlgaeProcessed)).round(),
+        teleopAlgaeScoredInNet: _average(matches.map((r) => r.teleopAlgaeScoredInNet)).round(),
+        teleopCanPickupAlgae: _mostCommon(matches.map((r) => r.teleopCanPickupAlgae)),
+        teleopCoralPickupMethod: _mostCommonString(matches.map((r) => r.teleopCoralPickupMethod)),
+
+        // Endgame
+        endgameReturnedToBarge: _mostCommon(matches.map((r) => r.endgameReturnedToBarge)),
+        endgameCageHang: _mostCommonString(matches.map((r) => r.endgameCageHang)),
+        endgameBargeRankingPoint: _mostCommon(matches.map((r) => r.endgameBargeRankingPoint)),
+
+        // Other
+        otherCoOpPoint: _mostCommon(matches.map((r) => r.otherCoOpPoint)),
+        otherBreakdown: _mostCommon(matches.map((r) => r.otherBreakdown)),
+        otherComments: matches.map((r) => r.otherComments).where((c) => c.isNotEmpty).join('; '),
+
+        // Legacy fields
+        cageType: _mostCommonString(matches.map((r) => r.cageType)),
         coralPreloaded: _mostCommon(matches.map((r) => r.coralPreloaded)),
         taxis: _mostCommon(matches.map((r) => r.taxis)),
-        algaeRemoved: _average(matches.map((r) => r.algaeRemoved)),
+        algaeRemoved: _average(matches.map((r) => r.algaeRemoved)).round(),
         coralPlaced: _mostCommonString(matches.map((r) => r.coralPlaced)),
         rankingPoint: _mostCommon(matches.map((r) => r.rankingPoint)),
         canPickupCoral: _mostCommon(matches.map((r) => r.canPickupCoral)),
         canPickupAlgae: _mostCommon(matches.map((r) => r.canPickupAlgae)),
-        coralPickupMethod: _mostCommonString(matches.map((r) => r.coralPickupMethod)),
-        // Auto
-        autoAlgaeInNet: _average(matches.map((r) => r.autoAlgaeInNet)),
-        autoAlgaeInProcessor: _average(matches.map((r) => r.autoAlgaeInProcessor)),
-        // Teleop
-        algaeScoredInNet: _average(matches.map((r) => r.algaeScoredInNet)),
+        algaeScoredInNet: _average(matches.map((r) => r.algaeScoredInNet)).round(),
         coralRankingPoint: _mostCommon(matches.map((r) => r.coralRankingPoint)),
-        algaeProcessed: _average(matches.map((r) => r.algaeProcessed)),
-        processedAlgaeScored: _average(matches.map((r) => r.processedAlgaeScored)),
-        processorCycles: _average(matches.map((r) => r.processorCycles)),
+        algaeProcessed: _average(matches.map((r) => r.algaeProcessed)).round(),
+        processedAlgaeScored: _average(matches.map((r) => r.processedAlgaeScored)).round(),
+        processorCycles: _average(matches.map((r) => r.processorCycles)).round(),
         coOpPoint: _mostCommon(matches.map((r) => r.coOpPoint)),
-        // Endgame
         returnedToBarge: _mostCommon(matches.map((r) => r.returnedToBarge)),
         cageHang: _mostCommonString(matches.map((r) => r.cageHang)),
         bargeRankingPoint: _mostCommon(matches.map((r) => r.bargeRankingPoint)),
-        // Other
         breakdown: _mostCommon(matches.map((r) => r.breakdown)),
         comments: matches.map((r) => r.comments).where((c) => c.isNotEmpty).join('; '),
-        // Coral placement
-        coralOnReefHeight1: _average(matches.map((r) => r.coralOnReefHeight1)),
-        coralOnReefHeight2: _average(matches.map((r) => r.coralOnReefHeight2)),
-        coralOnReefHeight3: _average(matches.map((r) => r.coralOnReefHeight3)),
-        coralOnReefHeight4: _average(matches.map((r) => r.coralOnReefHeight4)),
-        // Additional fields
+        coralPickupMethod: _mostCommonString(matches.map((r) => r.coralPickupMethod)),
         feederStation: _mostCommonString(matches.map((r) => r.feederStation)),
+        coralOnReefHeight1: _average(matches.map((r) => r.coralOnReefHeight1)).round(),
+        coralOnReefHeight2: _average(matches.map((r) => r.coralOnReefHeight2)).round(),
+        coralOnReefHeight3: _average(matches.map((r) => r.coralOnReefHeight3)).round(),
+        coralOnReefHeight4: _average(matches.map((r) => r.coralOnReefHeight4)).round(),
         robotPath: matches.first.robotPath, // Take the first match's path
       );
     }).toList();

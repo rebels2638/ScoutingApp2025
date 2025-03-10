@@ -29,8 +29,50 @@ class ScoutingRecord {
   final String matchType;
   final int teamNumber;
   final bool isRedAlliance;
-  
-  // auto
+
+  // Auto
+  final bool autoTaxis;
+  final bool autoCoralPreloaded;
+  final int autoAlgaeRemoved;
+  final int autoCoralHeight4Success;
+  final int autoCoralHeight4Failure;
+  final int autoCoralHeight3Success;
+  final int autoCoralHeight3Failure;
+  final int autoCoralHeight2Success;
+  final int autoCoralHeight2Failure;
+  final int autoCoralHeight1Success;
+  final int autoCoralHeight1Failure;
+  final int autoAlgaeInNet;
+  final int autoAlgaeInProcessor;
+
+  // Teleop
+  final int teleopCoralHeight4Success;
+  final int teleopCoralHeight4Failure;
+  final int teleopCoralHeight3Success;
+  final int teleopCoralHeight3Failure;
+  final int teleopCoralHeight2Success;
+  final int teleopCoralHeight2Failure;
+  final int teleopCoralHeight1Success;
+  final int teleopCoralHeight1Failure;
+  final bool teleopCoralRankingPoint;
+  final int teleopAlgaeRemoved;
+  final int teleopAlgaeProcessorAttempts;
+  final int teleopAlgaeProcessed;
+  final int teleopAlgaeScoredInNet;
+  final bool teleopCanPickupAlgae;
+  final String teleopCoralPickupMethod;
+
+  // Endgame
+  final bool endgameReturnedToBarge;
+  final String endgameCageHang;
+  final bool endgameBargeRankingPoint;
+
+  // Other
+  final bool otherCoOpPoint;
+  final bool otherBreakdown;
+  final String otherComments;
+
+  // Legacy fields needed for compatibility
   final String cageType;
   final bool coralPreloaded;
   final bool taxis;
@@ -39,46 +81,75 @@ class ScoutingRecord {
   final bool rankingPoint;
   final bool canPickupCoral;
   final bool canPickupAlgae;
-  final String coralPickupMethod;
-  
-  // teleop
   final int algaeScoredInNet;
   final bool coralRankingPoint;
   final int algaeProcessed;
   final int processedAlgaeScored;
   final int processorCycles;
   final bool coOpPoint;
-  
-  // endgame
   final bool returnedToBarge;
   final String cageHang;
   final bool bargeRankingPoint;
-  
-  // other
   final bool breakdown;
   final String comments;
-
-  final int autoAlgaeInNet;
-  final int autoAlgaeInProcessor;
-  
-  final List<Map<String, dynamic>>? robotPath;
-  
-  String? telemetry;
-  
+  final String coralPickupMethod;
   final String feederStation;
-  
-  // Add coral height fields
   final int coralOnReefHeight1;
   final int coralOnReefHeight2;
   final int coralOnReefHeight3;
   final int coralOnReefHeight4;
-  
-  ScoutingRecord({
+  final List<Map<String, dynamic>>? robotPath;
+
+  const ScoutingRecord({
     required this.timestamp,
     required this.matchNumber,
     required this.matchType,
     required this.teamNumber,
     required this.isRedAlliance,
+    
+    // Auto
+    required this.autoTaxis,
+    required this.autoCoralPreloaded,
+    required this.autoAlgaeRemoved,
+    required this.autoCoralHeight4Success,
+    required this.autoCoralHeight4Failure,
+    required this.autoCoralHeight3Success,
+    required this.autoCoralHeight3Failure,
+    required this.autoCoralHeight2Success,
+    required this.autoCoralHeight2Failure,
+    required this.autoCoralHeight1Success,
+    required this.autoCoralHeight1Failure,
+    required this.autoAlgaeInNet,
+    required this.autoAlgaeInProcessor,
+
+    // Teleop
+    required this.teleopCoralHeight4Success,
+    required this.teleopCoralHeight4Failure,
+    required this.teleopCoralHeight3Success,
+    required this.teleopCoralHeight3Failure,
+    required this.teleopCoralHeight2Success,
+    required this.teleopCoralHeight2Failure,
+    required this.teleopCoralHeight1Success,
+    required this.teleopCoralHeight1Failure,
+    required this.teleopCoralRankingPoint,
+    required this.teleopAlgaeRemoved,
+    required this.teleopAlgaeProcessorAttempts,
+    required this.teleopAlgaeProcessed,
+    required this.teleopAlgaeScoredInNet,
+    required this.teleopCanPickupAlgae,
+    required this.teleopCoralPickupMethod,
+
+    // Endgame
+    required this.endgameReturnedToBarge,
+    required this.endgameCageHang,
+    required this.endgameBargeRankingPoint,
+
+    // Other
+    required this.otherCoOpPoint,
+    required this.otherBreakdown,
+    required this.otherComments,
+
+    // Legacy fields
     required this.cageType,
     required this.coralPreloaded,
     required this.taxis,
@@ -98,34 +169,67 @@ class ScoutingRecord {
     required this.bargeRankingPoint,
     required this.breakdown,
     required this.comments,
-    required this.autoAlgaeInNet,
-    required this.autoAlgaeInProcessor,
     required this.coralPickupMethod,
+    required this.feederStation,
     required this.coralOnReefHeight1,
     required this.coralOnReefHeight2,
     required this.coralOnReefHeight3,
     required this.coralOnReefHeight4,
     this.robotPath,
-    this.telemetry,
-    required this.feederStation,
-  }) : assert(coralPreloaded != null),
-       assert(taxis != null),
-       assert(rankingPoint != null),
-       assert(canPickupCoral != null),
-       assert(canPickupAlgae != null),
-       assert(coralRankingPoint != null),
-       assert(coOpPoint != null),
-       assert(returnedToBarge != null),
-       assert(bargeRankingPoint != null),
-       assert(breakdown != null);
+  });
 
   Map<String, dynamic> toJson() {
     return {
-      'teamNumber': teamNumber,
-      'matchNumber': matchNumber,
+      // Match info
       'timestamp': timestamp,
+      'matchNumber': matchNumber,
       'matchType': matchType,
+      'teamNumber': teamNumber,
       'isRedAlliance': isRedAlliance,
+      
+      // Auto
+      'autoTaxis': autoTaxis,
+      'autoCoralPreloaded': autoCoralPreloaded,
+      'autoAlgaeRemoved': autoAlgaeRemoved,
+      'autoCoralHeight4Success': autoCoralHeight4Success,
+      'autoCoralHeight4Failure': autoCoralHeight4Failure,
+      'autoCoralHeight3Success': autoCoralHeight3Success,
+      'autoCoralHeight3Failure': autoCoralHeight3Failure,
+      'autoCoralHeight2Success': autoCoralHeight2Success,
+      'autoCoralHeight2Failure': autoCoralHeight2Failure,
+      'autoCoralHeight1Success': autoCoralHeight1Success,
+      'autoCoralHeight1Failure': autoCoralHeight1Failure,
+      'autoAlgaeInNet': autoAlgaeInNet,
+      'autoAlgaeInProcessor': autoAlgaeInProcessor,
+
+      // Teleop
+      'teleopCoralHeight4Success': teleopCoralHeight4Success,
+      'teleopCoralHeight4Failure': teleopCoralHeight4Failure,
+      'teleopCoralHeight3Success': teleopCoralHeight3Success,
+      'teleopCoralHeight3Failure': teleopCoralHeight3Failure,
+      'teleopCoralHeight2Success': teleopCoralHeight2Success,
+      'teleopCoralHeight2Failure': teleopCoralHeight2Failure,
+      'teleopCoralHeight1Success': teleopCoralHeight1Success,
+      'teleopCoralHeight1Failure': teleopCoralHeight1Failure,
+      'teleopCoralRankingPoint': teleopCoralRankingPoint,
+      'teleopAlgaeRemoved': teleopAlgaeRemoved,
+      'teleopAlgaeProcessorAttempts': teleopAlgaeProcessorAttempts,
+      'teleopAlgaeProcessed': teleopAlgaeProcessed,
+      'teleopAlgaeScoredInNet': teleopAlgaeScoredInNet,
+      'teleopCanPickupAlgae': teleopCanPickupAlgae,
+      'teleopCoralPickupMethod': teleopCoralPickupMethod,
+
+      // Endgame
+      'endgameReturnedToBarge': endgameReturnedToBarge,
+      'endgameCageHang': endgameCageHang,
+      'endgameBargeRankingPoint': endgameBargeRankingPoint,
+
+      // Other
+      'otherCoOpPoint': otherCoOpPoint,
+      'otherBreakdown': otherBreakdown,
+      'otherComments': otherComments,
+
+      // Legacy fields
       'cageType': cageType,
       'coralPreloaded': coralPreloaded,
       'taxis': taxis,
@@ -145,163 +249,254 @@ class ScoutingRecord {
       'bargeRankingPoint': bargeRankingPoint,
       'breakdown': breakdown,
       'comments': comments,
-      'autoAlgaeInNet': autoAlgaeInNet,
-      'autoAlgaeInProcessor': autoAlgaeInProcessor,
       'coralPickupMethod': coralPickupMethod,
+      'feederStation': feederStation,
+      'coralOnReefHeight1': coralOnReefHeight1,
+      'coralOnReefHeight2': coralOnReefHeight2,
+      'coralOnReefHeight3': coralOnReefHeight3,
+      'coralOnReefHeight4': coralOnReefHeight4,
+      'robotPath': robotPath,
     };
   }
 
   factory ScoutingRecord.fromJson(Map<String, dynamic> json) {
     return ScoutingRecord(
-      teamNumber: json['teamNumber'],
-      matchNumber: json['matchNumber'],
-      timestamp: json['timestamp'] ?? '',
-      matchType: json['matchType'] ?? 'Unset',
-      isRedAlliance: json['isRedAlliance'] ?? false,
-      cageType: json['cageType'] ?? 'Shallow',
-      coralPreloaded: json['coralPreloaded'] ?? false,
-      taxis: json['taxis'] ?? false,
-      algaeRemoved: json['algaeRemoved'] ?? 0,
-      coralPlaced: json['coralPlaced'] ?? 'No',
-      rankingPoint: json['rankingPoint'] ?? false,
-      canPickupCoral: json['canPickupCoral'] ?? false,
-      canPickupAlgae: json['canPickupAlgae'] ?? false,
-      algaeScoredInNet: json['algaeScoredInNet'] ?? 0,
-      coralRankingPoint: json['coralRankingPoint'] ?? false,
-      algaeProcessed: json['algaeProcessed'] ?? 0,
-      processedAlgaeScored: json['processedAlgaeScored'] ?? 0,
-      processorCycles: json['processorCycles'] ?? 0,
-      coOpPoint: json['coOpPoint'] ?? false,
-      returnedToBarge: json['returnedToBarge'] ?? false,
-      cageHang: json['cageHang'] ?? 'None',
-      bargeRankingPoint: json['bargeRankingPoint'] ?? false,
-      breakdown: json['breakdown'] ?? false,
-      comments: json['comments'] ?? '',
-      autoAlgaeInNet: json['autoAlgaeInNet'] ?? 0,
-      autoAlgaeInProcessor: json['autoAlgaeInProcessor'] ?? 0,
-      coralPickupMethod: json['coralPickupMethod'] ?? 'None',
-      coralOnReefHeight1: json['coralOnReefHeight1'] ?? 0,
-      coralOnReefHeight2: json['coralOnReefHeight2'] ?? 0,
-      coralOnReefHeight3: json['coralOnReefHeight3'] ?? 0,
-      coralOnReefHeight4: json['coralOnReefHeight4'] ?? 0,
+      timestamp: json['timestamp'] as String? ?? '',
+      matchNumber: json['matchNumber'] as int? ?? 0,
+      matchType: json['matchType'] as String? ?? 'Qualification',
+      teamNumber: json['teamNumber'] as int? ?? 0,
+      isRedAlliance: json['isRedAlliance'] as bool? ?? false,
+      
+      // Auto
+      autoTaxis: json['autoTaxis'] as bool? ?? false,
+      autoCoralPreloaded: json['autoCoralPreloaded'] as bool? ?? false,
+      autoAlgaeRemoved: json['autoAlgaeRemoved'] as int? ?? 0,
+      autoCoralHeight4Success: json['autoCoralHeight4Success'] as int? ?? 0,
+      autoCoralHeight4Failure: json['autoCoralHeight4Failure'] as int? ?? 0,
+      autoCoralHeight3Success: json['autoCoralHeight3Success'] as int? ?? 0,
+      autoCoralHeight3Failure: json['autoCoralHeight3Failure'] as int? ?? 0,
+      autoCoralHeight2Success: json['autoCoralHeight2Success'] as int? ?? 0,
+      autoCoralHeight2Failure: json['autoCoralHeight2Failure'] as int? ?? 0,
+      autoCoralHeight1Success: json['autoCoralHeight1Success'] as int? ?? 0,
+      autoCoralHeight1Failure: json['autoCoralHeight1Failure'] as int? ?? 0,
+      autoAlgaeInNet: json['autoAlgaeInNet'] as int? ?? 0,
+      autoAlgaeInProcessor: json['autoAlgaeInProcessor'] as int? ?? 0,
+
+      // Teleop
+      teleopCoralHeight4Success: json['teleopCoralHeight4Success'] as int? ?? 0,
+      teleopCoralHeight4Failure: json['teleopCoralHeight4Failure'] as int? ?? 0,
+      teleopCoralHeight3Success: json['teleopCoralHeight3Success'] as int? ?? 0,
+      teleopCoralHeight3Failure: json['teleopCoralHeight3Failure'] as int? ?? 0,
+      teleopCoralHeight2Success: json['teleopCoralHeight2Success'] as int? ?? 0,
+      teleopCoralHeight2Failure: json['teleopCoralHeight2Failure'] as int? ?? 0,
+      teleopCoralHeight1Success: json['teleopCoralHeight1Success'] as int? ?? 0,
+      teleopCoralHeight1Failure: json['teleopCoralHeight1Failure'] as int? ?? 0,
+      teleopCoralRankingPoint: json['teleopCoralRankingPoint'] as bool? ?? false,
+      teleopAlgaeRemoved: json['teleopAlgaeRemoved'] as int? ?? 0,
+      teleopAlgaeProcessorAttempts: json['teleopAlgaeProcessorAttempts'] as int? ?? 0,
+      teleopAlgaeProcessed: json['teleopAlgaeProcessed'] as int? ?? 0,
+      teleopAlgaeScoredInNet: json['teleopAlgaeScoredInNet'] as int? ?? 0,
+      teleopCanPickupAlgae: json['teleopCanPickupAlgae'] as bool? ?? false,
+      teleopCoralPickupMethod: json['teleopCoralPickupMethod'] as String? ?? 'None',
+
+      // Endgame
+      endgameReturnedToBarge: json['endgameReturnedToBarge'] as bool? ?? false,
+      endgameCageHang: json['endgameCageHang'] as String? ?? 'None',
+      endgameBargeRankingPoint: json['endgameBargeRankingPoint'] as bool? ?? false,
+
+      // Other
+      otherCoOpPoint: json['otherCoOpPoint'] as bool? ?? false,
+      otherBreakdown: json['otherBreakdown'] as bool? ?? false,
+      otherComments: json['otherComments'] as String? ?? '',
+
+      // Legacy fields
+      cageType: json['cageType'] as String? ?? 'Shallow',
+      coralPreloaded: json['coralPreloaded'] as bool? ?? false,
+      taxis: json['taxis'] as bool? ?? false,
+      algaeRemoved: json['algaeRemoved'] as int? ?? 0,
+      coralPlaced: json['coralPlaced'] as String? ?? 'No',
+      rankingPoint: json['rankingPoint'] as bool? ?? false,
+      canPickupCoral: json['canPickupCoral'] as bool? ?? false,
+      canPickupAlgae: json['canPickupAlgae'] as bool? ?? false,
+      algaeScoredInNet: json['algaeScoredInNet'] as int? ?? 0,
+      coralRankingPoint: json['coralRankingPoint'] as bool? ?? false,
+      algaeProcessed: json['algaeProcessed'] as int? ?? 0,
+      processedAlgaeScored: json['processedAlgaeScored'] as int? ?? 0,
+      processorCycles: json['processorCycles'] as int? ?? 0,
+      coOpPoint: json['coOpPoint'] as bool? ?? false,
+      returnedToBarge: json['returnedToBarge'] as bool? ?? false,
+      cageHang: json['cageHang'] as String? ?? 'None',
+      bargeRankingPoint: json['bargeRankingPoint'] as bool? ?? false,
+      breakdown: json['breakdown'] as bool? ?? false,
+      comments: json['comments'] as String? ?? '',
+      coralPickupMethod: json['coralPickupMethod'] as String? ?? 'None',
+      feederStation: json['feederStation'] as String? ?? 'None',
+      coralOnReefHeight1: json['coralOnReefHeight1'] as int? ?? 0,
+      coralOnReefHeight2: json['coralOnReefHeight2'] as int? ?? 0,
+      coralOnReefHeight3: json['coralOnReefHeight3'] as int? ?? 0,
+      coralOnReefHeight4: json['coralOnReefHeight4'] as int? ?? 0,
       robotPath: json['robotPath'] != null
-          ? (json['robotPath'] as List).map((line) {
-              final Map<String, dynamic> lineMap = Map<String, dynamic>.from(line);
-              return {
-                'points': lineMap['points'],
-                'color': lineMap['color'],
-                'strokeWidth': lineMap['strokeWidth'],
-                'imagePath': lineMap['imagePath'],
-              };
-            }).toList()
+          ? (json['robotPath'] as List<dynamic>)
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList()
           : null,
-      telemetry: json['telemetry'] as String?,
-      feederStation: json['feederStation'] ?? 'None',
     );
   }
 
   Map<String, dynamic> toCompressedJson() {
     return {
-      // Match info
-      'm': matchNumber,
-      'mt': matchType,
       'ts': timestamp,
-      't': teamNumber,
+      'mn': matchNumber,
+      'mt': matchType,
+      'tn': teamNumber,
       'ra': isRedAlliance ? 1 : 0,
       
       // Auto
-      'ct': cageType,
-      'cp': coralPreloaded ? 1 : 0,
-      'tx': taxis ? 1 : 0,
-      'ar': algaeRemoved,
-      'cpl': coralPlaced,
-      'rp': rankingPoint ? 1 : 0,
-      'cpc': canPickupCoral ? 1 : 0,
-      'cpa': canPickupAlgae ? 1 : 0,
+      'tx': autoTaxis ? 1 : 0,
+      'cp': autoCoralPreloaded ? 1 : 0,
+      'ar': autoAlgaeRemoved,
+      'ch4s': autoCoralHeight4Success,
+      'ch4f': autoCoralHeight4Failure,
+      'ch3s': autoCoralHeight3Success,
+      'ch3f': autoCoralHeight3Failure,
+      'ch2s': autoCoralHeight2Success,
+      'ch2f': autoCoralHeight2Failure,
+      'ch1s': autoCoralHeight1Success,
+      'ch1f': autoCoralHeight1Failure,
       'aan': autoAlgaeInNet,
       'aap': autoAlgaeInProcessor,
-      'cpm': coralPickupMethod,
-      
-      // Teleop
-      'ch1': coralOnReefHeight1,
-      'ch2': coralOnReefHeight2,
-      'ch3': coralOnReefHeight3,
-      'ch4': coralOnReefHeight4,
-      'fs': feederStation,
-      'asn': algaeScoredInNet,
-      'crp': coralRankingPoint ? 1 : 0,
-      'ap': algaeProcessed,
-      'pas': processedAlgaeScored,
-      'pc': processorCycles,
-      'cop': coOpPoint ? 1 : 0,
-      
-      // Endgame
-      'rtb': returnedToBarge ? 1 : 0,
-      'ch': cageHang,
-      'brp': bargeRankingPoint ? 1 : 0,
-      
-      // Other
-      'bd': breakdown ? 1 : 0,
-      'cm': comments,
-      'rp': robotPath,
-      'tel': telemetry,
-    };
-  }
 
-  static ScoutingRecord fromCompressedJson(Map<String, dynamic> json) {
-    return ScoutingRecord(
-      teamNumber: json['t'] as int,
-      matchNumber: json['m'] as int,
-      timestamp: json['ts'] as String,
-      matchType: json['mt'] as String,
-      isRedAlliance: json['ra'] == 1,
-      cageType: json['ct'] as String,
-      coralPreloaded: json['cp'] == 1,
-      taxis: json['tx'] == 1,
-      algaeRemoved: json['ar'] as int,
-      coralPlaced: json['cpl'] as String,
-      rankingPoint: json['rp'] == 1,
-      canPickupCoral: json['cpc'] == 1,
-      canPickupAlgae: json['cpa'] == 1,
-      algaeScoredInNet: json['asn'] as int,
-      coralRankingPoint: json['crp'] == 1,
-      algaeProcessed: json['ap'] as int,
-      processedAlgaeScored: json['pas'] as int,
-      processorCycles: json['pc'] as int,
-      coOpPoint: json['cop'] == 1,
-      returnedToBarge: json['rtb'] == 1,
-      cageHang: json['ch'] as String,
-      bargeRankingPoint: json['brp'] == 1,
-      breakdown: json['bd'] == 1,
-      comments: json['cm'] as String,
-      autoAlgaeInNet: json['aan'] as int,
-      autoAlgaeInProcessor: json['aap'] as int,
-      coralPickupMethod: json['cpm'] as String,
-      coralOnReefHeight1: json['ch1'] as int,
-      coralOnReefHeight2: json['ch2'] as int,
-      coralOnReefHeight3: json['ch3'] as int,
-      coralOnReefHeight4: json['ch4'] as int,
-      robotPath: json['rp'] != null ? (json['rp'] as List).map((line) {
+      // Teleop
+      'tch4s': teleopCoralHeight4Success,
+      'tch4f': teleopCoralHeight4Failure,
+      'tch3s': teleopCoralHeight3Success,
+      'tch3f': teleopCoralHeight3Failure,
+      'tch2s': teleopCoralHeight2Success,
+      'tch2f': teleopCoralHeight2Failure,
+      'tch1s': teleopCoralHeight1Success,
+      'tch1f': teleopCoralHeight1Failure,
+      'crp': teleopCoralRankingPoint ? 1 : 0,
+      'tar': teleopAlgaeRemoved,
+      'tap': teleopAlgaeProcessorAttempts,
+      'tapr': teleopAlgaeProcessed,
+      'tasn': teleopAlgaeScoredInNet,
+      'tcpa': teleopCanPickupAlgae ? 1 : 0,
+      'tcpm': teleopCoralPickupMethod,
+
+      // Endgame
+      'rtb': endgameReturnedToBarge ? 1 : 0,
+      'ch': endgameCageHang,
+      'brp': endgameBargeRankingPoint ? 1 : 0,
+
+      // Other
+      'cop': otherCoOpPoint ? 1 : 0,
+      'bd': otherBreakdown ? 1 : 0,
+      'cm': otherComments,
+
+      // Robot path
+      'rp': robotPath?.map((line) {
         return {
-          'points': (line['p'] as List).map((p) => {
+          'p': (line['points'] as List).map((p) => {
             'x': (p['x'] as num).toDouble(),
             'y': (p['y'] as num).toDouble(),
           }).toList(),
-          'color': line['c'],
-          'strokeWidth': line['w'],
-          'imagePath': line['i'],
+          'c': line['color'],
+          'w': line['strokeWidth'],
+          'i': line['imagePath'],
         };
-      }).toList() : null,
-      feederStation: json['fs'] as String,
-      telemetry: json['tel'] as String?,
+      }).toList(),
+    };
+  }
+
+  factory ScoutingRecord.fromCompressedJson(Map<String, dynamic> json) {
+    return ScoutingRecord(
+      timestamp: json['ts'] as String? ?? '',
+      matchNumber: json['mn'] as int? ?? 0,
+      matchType: json['mt'] as String? ?? 'Qualification',
+      teamNumber: json['tn'] as int? ?? 0,
+      isRedAlliance: json['ra'] == 1,
+      
+      // Auto
+      autoTaxis: json['tx'] == 1,
+      autoCoralPreloaded: json['cp'] == 1,
+      autoAlgaeRemoved: json['ar'] as int? ?? 0,
+      autoCoralHeight4Success: json['ch4s'] as int? ?? 0,
+      autoCoralHeight4Failure: json['ch4f'] as int? ?? 0,
+      autoCoralHeight3Success: json['ch3s'] as int? ?? 0,
+      autoCoralHeight3Failure: json['ch3f'] as int? ?? 0,
+      autoCoralHeight2Success: json['ch2s'] as int? ?? 0,
+      autoCoralHeight2Failure: json['ch2f'] as int? ?? 0,
+      autoCoralHeight1Success: json['ch1s'] as int? ?? 0,
+      autoCoralHeight1Failure: json['ch1f'] as int? ?? 0,
+      autoAlgaeInNet: json['aan'] as int? ?? 0,
+      autoAlgaeInProcessor: json['aap'] as int? ?? 0,
+
+      // Teleop
+      teleopCoralHeight4Success: json['tch4s'] as int? ?? 0,
+      teleopCoralHeight4Failure: json['tch4f'] as int? ?? 0,
+      teleopCoralHeight3Success: json['tch3s'] as int? ?? 0,
+      teleopCoralHeight3Failure: json['tch3f'] as int? ?? 0,
+      teleopCoralHeight2Success: json['tch2s'] as int? ?? 0,
+      teleopCoralHeight2Failure: json['tch2f'] as int? ?? 0,
+      teleopCoralHeight1Success: json['tch1s'] as int? ?? 0,
+      teleopCoralHeight1Failure: json['tch1f'] as int? ?? 0,
+      teleopCoralRankingPoint: json['crp'] == 1,
+      teleopAlgaeRemoved: json['tar'] as int? ?? 0,
+      teleopAlgaeProcessorAttempts: json['tap'] as int? ?? 0,
+      teleopAlgaeProcessed: json['tapr'] as int? ?? 0,
+      teleopAlgaeScoredInNet: json['tasn'] as int? ?? 0,
+      teleopCanPickupAlgae: json['tcpa'] == 1,
+      teleopCoralPickupMethod: json['tcpm'] as String? ?? 'None',
+
+      // Endgame
+      endgameReturnedToBarge: json['rtb'] == 1,
+      endgameCageHang: json['ch'] as String? ?? 'None',
+      endgameBargeRankingPoint: json['brp'] == 1,
+
+      // Other
+      otherCoOpPoint: json['cop'] == 1,
+      otherBreakdown: json['bd'] == 1,
+      otherComments: json['cm'] as String? ?? '',
+
+      // Legacy fields
+      cageType: 'Shallow',
+      coralPreloaded: json['cp'] == 1,
+      taxis: json['tx'] == 1,
+      algaeRemoved: json['ar'] as int? ?? 0,
+      coralPlaced: 'No',
+      rankingPoint: json['crp'] == 1,
+      canPickupCoral: json['tcpa'] == 1,
+      canPickupAlgae: json['tcpa'] == 1,
+      algaeScoredInNet: json['tasn'] as int? ?? 0,
+      coralRankingPoint: json['crp'] == 1,
+      algaeProcessed: json['tapr'] as int? ?? 0,
+      processedAlgaeScored: json['tapr'] as int? ?? 0,
+      processorCycles: json['tap'] as int? ?? 0,
+      coOpPoint: json['cop'] == 1,
+      returnedToBarge: json['rtb'] == 1,
+      cageHang: json['ch'] as String? ?? 'None',
+      bargeRankingPoint: json['brp'] == 1,
+      breakdown: json['bd'] == 1,
+      comments: json['cm'] as String? ?? '',
+      coralPickupMethod: json['tcpm'] as String? ?? 'None',
+      feederStation: 'None',
+      coralOnReefHeight1: json['tch1s'] as int? ?? 0,
+      coralOnReefHeight2: json['tch2s'] as int? ?? 0,
+      coralOnReefHeight3: json['tch3s'] as int? ?? 0,
+      coralOnReefHeight4: json['tch4s'] as int? ?? 0,
+      robotPath: json['rp'] != null
+          ? (json['rp'] as List<dynamic>)
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList()
+          : null,
     );
   }
 
   List<dynamic> toCsvRow() {
     String robotPathStr = '';
-    if (robotPath != null) {
+    if (robotPath != null && robotPath!.isNotEmpty) {
       try {
-        robotPathStr = jsonEncode(robotPath).replaceAll('|', '\\|');
+        robotPathStr = jsonEncode(robotPath);
       } catch (e) {
         print('Error encoding robotPath: $e');
       }
@@ -316,39 +511,46 @@ class ScoutingRecord {
       isRedAlliance ? 1 : 0,
       
       // Auto
-      cageType,
-      coralPreloaded ? 1 : 0,
-      taxis ? 1 : 0,
-      algaeRemoved,
-      coralPlaced,
-      rankingPoint ? 1 : 0,
-      canPickupCoral ? 1 : 0,
-      canPickupAlgae ? 1 : 0,
+      autoTaxis ? 1 : 0,
+      autoCoralPreloaded ? 1 : 0,
+      autoAlgaeRemoved,
+      autoCoralHeight4Success,
+      autoCoralHeight4Failure,
+      autoCoralHeight3Success,
+      autoCoralHeight3Failure,
+      autoCoralHeight2Success,
+      autoCoralHeight2Failure,
+      autoCoralHeight1Success,
+      autoCoralHeight1Failure,
       autoAlgaeInNet,
       autoAlgaeInProcessor,
-      coralPickupMethod,
-      
+
       // Teleop
-      coralOnReefHeight1,
-      coralOnReefHeight2,
-      coralOnReefHeight3,
-      coralOnReefHeight4,
-      feederStation,
-      algaeScoredInNet,
-      coralRankingPoint ? 1 : 0,
-      algaeProcessed,
-      processedAlgaeScored,
-      processorCycles,
-      coOpPoint ? 1 : 0,
-      
+      teleopCoralHeight4Success,
+      teleopCoralHeight4Failure,
+      teleopCoralHeight3Success,
+      teleopCoralHeight3Failure,
+      teleopCoralHeight2Success,
+      teleopCoralHeight2Failure,
+      teleopCoralHeight1Success,
+      teleopCoralHeight1Failure,
+      teleopCoralRankingPoint ? 1 : 0,
+      teleopAlgaeRemoved,
+      teleopAlgaeProcessorAttempts,
+      teleopAlgaeProcessed,
+      teleopAlgaeScoredInNet,
+      teleopCanPickupAlgae ? 1 : 0,
+      teleopCoralPickupMethod,
+
       // Endgame
-      returnedToBarge ? 1 : 0,
-      cageHang,
-      bargeRankingPoint ? 1 : 0,
-      
+      endgameReturnedToBarge ? 1 : 0,
+      endgameCageHang,
+      endgameBargeRankingPoint ? 1 : 0,
+
       // Other
-      breakdown ? 1 : 0,
-      comments.replaceAll('|', '\\|'),
+      otherCoOpPoint ? 1 : 0,
+      otherBreakdown ? 1 : 0,
+      otherComments.replaceAll('|', '\\|'),
       robotPathStr,
     ];
   }
@@ -356,47 +558,54 @@ class ScoutingRecord {
   static List<String> getCsvHeaders() {
     return [
       // Match info
-      'matchNumber',
-      'matchType',
-      'timestamp',
-      'teamNumber',
-      'isRedAlliance',
+      'Match Number',
+      'Match Type',
+      'Timestamp',
+      'Team Number',
+      'Red Alliance',
       
       // Auto
-      'cageType',
-      'coralPreloaded',
-      'taxis',
-      'algaeRemoved',
-      'coralPlaced',
-      'rankingPoint',
-      'canPickupCoral',
-      'canPickupAlgae',
-      'autoAlgaeInNet',
-      'autoAlgaeInProcessor',
-      'coralPickupMethod',
-      
+      'Auto Taxis',
+      'Auto Coral Preloaded',
+      'Auto Algae Removed',
+      'Auto Coral Height 4 Success',
+      'Auto Coral Height 4 Failure',
+      'Auto Coral Height 3 Success',
+      'Auto Coral Height 3 Failure',
+      'Auto Coral Height 2 Success',
+      'Auto Coral Height 2 Failure',
+      'Auto Coral Height 1 Success',
+      'Auto Coral Height 1 Failure',
+      'Auto Algae in Net',
+      'Auto Algae in Processor',
+
       // Teleop
-      'coralOnReefHeight1',
-      'coralOnReefHeight2',
-      'coralOnReefHeight3',
-      'coralOnReefHeight4',
-      'feederStation',
-      'algaeScoredInNet',
-      'coralRankingPoint',
-      'algaeProcessed',
-      'processedAlgaeScored',
-      'processorCycles',
-      'coOpPoint',
-      
+      'Teleop Coral Height 4 Success',
+      'Teleop Coral Height 4 Failure',
+      'Teleop Coral Height 3 Success',
+      'Teleop Coral Height 3 Failure',
+      'Teleop Coral Height 2 Success',
+      'Teleop Coral Height 2 Failure',
+      'Teleop Coral Height 1 Success',
+      'Teleop Coral Height 1 Failure',
+      'Teleop Coral Ranking Point',
+      'Teleop Algae Removed',
+      'Teleop Algae Processor Attempts',
+      'Teleop Algae Processed',
+      'Teleop Algae Scored in Net',
+      'Teleop Can Pickup Algae',
+      'Teleop Coral Pickup Method',
+
       // Endgame
-      'returnedToBarge',
-      'cageHang',
-      'bargeRankingPoint',
-      
+      'Endgame Returned to Barge',
+      'Endgame Cage Hang',
+      'Endgame Barge Ranking Point',
+
       // Other
-      'breakdown',
-      'comments',
-      'robotPath',
+      'Other Co-Op Point',
+      'Other Breakdown',
+      'Other Comments',
+      'Robot Path',
     ];
   }
 
@@ -423,40 +632,72 @@ class ScoutingRecord {
       isRedAlliance: row[4].toString() == '1',
       
       // Auto
-      cageType: row[5].toString(),
-      coralPreloaded: row[6].toString() == '1',
-      taxis: row[7].toString() == '1',
-      algaeRemoved: int.parse(row[8].toString()),
-      coralPlaced: row[9].toString(),
-      rankingPoint: row[10].toString() == '1',
-      canPickupCoral: row[11].toString() == '1',
-      canPickupAlgae: row[12].toString() == '1',
-      autoAlgaeInNet: int.parse(row[13].toString()),
-      autoAlgaeInProcessor: int.parse(row[14].toString()),
-      coralPickupMethod: row[15].toString(),
+      autoTaxis: row[5].toString() == '1',
+      autoCoralPreloaded: row[6].toString() == '1',
+      autoAlgaeRemoved: int.parse(row[7].toString()),
+      autoCoralHeight4Success: int.parse(row[8].toString()),
+      autoCoralHeight4Failure: int.parse(row[9].toString()),
+      autoCoralHeight3Success: int.parse(row[10].toString()),
+      autoCoralHeight3Failure: int.parse(row[11].toString()),
+      autoCoralHeight2Success: int.parse(row[12].toString()),
+      autoCoralHeight2Failure: int.parse(row[13].toString()),
+      autoCoralHeight1Success: int.parse(row[14].toString()),
+      autoCoralHeight1Failure: int.parse(row[15].toString()),
+      autoAlgaeInNet: int.parse(row[16].toString()),
+      autoAlgaeInProcessor: int.parse(row[17].toString()),
       
       // Teleop
-      coralOnReefHeight1: int.parse(row[16].toString()),
-      coralOnReefHeight2: int.parse(row[17].toString()),
-      coralOnReefHeight3: int.parse(row[18].toString()),
-      coralOnReefHeight4: int.parse(row[19].toString()),
-      feederStation: row[20].toString(),
-      algaeScoredInNet: int.parse(row[21].toString()),
-      coralRankingPoint: row[22].toString() == '1',
-      algaeProcessed: int.parse(row[23].toString()),
-      processedAlgaeScored: int.parse(row[24].toString()),
-      processorCycles: int.parse(row[25].toString()),
-      coOpPoint: row[26].toString() == '1',
+      teleopCoralHeight4Success: int.parse(row[18].toString()),
+      teleopCoralHeight4Failure: int.parse(row[19].toString()),
+      teleopCoralHeight3Success: int.parse(row[20].toString()),
+      teleopCoralHeight3Failure: int.parse(row[21].toString()),
+      teleopCoralHeight2Success: int.parse(row[22].toString()),
+      teleopCoralHeight2Failure: int.parse(row[23].toString()),
+      teleopCoralHeight1Success: int.parse(row[24].toString()),
+      teleopCoralHeight1Failure: int.parse(row[25].toString()),
+      teleopCoralRankingPoint: row[26].toString() == '1',
+      teleopAlgaeRemoved: int.parse(row[27].toString()),
+      teleopAlgaeProcessorAttempts: int.parse(row[28].toString()),
+      teleopAlgaeProcessed: int.parse(row[29].toString()),
+      teleopAlgaeScoredInNet: int.parse(row[30].toString()),
+      teleopCanPickupAlgae: row[31].toString() == '1',
+      teleopCoralPickupMethod: row[32].toString(),
       
       // Endgame
-      returnedToBarge: row[27].toString() == '1',
-      cageHang: row[28].toString(),
-      bargeRankingPoint: row[29].toString() == '1',
+      endgameReturnedToBarge: row[33].toString() == '1',
+      endgameCageHang: row[34].toString(),
+      endgameBargeRankingPoint: row[35].toString() == '1',
       
       // Other
-      breakdown: row[30].toString() == '1',
-      comments: row[31].toString().replaceAll('\\|', '|'),
+      otherCoOpPoint: row[36].toString() == '1',
+      otherBreakdown: row[37].toString() == '1',
+      otherComments: row[38].toString().replaceAll('\\|', '|'),
       robotPath: pathData,
+      cageType: 'Shallow',
+      coralPreloaded: false,
+      taxis: false,
+      algaeRemoved: 0,
+      coralPlaced: 'No',
+      rankingPoint: false,
+      canPickupCoral: false,
+      canPickupAlgae: false,
+      algaeScoredInNet: 0,
+      coralRankingPoint: false,
+      algaeProcessed: 0,
+      processedAlgaeScored: 0,
+      processorCycles: 0,
+      coOpPoint: false,
+      returnedToBarge: false,
+      cageHang: 'None',
+      bargeRankingPoint: false,
+      breakdown: false,
+      comments: '',
+      coralPickupMethod: 'None',
+      feederStation: 'None',
+      coralOnReefHeight1: 0,
+      coralOnReefHeight2: 0,
+      coralOnReefHeight3: 0,
+      coralOnReefHeight4: 0,
     );
   }
 }
@@ -529,13 +770,13 @@ class DataManager {
 
     return {
       'matches': teamRecords.length,
-      'avgAutoAlgae': _average(teamRecords.map((r) => r.algaeRemoved)),
-      'avgTeleopAlgae': _average(teamRecords.map((r) => r.algaeScoredInNet)),
-      'avgProcessed': _average(teamRecords.map((r) => r.algaeProcessed)),
-      'avgCycles': _average(teamRecords.map((r) => r.processorCycles)),
-      'taxisSuccess': _percentSuccess(teamRecords.map((r) => r.taxis)),
-      'hangSuccess': _percentSuccess(teamRecords.map((r) => r.cageHang != 'None')),
-      'breakdowns': teamRecords.where((r) => r.breakdown).length,
+      'avgAutoAlgae': _average(teamRecords.map((r) => r.autoAlgaeRemoved)),
+      'avgTeleopAlgae': _average(teamRecords.map((r) => r.teleopAlgaeScoredInNet)),
+      'avgProcessed': _average(teamRecords.map((r) => r.teleopAlgaeProcessed)),
+      'avgCycles': _average(teamRecords.map((r) => r.teleopAlgaeProcessorAttempts)),
+      'taxisSuccess': _percentSuccess(teamRecords.map((r) => r.autoTaxis)),
+      'hangSuccess': _percentSuccess(teamRecords.map((r) => r.endgameCageHang != 'None')),
+      'breakdowns': teamRecords.where((r) => r.otherBreakdown).length,
     };
   }
 
@@ -555,11 +796,11 @@ class DataManager {
         .map((r) => {
               'matchNumber': r.matchNumber,
               'matchType': r.matchType,
-              'autoAlgae': r.algaeRemoved,
-              'teleopAlgae': r.algaeScoredInNet,
-              'processed': r.algaeProcessed,
-              'hang': r.cageHang,
-              'breakdown': r.breakdown,
+              'autoAlgae': r.autoAlgaeRemoved,
+              'teleopAlgae': r.teleopAlgaeScoredInNet,
+              'processed': r.teleopAlgaeProcessed,
+              'hang': r.endgameCageHang,
+              'breakdown': r.otherBreakdown,
             })
         .toList();
   }
@@ -924,10 +1165,10 @@ class DataPageState extends State<DataPage> {
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
               ),
             ),
-            if (record.comments.isNotEmpty) ...[
+            if (record.otherComments.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
-                record.comments,
+                record.otherComments,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
@@ -1127,7 +1368,38 @@ class DataPageState extends State<DataPage> {
                       coralOnReefHeight4: record.coralOnReefHeight4,
                       feederStation: record.feederStation,
                       robotPath: updatedPath,
-                      telemetry: record.telemetry,
+                      autoTaxis: record.autoTaxis,
+                      autoCoralPreloaded: record.autoCoralPreloaded,
+                      autoAlgaeRemoved: record.autoAlgaeRemoved,
+                      autoCoralHeight4Success: record.autoCoralHeight4Success,
+                      autoCoralHeight4Failure: record.autoCoralHeight4Failure,
+                      autoCoralHeight3Success: record.autoCoralHeight3Success,
+                      autoCoralHeight3Failure: record.autoCoralHeight3Failure,
+                      autoCoralHeight2Success: record.autoCoralHeight2Success,
+                      autoCoralHeight2Failure: record.autoCoralHeight2Failure,
+                      autoCoralHeight1Success: record.autoCoralHeight1Success,
+                      autoCoralHeight1Failure: record.autoCoralHeight1Failure,
+                      teleopCoralHeight4Success: record.teleopCoralHeight4Success,
+                      teleopCoralHeight4Failure: record.teleopCoralHeight4Failure,
+                      teleopCoralHeight3Success: record.teleopCoralHeight3Success,
+                      teleopCoralHeight3Failure: record.teleopCoralHeight3Failure,
+                      teleopCoralHeight2Success: record.teleopCoralHeight2Success,
+                      teleopCoralHeight2Failure: record.teleopCoralHeight2Failure,
+                      teleopCoralHeight1Success: record.teleopCoralHeight1Success,
+                      teleopCoralHeight1Failure: record.teleopCoralHeight1Failure,
+                      teleopCoralRankingPoint: record.teleopCoralRankingPoint,
+                      teleopAlgaeRemoved: record.teleopAlgaeRemoved,
+                      teleopAlgaeProcessorAttempts: record.teleopAlgaeProcessorAttempts,
+                      teleopAlgaeProcessed: record.teleopAlgaeProcessed,
+                      teleopAlgaeScoredInNet: record.teleopAlgaeScoredInNet,
+                      teleopCanPickupAlgae: record.teleopCanPickupAlgae,
+                      teleopCoralPickupMethod: record.teleopCoralPickupMethod,
+                      endgameReturnedToBarge: record.endgameReturnedToBarge,
+                      endgameCageHang: record.endgameCageHang,
+                      endgameBargeRankingPoint: record.endgameBargeRankingPoint,
+                      otherCoOpPoint: record.otherCoOpPoint,
+                      otherBreakdown: record.otherBreakdown,
+                      otherComments: record.otherComments,
                     );
 
                     // Update the record in the database
