@@ -89,31 +89,34 @@ class _QrScannerPageState extends State<QrScannerPage> {
         matchType: data[2] as String? ?? 'Qualification',
         teamNumber: data[3] as int? ?? 0,
         isRedAlliance: data[4] == 1,
+        cageType: data[5] as String? ?? 'Shallow',
         
         // Auto
-        autoTaxis: data[7] == 1,
         autoCoralPreloaded: data[6] == 1,
+        autoTaxis: data[7] == 1,
         autoAlgaeRemoved: data[8] as int? ?? 0,
-        autoCoralHeight4Success: data[19] as int? ?? 0,
-        autoCoralHeight4Failure: data[20] as int? ?? 0,
-        autoCoralHeight3Success: data[17] as int? ?? 0,
-        autoCoralHeight3Failure: data[18] as int? ?? 0,
-        autoCoralHeight2Success: data[15] as int? ?? 0,
-        autoCoralHeight2Failure: data[16] as int? ?? 0,
-        autoCoralHeight1Success: data[13] as int? ?? 0,
-        autoCoralHeight1Failure: data[14] as int? ?? 0,
         autoAlgaeInNet: data[9] as int? ?? 0,
         autoAlgaeInProcessor: data[10] as int? ?? 0,
-
-        // Teleop
-        teleopCoralHeight4Success: data[21] as int? ?? 0,
-        teleopCoralHeight4Failure: data[22] as int? ?? 0,
+        
+        // teleop coral success/failure
         teleopCoralHeight3Success: data[11] as int? ?? 0,
         teleopCoralHeight3Failure: data[12] as int? ?? 0,
+        autoCoralHeight1Success: data[13] as int? ?? 0,
+        autoCoralHeight1Failure: data[14] as int? ?? 0,
+        autoCoralHeight2Success: data[15] as int? ?? 0,
+        autoCoralHeight2Failure: data[16] as int? ?? 0,
+        autoCoralHeight3Success: data[17] as int? ?? 0,
+        autoCoralHeight3Failure: data[18] as int? ?? 0,
+        autoCoralHeight4Success: data[19] as int? ?? 0,
+        autoCoralHeight4Failure: data[20] as int? ?? 0,
+        teleopCoralHeight4Success: data[21] as int? ?? 0,
+        teleopCoralHeight4Failure: data[22] as int? ?? 0,
         teleopCoralHeight2Success: data[23] as int? ?? 0,
         teleopCoralHeight2Failure: data[24] as int? ?? 0,
         teleopCoralHeight1Success: data[25] as int? ?? 0,
         teleopCoralHeight1Failure: data[26] as int? ?? 0,
+        
+        // teleop
         teleopCoralRankingPoint: data[27] == 1,
         teleopAlgaeRemoved: data[28] as int? ?? 0,
         teleopAlgaeProcessorAttempts: data[29] as int? ?? 0,
@@ -121,19 +124,25 @@ class _QrScannerPageState extends State<QrScannerPage> {
         teleopAlgaeScoredInNet: data[31] as int? ?? 0,
         teleopCanPickupAlgae: data[32] == 1,
         teleopCoralPickupMethod: data[33] as String? ?? 'None',
-
+        
         // Endgame
         endgameReturnedToBarge: data[34] == 1,
         endgameCageHang: data[35] as String? ?? 'None',
         endgameBargeRankingPoint: data[36] == 1,
-
+        
         // Other
         otherCoOpPoint: data[37] == 1,
         otherBreakdown: data[38] == 1,
         otherComments: data[39] as String? ?? '',
+        
+        // robot path
+        robotPath: data[40] != null
+            ? (data[40] as List<dynamic>)
+                .map((e) => Map<String, dynamic>.from(e as Map))
+                .toList()
+            : null,
 
-        // Legacy fields
-        cageType: 'Shallow',
+        // legacy fields (required by constructor)
         coralPreloaded: data[6] == 1,
         taxis: data[7] == 1,
         algaeRemoved: data[8] as int? ?? 0,
@@ -158,11 +167,6 @@ class _QrScannerPageState extends State<QrScannerPage> {
         coralOnReefHeight2: data[23] as int? ?? 0,
         coralOnReefHeight3: data[11] as int? ?? 0,
         coralOnReefHeight4: data[21] as int? ?? 0,
-        robotPath: data[40] != null
-            ? (data[40] as List<dynamic>)
-                .map((e) => Map<String, dynamic>.from(e as Map))
-                .toList()
-            : null,
       );
 
       // OLD SCAN POPUP STUFF BELOW

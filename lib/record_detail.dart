@@ -123,20 +123,32 @@ class RecordDetailPage extends StatelessWidget {
       children: [
         _buildStatRow('Starting Configuration', [
           _buildStat('Cage Type', record.cageType),
-          _buildStat('Coral Preloaded', record.coralPreloaded ? 'Yes' : 'No'),
+          _buildStat('Coral Preloaded', record.autoCoralPreloaded ? 'Yes' : 'No'),
         ]),
         _buildStatRow('Movement', [
-          _buildStat('Taxis', record.taxis ? 'Yes' : 'No'),
+          _buildStat('Taxis', record.autoTaxis ? 'Yes' : 'No'),
           _buildStat('Auto Path', record.robotPath != null ? 'Drawn' : 'None'),
         ]),
-        _buildStatRow('Scoring', [
-          _buildStat('Algae Removed', record.algaeRemoved.toString()),
+        _buildStatRow('Algae Scoring', [
+          _buildStat('Algae Removed', record.autoAlgaeRemoved.toString()),
           _buildStat('Algae in Net', record.autoAlgaeInNet.toString()),
           _buildStat('Algae in Processor', record.autoAlgaeInProcessor.toString()),
         ]),
-        _buildStatRow('Coral', [
-          _buildStat('Coral Placed', record.coralPlaced),
-          _buildStat('Ranking Point', record.rankingPoint ? 'Yes' : 'No'),
+        _buildStatRow('Coral Height 1', [
+          _buildStat('Success', record.autoCoralHeight1Success.toString()),
+          _buildStat('Failure', record.autoCoralHeight1Failure.toString()),
+        ]),
+        _buildStatRow('Coral Height 2', [
+          _buildStat('Success', record.autoCoralHeight2Success.toString()),
+          _buildStat('Failure', record.autoCoralHeight2Failure.toString()),
+        ]),
+        _buildStatRow('Coral Height 3', [
+          _buildStat('Success', record.autoCoralHeight3Success.toString()),
+          _buildStat('Failure', record.autoCoralHeight3Failure.toString()),
+        ]),
+        _buildStatRow('Coral Height 4', [
+          _buildStat('Success', record.autoCoralHeight4Success.toString()),
+          _buildStat('Failure', record.autoCoralHeight4Failure.toString()),
         ]),
       ],
     );
@@ -150,24 +162,33 @@ class RecordDetailPage extends StatelessWidget {
       color: Colors.green,
       children: [
         _buildStatRow('Algae Scoring', [
-          _buildStat('In Net', record.algaeScoredInNet.toString()),
-          _buildStat('Processed', record.algaeProcessed.toString()),
-          _buildStat('Processed & Scored', record.processedAlgaeScored.toString()),
+          _buildStat('Removed', record.teleopAlgaeRemoved.toString()),
+          _buildStat('In Net', record.teleopAlgaeScoredInNet.toString()),
+          _buildStat('Processor Attempts', record.teleopAlgaeProcessorAttempts.toString()),
+          _buildStat('Processed', record.teleopAlgaeProcessed.toString()),
         ]),
-        _buildStatRow('Coral Scoring', [
-          _buildStat('Height 1', record.coralOnReefHeight1.toString()),
-          _buildStat('Height 2', record.coralOnReefHeight2.toString()),
-          _buildStat('Height 3', record.coralOnReefHeight3.toString()),
-          _buildStat('Height 4', record.coralOnReefHeight4.toString()),
+        _buildStatRow('Coral Height 1', [
+          _buildStat('Success', record.teleopCoralHeight1Success.toString()),
+          _buildStat('Failure', record.teleopCoralHeight1Failure.toString()),
         ]),
-        _buildStatRow('Cycling', [
-          _buildStat('Processor Cycles', record.processorCycles.toString()),
-          _buildStat('Co-op Point', record.coOpPoint ? 'Yes' : 'No'),
+        _buildStatRow('Coral Height 2', [
+          _buildStat('Success', record.teleopCoralHeight2Success.toString()),
+          _buildStat('Failure', record.teleopCoralHeight2Failure.toString()),
+        ]),
+        _buildStatRow('Coral Height 3', [
+          _buildStat('Success', record.teleopCoralHeight3Success.toString()),
+          _buildStat('Failure', record.teleopCoralHeight3Failure.toString()),
+        ]),
+        _buildStatRow('Coral Height 4', [
+          _buildStat('Success', record.teleopCoralHeight4Success.toString()),
+          _buildStat('Failure', record.teleopCoralHeight4Failure.toString()),
         ]),
         _buildStatRow('Capabilities', [
-          _buildStat('Can Pickup Coral', record.canPickupCoral ? 'Yes' : 'No'),
-          _buildStat('Can Pickup Algae', record.canPickupAlgae ? 'Yes' : 'No'),
-          _buildStat('Coral Method', record.coralPickupMethod),
+          _buildStat('Can Pickup Algae', record.teleopCanPickupAlgae ? 'Yes' : 'No'),
+          _buildStat('Coral Pickup Method', record.teleopCoralPickupMethod),
+        ]),
+        _buildStatRow('Points', [
+          _buildStat('Coral Ranking Point', record.teleopCoralRankingPoint ? 'Yes' : 'No'),
         ]),
       ],
     );
@@ -181,16 +202,16 @@ class RecordDetailPage extends StatelessWidget {
       color: Colors.orange,
       children: [
         _buildStatRow('Performance', [
-          _buildStat('Cage Hang', record.cageHang),
-          _buildStat('Return to Barge', record.returnedToBarge ? 'Yes' : 'No'),
+          _buildStat('Cage Hang', record.endgameCageHang),
+          _buildStat('Return to Barge', record.endgameReturnedToBarge ? 'Yes' : 'No'),
         ]),
         _buildStatRow('Points', [
-          _buildStat('Barge RP', record.bargeRankingPoint ? 'Yes' : 'No'),
-          _buildStat('Coral RP', record.coralRankingPoint ? 'Yes' : 'No'),
+          _buildStat('Barge Ranking Point', record.endgameBargeRankingPoint ? 'Yes' : 'No'),
+          _buildStat('Co-Op Point', record.otherCoOpPoint ? 'Yes' : 'No'),
         ]),
         _buildStatRow('Issues', [
-          _buildStat('Breakdown', record.breakdown ? 'Yes' : 'No',
-              color: record.breakdown ? Colors.red : null),
+          _buildStat('Breakdown', record.otherBreakdown ? 'Yes' : 'No',
+              color: record.otherBreakdown ? Colors.red : null),
         ]),
       ],
     );
@@ -206,7 +227,7 @@ class RecordDetailPage extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(8),
           child: Text(
-            record.comments,
+            record.otherComments,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ),
