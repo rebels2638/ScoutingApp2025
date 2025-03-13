@@ -143,28 +143,28 @@ class TeamStats {
   List<String> getStrengths() {
     List<String> strengths = [];
     
-    // Auto strengths
+    // auto strengths
     if (autoTaxisRate >= 0.8) strengths.add('Reliable Auto Taxis');
     if (autoAlgaeAvg >= 3) strengths.add('Strong Auto Algae');
     if (autoL4SuccessRate >= 0.7) strengths.add('Accurate L4 Auto');
     if ((autoL4Avg + autoL3Avg + autoL2Avg + autoL1Avg) >= 3) strengths.add('High Auto Coral Output');
     
-    // Teleop strengths
+    // teleop strengths
     if (teleopAlgaeNetAvg >= 8) strengths.add('High Algae Output');
     if (processorEfficiency >= 0.8) strengths.add('Efficient Processor');
     if (teleopL4SuccessRate >= 0.7) strengths.add('Accurate L4 Scoring');
     if ((teleopL4Avg + teleopL3Avg + teleopL2Avg + teleopL1Avg) >= 5) strengths.add('High Coral Output');
     
-    // Endgame strengths
+    // endgame strengths
     if (cageHangSuccessRate >= 0.8) strengths.add('Reliable Hanging');
     if (bargeReturnRate >= 0.8) strengths.add('Consistent Barge Return');
     
-    // Ranking point strengths
+    // ranking point strengths
     if (coralRankingPointRate >= 0.5) strengths.add('Frequent Coral RP');
     if (bargeRankingPointRate >= 0.5) strengths.add('Frequent Barge RP');
     if (coOpPointRate >= 0.5) strengths.add('Good Co-op Partner');
     
-    // Reliability strength
+    // reliability strength
     if (breakdownRate <= 0.1) strengths.add('Very Reliable');
     
     return strengths.take(4).toList(); // Limit to top 4 strengths
@@ -173,334 +173,164 @@ class TeamStats {
   List<String> getWeaknesses() {
     List<String> weaknesses = [];
     
-    // Auto weaknesses
+    // auto weaknesses
     if (autoTaxisRate < 0.5) weaknesses.add('Unreliable Auto Taxis');
     if (autoAlgaeAvg < 1) weaknesses.add('Poor Auto Algae');
     if (autoL4SuccessRate < 0.3 && autoL4Avg > 0) weaknesses.add('Inaccurate L4 Auto');
     if ((autoL4Avg + autoL3Avg + autoL2Avg + autoL1Avg) < 1) weaknesses.add('Low Auto Coral Output');
     
-    // Teleop weaknesses
+    // teleop weaknesses
     if (teleopAlgaeNetAvg < 3) weaknesses.add('Low Algae Output');
     if (processorEfficiency < 0.5 && teleopAlgaeProcessorAttemptsAvg > 0) weaknesses.add('Inefficient Processing');
     if (teleopL4SuccessRate < 0.3 && teleopL4Avg > 0) weaknesses.add('Inaccurate L4 Scoring');
     if ((teleopL4Avg + teleopL3Avg + teleopL2Avg + teleopL1Avg) < 2) weaknesses.add('Low Coral Output');
     
-    // Endgame weaknesses
+    // endgame weaknesses
     if (cageHangSuccessRate < 0.3) weaknesses.add('Unreliable Hanging');
     if (bargeReturnRate < 0.3) weaknesses.add('Rare Barge Return');
     
-    // Reliability weakness
+    // reliability weakness
     if (breakdownRate >= 0.3) weaknesses.add('Frequent Breakdowns');
     
-    return weaknesses.take(3).toList(); // Limit to top 3 weaknesses
+    return weaknesses.take(3).toList(); // limit to top 3 weaknesses
   }
 }
 
-class TeamAnalysisPage extends StatelessWidget {
+class TeamAnalysisPage extends StatefulWidget {
   final List<ScoutingRecord> records;
 
   const TeamAnalysisPage({Key? key, required this.records}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    // Group records by team
+  TeamAnalysisPageState createState() => TeamAnalysisPageState();
+}
+
+class TeamAnalysisPageState extends State<TeamAnalysisPage> {
+  String _searchQuery = '';
+  Set<int> _expandedTeams = {};
+  late List<TeamStats> _teamStats;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeTeamStats();
+  }
+
+  void _initializeTeamStats() {
+    // group records by team
     Map<int, List<ScoutingRecord>> teamRecords = {};
-    for (var record in records) {
+    for (var record in widget.records) {
       teamRecords.putIfAbsent(record.teamNumber, () => []).add(record);
     }
 
-    // Convert to list of TeamStats and sort by scoring potential
-    final teamStats = teamRecords.entries
+    // convert to list of TeamStats and sort by scoring potential
+    _teamStats = teamRecords.entries
         .map((e) => TeamStats(teamNumber: e.key, records: e.value))
         .toList()
       ..sort((a, b) => b.scoringPotential.compareTo(a.scoringPotential));
+  }
+
+  void _toggleExpanded(int teamNumber) {
+    setState(() {
+      if (_expandedTeams.contains(teamNumber)) {
+        _expandedTeams.remove(teamNumber);
+      } else {
+        _expandedTeams.add(teamNumber);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredTeams = _teamStats.where((stats) {
+      if (_searchQuery.isEmpty) return true;
+      return stats.teamNumber.toString().contains(_searchQuery);
+    }).toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Team Analysis'),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        itemCount: teamStats.length,
-        itemBuilder: (context, index) => TeamAnalysisCard(stats: teamStats[index]),
-      ),
-    );
-  }
-}
-
-class TeamAnalysisCard extends StatelessWidget {
-  final TeamStats stats;
-
-  const TeamAnalysisCard({Key? key, required this.stats}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    return Card(
-      elevation: isDark ? 0 : 2,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ComparisonPage(records: stats.records),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with team number and scoring potential
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.7),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      body: Column(
+        children: [
+          // search bar
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search teams...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Team ${stats.teamNumber}',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+          ),
+          // team list
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              itemCount: filteredTeams.length,
+              itemBuilder: (context, index) {
+                final stats = filteredTeams[index];
+                final isExpanded = _expandedTeams.contains(stats.teamNumber);
+                
+                return Card(
+                  elevation: isExpanded ? 2 : 1,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Column(
+                    children: [
+                      // header (always visible)
+                      InkWell(
+                        onTap: () => _toggleExpanded(stats.teamNumber),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Team ${stats.teamNumber}',
+                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${stats.records.length} matches scouted',
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _buildScoreIndicator(context, stats.scoringPotential),
+                              const SizedBox(width: 8),
+                              Icon(
+                                isExpanded ? Icons.expand_less : Icons.expand_more,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ],
                           ),
                         ),
-                        Text(
-                          '${stats.records.length} matches scouted',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
+                      ),
+                      // expanded content
+                      if (isExpanded)
+                        TeamAnalysisCard(stats: stats),
+                    ],
                   ),
-                  _buildScoreIndicator(context, stats.scoringPotential),
-                ],
-              ),
+                );
+              },
             ),
-
-            // Main content
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Auto metrics
-                  _buildSectionHeader(context, 'Auto Performance'),
-                  _buildMetricGrid(context, [
-                    _MetricTile(
-                      label: 'Taxis Rate',
-                      value: '${(stats.autoTaxisRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.autoTaxisRate),
-                    ),
-                    _MetricTile(
-                      label: 'Auto Algae',
-                      value: stats.autoAlgaeAvg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'Net Algae',
-                      value: stats.autoAlgaeNetAvg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'Processor',
-                      value: stats.autoAlgaeProcessorAvg.toStringAsFixed(1),
-                    ),
-                  ]),
-
-                  // Auto coral success rates
-                  _buildSectionHeader(context, 'Auto Coral Success Rates'),
-                  _buildMetricGrid(context, [
-                    _MetricTile(
-                      label: 'L4 Rate',
-                      value: '${(stats.autoL4SuccessRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.autoL4SuccessRate),
-                    ),
-                    _MetricTile(
-                      label: 'L3 Rate',
-                      value: '${(stats.autoL3SuccessRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.autoL3SuccessRate),
-                    ),
-                    _MetricTile(
-                      label: 'L2 Rate',
-                      value: '${(stats.autoL2SuccessRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.autoL2SuccessRate),
-                    ),
-                    _MetricTile(
-                      label: 'L1 Rate',
-                      value: '${(stats.autoL1SuccessRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.autoL1SuccessRate),
-                    ),
-                  ]),
-
-                  // Auto coral averages
-                  _buildSectionHeader(context, 'Auto Coral Averages'),
-                  _buildMetricGrid(context, [
-                    _MetricTile(
-                      label: 'L4 Avg',
-                      value: stats.autoL4Avg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'L3 Avg',
-                      value: stats.autoL3Avg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'L2 Avg',
-                      value: stats.autoL2Avg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'L1 Avg',
-                      value: stats.autoL1Avg.toStringAsFixed(1),
-                    ),
-                  ]),
-
-                  // Teleop metrics
-                  _buildSectionHeader(context, 'Teleop Performance'),
-                  _buildMetricGrid(context, [
-                    _MetricTile(
-                      label: 'Net Algae',
-                      value: stats.teleopAlgaeNetAvg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'Processed',
-                      value: stats.teleopAlgaeProcessedAvg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'Attempts',
-                      value: stats.teleopAlgaeProcessorAttemptsAvg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'Efficiency',
-                      value: '${(stats.processorEfficiency * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.processorEfficiency),
-                    ),
-                  ]),
-
-                  // Teleop coral success rates
-                  _buildSectionHeader(context, 'Teleop Coral Success Rates'),
-                  _buildMetricGrid(context, [
-                    _MetricTile(
-                      label: 'L4 Rate',
-                      value: '${(stats.teleopL4SuccessRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.teleopL4SuccessRate),
-                    ),
-                    _MetricTile(
-                      label: 'L3 Rate',
-                      value: '${(stats.teleopL3SuccessRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.teleopL3SuccessRate),
-                    ),
-                    _MetricTile(
-                      label: 'L2 Rate',
-                      value: '${(stats.teleopL2SuccessRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.teleopL2SuccessRate),
-                    ),
-                    _MetricTile(
-                      label: 'L1 Rate',
-                      value: '${(stats.teleopL1SuccessRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.teleopL1SuccessRate),
-                    ),
-                  ]),
-
-                  // Teleop coral averages
-                  _buildSectionHeader(context, 'Teleop Coral Averages'),
-                  _buildMetricGrid(context, [
-                    _MetricTile(
-                      label: 'L4 Avg',
-                      value: stats.teleopL4Avg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'L3 Avg',
-                      value: stats.teleopL3Avg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'L2 Avg',
-                      value: stats.teleopL2Avg.toStringAsFixed(1),
-                    ),
-                    _MetricTile(
-                      label: 'L1 Avg',
-                      value: stats.teleopL1Avg.toStringAsFixed(1),
-                    ),
-                  ]),
-
-                  // Endgame and Ranking Points
-                  _buildSectionHeader(context, 'Endgame & Ranking Points'),
-                  _buildMetricGrid(context, [
-                    _MetricTile(
-                      label: 'Hang Rate',
-                      value: '${(stats.cageHangSuccessRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.cageHangSuccessRate),
-                    ),
-                    _MetricTile(
-                      label: 'Barge Rate',
-                      value: '${(stats.bargeReturnRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.bargeReturnRate),
-                    ),
-                    _MetricTile(
-                      label: 'Coral RP',
-                      value: '${(stats.coralRankingPointRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.coralRankingPointRate),
-                    ),
-                    _MetricTile(
-                      label: 'Co-Op Rate',
-                      value: '${(stats.coOpPointRate * 100).round()}%',
-                      color: _getSuccessRateColor(context, stats.coOpPointRate),
-                    ),
-                  ]),
-
-                  // Capabilities
-                  _buildSectionHeader(context, 'Capabilities'),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      'Coral Pickup: ${stats.preferredCoralPickupMethod}',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  ),
-
-                  // Strengths and weaknesses
-                  if (stats.getStrengths().isNotEmpty) ...[
-                    _buildStrengthsSection(context, stats.getStrengths()),
-                    const SizedBox(height: 8),
-                  ],
-                  if (stats.getWeaknesses().isNotEmpty)
-                    _buildWeaknessesSection(context, stats.getWeaknesses()),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
-      child: Text(
-        title.toUpperCase(),
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.bold,
-          color: Theme.of(context).colorScheme.primary,
-          letterSpacing: 0.5,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetricGrid(BuildContext context, List<Widget> metrics) {
-    return GridView.count(
-      crossAxisCount: 2,
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      childAspectRatio: 2.5,
-      mainAxisSpacing: 8,
-      crossAxisSpacing: 8,
-      children: metrics,
     );
   }
 
@@ -531,6 +361,229 @@ class TeamAnalysisCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class TeamAnalysisCard extends StatelessWidget {
+  final TeamStats stats;
+
+  const TeamAnalysisCard({Key? key, required this.stats}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // auto metrics
+          _buildSectionHeader(context, 'auto performance'),
+          _buildMetricGrid(context, [
+            _MetricTile(
+              label: 'Taxis Rate',
+              value: '${(stats.autoTaxisRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.autoTaxisRate),
+            ),
+            _MetricTile(
+              label: 'Auto Algae',
+              value: stats.autoAlgaeAvg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'Net Algae',
+              value: stats.autoAlgaeNetAvg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'Processor',
+              value: stats.autoAlgaeProcessorAvg.toStringAsFixed(1),
+            ),
+          ]),
+
+          // auto coral success rates
+          _buildSectionHeader(context, 'auto coral success rates'),
+          _buildMetricGrid(context, [
+            _MetricTile(
+              label: 'L4 Rate',
+              value: '${(stats.autoL4SuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.autoL4SuccessRate),
+            ),
+            _MetricTile(
+              label: 'L3 Rate',
+              value: '${(stats.autoL3SuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.autoL3SuccessRate),
+            ),
+            _MetricTile(
+              label: 'L2 Rate',
+              value: '${(stats.autoL2SuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.autoL2SuccessRate),
+            ),
+            _MetricTile(
+              label: 'L1 Rate',
+              value: '${(stats.autoL1SuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.autoL1SuccessRate),
+            ),
+          ]),
+
+          // auto coral averages
+          _buildSectionHeader(context, 'auto coral averages'),
+          _buildMetricGrid(context, [
+            _MetricTile(
+              label: 'L4 Avg',
+              value: stats.autoL4Avg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'L3 Avg',
+              value: stats.autoL3Avg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'L2 Avg',
+              value: stats.autoL2Avg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'L1 Avg',
+              value: stats.autoL1Avg.toStringAsFixed(1),
+            ),
+          ]),
+
+          // teleop metrics
+          _buildSectionHeader(context, 'teleop performance'),
+          _buildMetricGrid(context, [
+            _MetricTile(
+              label: 'Net Algae',
+              value: stats.teleopAlgaeNetAvg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'Processed',
+              value: stats.teleopAlgaeProcessedAvg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'Attempts',
+              value: stats.teleopAlgaeProcessorAttemptsAvg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'Efficiency',
+              value: '${(stats.processorEfficiency * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.processorEfficiency),
+            ),
+          ]),
+
+          // teleop coral success rates
+          _buildSectionHeader(context, 'teleop coral success rates'),
+          _buildMetricGrid(context, [
+            _MetricTile(
+              label: 'L4 Rate',
+              value: '${(stats.teleopL4SuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.teleopL4SuccessRate),
+            ),
+            _MetricTile(
+              label: 'L3 Rate',
+              value: '${(stats.teleopL3SuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.teleopL3SuccessRate),
+            ),
+            _MetricTile(
+              label: 'L2 Rate',
+              value: '${(stats.teleopL2SuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.teleopL2SuccessRate),
+            ),
+            _MetricTile(
+              label: 'L1 Rate',
+              value: '${(stats.teleopL1SuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.teleopL1SuccessRate),
+            ),
+          ]),
+
+          // teleop coral averages
+          _buildSectionHeader(context, 'teleop coral averages'),
+          _buildMetricGrid(context, [
+            _MetricTile(
+              label: 'L4 Avg',
+              value: stats.teleopL4Avg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'L3 Avg',
+              value: stats.teleopL3Avg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'L2 Avg',
+              value: stats.teleopL2Avg.toStringAsFixed(1),
+            ),
+            _MetricTile(
+              label: 'L1 Avg',
+              value: stats.teleopL1Avg.toStringAsFixed(1),
+            ),
+          ]),
+
+          // endgame and ranking points
+          _buildSectionHeader(context, 'endgame & ranking points'),
+          _buildMetricGrid(context, [
+            _MetricTile(
+              label: 'Hang Rate',
+              value: '${(stats.cageHangSuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.cageHangSuccessRate),
+            ),
+            _MetricTile(
+              label: 'Barge Rate',
+              value: '${(stats.bargeReturnRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.bargeReturnRate),
+            ),
+            _MetricTile(
+              label: 'Coral RP',
+              value: '${(stats.coralRankingPointRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.coralRankingPointRate),
+            ),
+            _MetricTile(
+              label: 'Co-Op Rate',
+              value: '${(stats.coOpPointRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.coOpPointRate),
+            ),
+          ]),
+
+          // capabilities
+          _buildSectionHeader(context, 'capabilities'),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              'Coral Pickup: ${stats.preferredCoralPickupMethod}',
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+
+          // strengths and weaknesses
+          if (stats.getStrengths().isNotEmpty) ...[
+            _buildStrengthsSection(context, stats.getStrengths()),
+            const SizedBox(height: 8),
+          ],
+          if (stats.getWeaknesses().isNotEmpty)
+            _buildWeaknessesSection(context, stats.getWeaknesses()),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricGrid(BuildContext context, List<Widget> metrics) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      childAspectRatio: 2.5,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      children: metrics,
     );
   }
 
