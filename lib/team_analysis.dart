@@ -755,7 +755,7 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
 
   Widget _buildSectionSubheader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      padding: const EdgeInsets.only(top: 8, bottom: 8),
       child: Text(
         title,
         style: TextStyle(
@@ -773,8 +773,9 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
       childAspectRatio: 2.5,
-      mainAxisSpacing: 8,
+      mainAxisSpacing: 4,
       crossAxisSpacing: 8,
+      padding: EdgeInsets.only(bottom: 4),
       children: metrics,
     );
   }
