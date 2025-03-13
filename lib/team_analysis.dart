@@ -13,46 +13,98 @@ class TeamStats {
     required this.records,
   });
 
-  // Scoring metrics
-  double get avgAutoAlgae => _average((r) => r.algaeRemoved);
-  double get avgTeleopAlgae => _average((r) => r.algaeScoredInNet);
-  double get avgProcessedAlgae => _average((r) => r.processedAlgaeScored);
-  double get avgCycles => _average((r) => r.processorCycles);
+  // auto metrics
+  double get autoTaxisRate => _successRate((r) => r.autoTaxis);
+  double get autoAlgaeAvg => _average((r) => r.autoAlgaeRemoved);
+  double get autoAlgaeNetAvg => _average((r) => r.autoAlgaeInNet);
+  double get autoAlgaeProcessorAvg => _average((r) => r.autoAlgaeInProcessor);
   
-  // Auto metrics
-  double get taxisSuccessRate => _successRate((r) => r.taxis);
-  double get autoCoralSuccessRate => _successRate((r) => r.coralPlaced != 'No');
+  // auto coral success rates
+  double get autoL4SuccessRate => _successRateWithAttempts(
+    (r) => r.autoCoralHeight4Success,
+    (r) => r.autoCoralHeight4Success + r.autoCoralHeight4Failure
+  );
+  double get autoL3SuccessRate => _successRateWithAttempts(
+    (r) => r.autoCoralHeight3Success,
+    (r) => r.autoCoralHeight3Success + r.autoCoralHeight3Failure
+  );
+  double get autoL2SuccessRate => _successRateWithAttempts(
+    (r) => r.autoCoralHeight2Success,
+    (r) => r.autoCoralHeight2Success + r.autoCoralHeight2Failure
+  );
+  double get autoL1SuccessRate => _successRateWithAttempts(
+    (r) => r.autoCoralHeight1Success,
+    (r) => r.autoCoralHeight1Success + r.autoCoralHeight1Failure
+  );
   
-  // Endgame metrics
-  double get cageHangSuccessRate => _successRate((r) => r.cageHang != 'None');
-  double get bargeReturnRate => _successRate((r) => r.returnedToBarge);
-  
-  // Reliability metrics
-  double get breakdownRate => _successRate((r) => r.breakdown);
-  
-  // Ranking point metrics
-  double get autoRankingPointRate => _successRate((r) => r.rankingPoint);
-  double get coralRankingPointRate => _successRate((r) => r.coralRankingPoint);
-  double get bargeRankingPointRate => _successRate((r) => r.bargeRankingPoint);
+  // auto coral averages
+  double get autoL4Avg => _average((r) => r.autoCoralHeight4Success);
+  double get autoL3Avg => _average((r) => r.autoCoralHeight3Success);
+  double get autoL2Avg => _average((r) => r.autoCoralHeight2Success);
+  double get autoL1Avg => _average((r) => r.autoCoralHeight1Success);
 
-  // Overall scoring potential (out of 100)
+  // teleop metrics
+  double get teleopAlgaeNetAvg => _average((r) => r.teleopAlgaeScoredInNet);
+  double get teleopAlgaeProcessedAvg => _average((r) => r.teleopAlgaeProcessed);
+  double get teleopAlgaeProcessorAttemptsAvg => _average((r) => r.teleopAlgaeProcessorAttempts);
+  double get processorEfficiency => teleopAlgaeProcessedAvg / (teleopAlgaeProcessorAttemptsAvg > 0 ? teleopAlgaeProcessorAttemptsAvg : 1);
+  
+  // teleop coral success rates
+  double get teleopL4SuccessRate => _successRateWithAttempts(
+    (r) => r.teleopCoralHeight4Success,
+    (r) => r.teleopCoralHeight4Success + r.teleopCoralHeight4Failure
+  );
+  double get teleopL3SuccessRate => _successRateWithAttempts(
+    (r) => r.teleopCoralHeight3Success,
+    (r) => r.teleopCoralHeight3Success + r.teleopCoralHeight3Failure
+  );
+  double get teleopL2SuccessRate => _successRateWithAttempts(
+    (r) => r.teleopCoralHeight2Success,
+    (r) => r.teleopCoralHeight2Success + r.teleopCoralHeight2Failure
+  );
+  double get teleopL1SuccessRate => _successRateWithAttempts(
+    (r) => r.teleopCoralHeight1Success,
+    (r) => r.teleopCoralHeight1Success + r.teleopCoralHeight1Failure
+  );
+  
+  // teleop coral averages
+  double get teleopL4Avg => _average((r) => r.teleopCoralHeight4Success);
+  double get teleopL3Avg => _average((r) => r.teleopCoralHeight3Success);
+  double get teleopL2Avg => _average((r) => r.teleopCoralHeight2Success);
+  double get teleopL1Avg => _average((r) => r.teleopCoralHeight1Success);
+
+  // endgame metrics
+  double get cageHangSuccessRate => _successRate((r) => r.endgameCageHang != 'None');
+  double get bargeReturnRate => _successRate((r) => r.endgameReturnedToBarge);
+  double get bargeRankingPointRate => _successRate((r) => r.endgameBargeRankingPoint);
+  
+  // ranking point metrics
+  double get coralRankingPointRate => _successRate((r) => r.teleopCoralRankingPoint);
+  double get coOpPointRate => _successRate((r) => r.otherCoOpPoint);
+  
+  // reliability metrics
+  double get breakdownRate => _successRate((r) => r.otherBreakdown);
+  String get preferredCoralPickupMethod => _mostCommonValue(records.map((r) => r.teleopCoralPickupMethod));
+
+  // overall scoring potential (out of 100)
   double get scoringPotential {
     double score = 0;
     
-    // Auto scoring (30 points max)
-    score += (avgAutoAlgae / 5) * 15; // Up to 15 points for auto algae
-    score += autoCoralSuccessRate * 0.15; // Up to 15 points for auto coral
+    // auto scoring (30 points max)
+    score += (autoAlgaeAvg / 5) * 10; // Up to 10 points for auto algae
+    score += ((autoL4SuccessRate + autoL3SuccessRate + autoL2SuccessRate + autoL1SuccessRate) / 4) * 20; // Up to 20 points for auto coral success rates
     
-    // Teleop scoring (40 points max)
-    score += (avgTeleopAlgae / 10) * 20; // Up to 20 points for teleop algae
-    score += (avgProcessedAlgae / 5) * 10; // Up to 10 points for processed algae
-    score += (avgCycles / 4) * 10; // Up to 10 points for cycling
+    // teleop scoring (40 points max)
+    score += (teleopAlgaeNetAvg / 10) * 15; // Up to 15 points for teleop algae in net
+    score += (teleopAlgaeProcessedAvg / 5) * 10; // Up to 10 points for processed algae
+    score += ((teleopL4SuccessRate + teleopL3SuccessRate + teleopL2SuccessRate + teleopL1SuccessRate) / 4) * 15; // Up to 15 points for teleop coral success rates
     
-    // Endgame (30 points max)
-    score += cageHangSuccessRate * 0.2; // Up to 20 points for hanging
-    score += bargeReturnRate * 0.1; // Up to 10 points for barge return
+    // endgame (30 points max)
+    score += cageHangSuccessRate * 15; // Up to 15 points for hanging
+    score += bargeReturnRate * 10; // Up to 10 points for barge return
+    score += bargeRankingPointRate * 5; // Up to 5 points for barge ranking points
     
-    // Reliability penalty
+    // reliability penalty
     score *= (1 - (breakdownRate * 0.5)); // Up to 50% penalty for breakdowns
     
     return max(0, min(score, 100));
@@ -69,17 +121,51 @@ class TeamStats {
     return records.where(selector).length / records.length;
   }
 
+  double _successRateWithAttempts(
+    int Function(ScoutingRecord) successSelector,
+    int Function(ScoutingRecord) totalAttemptsSelector
+  ) {
+    if (records.isEmpty) return 0;
+    int totalSuccesses = records.map(successSelector).reduce((a, b) => a + b);
+    int totalAttempts = records.map(totalAttemptsSelector).reduce((a, b) => a + b);
+    return totalAttempts > 0 ? totalSuccesses / totalAttempts : 0;
+  }
+
+  String _mostCommonValue(Iterable<String> values) {
+    if (values.isEmpty) return 'None';
+    Map<String, int> counts = {};
+    for (var value in values) {
+      counts[value] = (counts[value] ?? 0) + 1;
+    }
+    return counts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+  }
+
   List<String> getStrengths() {
     List<String> strengths = [];
     
-    if (avgAutoAlgae >= 3) strengths.add('Strong Auto Scoring');
-    if (taxisSuccessRate >= 0.8) strengths.add('Reliable Taxis');
-    if (autoCoralSuccessRate >= 0.7) strengths.add('Consistent Auto Coral');
-    if (avgTeleopAlgae >= 8) strengths.add('High Algae Output');
-    if (avgProcessedAlgae >= 4) strengths.add('Efficient Processing');
-    if (avgCycles >= 3) strengths.add('Fast Cycling');
+    // Auto strengths
+    if (autoTaxisRate >= 0.8) strengths.add('Reliable Auto Taxis');
+    if (autoAlgaeAvg >= 3) strengths.add('Strong Auto Algae');
+    if (autoL4SuccessRate >= 0.7) strengths.add('Accurate L4 Auto');
+    if ((autoL4Avg + autoL3Avg + autoL2Avg + autoL1Avg) >= 3) strengths.add('High Auto Coral Output');
+    
+    // Teleop strengths
+    if (teleopAlgaeNetAvg >= 8) strengths.add('High Algae Output');
+    if (processorEfficiency >= 0.8) strengths.add('Efficient Processor');
+    if (teleopL4SuccessRate >= 0.7) strengths.add('Accurate L4 Scoring');
+    if ((teleopL4Avg + teleopL3Avg + teleopL2Avg + teleopL1Avg) >= 5) strengths.add('High Coral Output');
+    
+    // Endgame strengths
     if (cageHangSuccessRate >= 0.8) strengths.add('Reliable Hanging');
-    if (records.every((r) => !r.breakdown)) strengths.add('No Breakdowns');
+    if (bargeReturnRate >= 0.8) strengths.add('Consistent Barge Return');
+    
+    // Ranking point strengths
+    if (coralRankingPointRate >= 0.5) strengths.add('Frequent Coral RP');
+    if (bargeRankingPointRate >= 0.5) strengths.add('Frequent Barge RP');
+    if (coOpPointRate >= 0.5) strengths.add('Good Co-op Partner');
+    
+    // Reliability strength
+    if (breakdownRate <= 0.1) strengths.add('Very Reliable');
     
     return strengths.take(4).toList(); // Limit to top 4 strengths
   }
@@ -87,12 +173,23 @@ class TeamStats {
   List<String> getWeaknesses() {
     List<String> weaknesses = [];
     
-    if (avgAutoAlgae < 1) weaknesses.add('Poor Auto Scoring');
-    if (taxisSuccessRate < 0.5) weaknesses.add('Inconsistent Taxis');
-    if (avgTeleopAlgae < 3) weaknesses.add('Low Scoring Output');
-    if (avgProcessedAlgae < 1) weaknesses.add('Minimal Processing');
-    if (avgCycles < 1) weaknesses.add('Slow Cycling');
+    // Auto weaknesses
+    if (autoTaxisRate < 0.5) weaknesses.add('Unreliable Auto Taxis');
+    if (autoAlgaeAvg < 1) weaknesses.add('Poor Auto Algae');
+    if (autoL4SuccessRate < 0.3 && autoL4Avg > 0) weaknesses.add('Inaccurate L4 Auto');
+    if ((autoL4Avg + autoL3Avg + autoL2Avg + autoL1Avg) < 1) weaknesses.add('Low Auto Coral Output');
+    
+    // Teleop weaknesses
+    if (teleopAlgaeNetAvg < 3) weaknesses.add('Low Algae Output');
+    if (processorEfficiency < 0.5 && teleopAlgaeProcessorAttemptsAvg > 0) weaknesses.add('Inefficient Processing');
+    if (teleopL4SuccessRate < 0.3 && teleopL4Avg > 0) weaknesses.add('Inaccurate L4 Scoring');
+    if ((teleopL4Avg + teleopL3Avg + teleopL2Avg + teleopL1Avg) < 2) weaknesses.add('Low Coral Output');
+    
+    // Endgame weaknesses
     if (cageHangSuccessRate < 0.3) weaknesses.add('Unreliable Hanging');
+    if (bargeReturnRate < 0.3) weaknesses.add('Rare Barge Return');
+    
+    // Reliability weakness
     if (breakdownRate >= 0.3) weaknesses.add('Frequent Breakdowns');
     
     return weaknesses.take(3).toList(); // Limit to top 3 weaknesses
@@ -193,58 +290,176 @@ class TeamAnalysisCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Key metrics
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _MetricTile(
-                          label: 'Auto Algae',
-                          value: stats.avgAutoAlgae.toStringAsFixed(1),
-                        ),
-                      ),
-                      Expanded(
-                        child: _MetricTile(
-                          label: 'Teleop Algae',
-                          value: stats.avgTeleopAlgae.toStringAsFixed(1),
-                        ),
-                      ),
-                      Expanded(
-                        child: _MetricTile(
-                          label: 'Cycles',
-                          value: stats.avgCycles.toStringAsFixed(1),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                  // Auto metrics
+                  _buildSectionHeader(context, 'Auto Performance'),
+                  _buildMetricGrid(context, [
+                    _MetricTile(
+                      label: 'Taxis Rate',
+                      value: '${(stats.autoTaxisRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.autoTaxisRate),
+                    ),
+                    _MetricTile(
+                      label: 'Auto Algae',
+                      value: stats.autoAlgaeAvg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'Net Algae',
+                      value: stats.autoAlgaeNetAvg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'Processor',
+                      value: stats.autoAlgaeProcessorAvg.toStringAsFixed(1),
+                    ),
+                  ]),
 
-                  // Success rates
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _MetricTile(
-                          label: 'Hang Rate',
-                          value: '${(stats.cageHangSuccessRate * 100).round()}%',
-                          color: _getSuccessRateColor(context, stats.cageHangSuccessRate),
-                        ),
-                      ),
-                      Expanded(
-                        child: _MetricTile(
-                          label: 'Taxis Rate',
-                          value: '${(stats.taxisSuccessRate * 100).round()}%',
-                          color: _getSuccessRateColor(context, stats.taxisSuccessRate),
-                        ),
-                      ),
-                      Expanded(
-                        child: _MetricTile(
-                          label: 'Breakdown',
-                          value: '${(stats.breakdownRate * 100).round()}%',
-                          color: _getBreakdownColor(context, stats.breakdownRate),
-                        ),
-                      ),
-                    ],
+                  // Auto coral success rates
+                  _buildSectionHeader(context, 'Auto Coral Success Rates'),
+                  _buildMetricGrid(context, [
+                    _MetricTile(
+                      label: 'L4 Rate',
+                      value: '${(stats.autoL4SuccessRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.autoL4SuccessRate),
+                    ),
+                    _MetricTile(
+                      label: 'L3 Rate',
+                      value: '${(stats.autoL3SuccessRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.autoL3SuccessRate),
+                    ),
+                    _MetricTile(
+                      label: 'L2 Rate',
+                      value: '${(stats.autoL2SuccessRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.autoL2SuccessRate),
+                    ),
+                    _MetricTile(
+                      label: 'L1 Rate',
+                      value: '${(stats.autoL1SuccessRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.autoL1SuccessRate),
+                    ),
+                  ]),
+
+                  // Auto coral averages
+                  _buildSectionHeader(context, 'Auto Coral Averages'),
+                  _buildMetricGrid(context, [
+                    _MetricTile(
+                      label: 'L4 Avg',
+                      value: stats.autoL4Avg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'L3 Avg',
+                      value: stats.autoL3Avg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'L2 Avg',
+                      value: stats.autoL2Avg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'L1 Avg',
+                      value: stats.autoL1Avg.toStringAsFixed(1),
+                    ),
+                  ]),
+
+                  // Teleop metrics
+                  _buildSectionHeader(context, 'Teleop Performance'),
+                  _buildMetricGrid(context, [
+                    _MetricTile(
+                      label: 'Net Algae',
+                      value: stats.teleopAlgaeNetAvg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'Processed',
+                      value: stats.teleopAlgaeProcessedAvg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'Attempts',
+                      value: stats.teleopAlgaeProcessorAttemptsAvg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'Efficiency',
+                      value: '${(stats.processorEfficiency * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.processorEfficiency),
+                    ),
+                  ]),
+
+                  // Teleop coral success rates
+                  _buildSectionHeader(context, 'Teleop Coral Success Rates'),
+                  _buildMetricGrid(context, [
+                    _MetricTile(
+                      label: 'L4 Rate',
+                      value: '${(stats.teleopL4SuccessRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.teleopL4SuccessRate),
+                    ),
+                    _MetricTile(
+                      label: 'L3 Rate',
+                      value: '${(stats.teleopL3SuccessRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.teleopL3SuccessRate),
+                    ),
+                    _MetricTile(
+                      label: 'L2 Rate',
+                      value: '${(stats.teleopL2SuccessRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.teleopL2SuccessRate),
+                    ),
+                    _MetricTile(
+                      label: 'L1 Rate',
+                      value: '${(stats.teleopL1SuccessRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.teleopL1SuccessRate),
+                    ),
+                  ]),
+
+                  // Teleop coral averages
+                  _buildSectionHeader(context, 'Teleop Coral Averages'),
+                  _buildMetricGrid(context, [
+                    _MetricTile(
+                      label: 'L4 Avg',
+                      value: stats.teleopL4Avg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'L3 Avg',
+                      value: stats.teleopL3Avg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'L2 Avg',
+                      value: stats.teleopL2Avg.toStringAsFixed(1),
+                    ),
+                    _MetricTile(
+                      label: 'L1 Avg',
+                      value: stats.teleopL1Avg.toStringAsFixed(1),
+                    ),
+                  ]),
+
+                  // Endgame and Ranking Points
+                  _buildSectionHeader(context, 'Endgame & Ranking Points'),
+                  _buildMetricGrid(context, [
+                    _MetricTile(
+                      label: 'Hang Rate',
+                      value: '${(stats.cageHangSuccessRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.cageHangSuccessRate),
+                    ),
+                    _MetricTile(
+                      label: 'Barge Rate',
+                      value: '${(stats.bargeReturnRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.bargeReturnRate),
+                    ),
+                    _MetricTile(
+                      label: 'Coral RP',
+                      value: '${(stats.coralRankingPointRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.coralRankingPointRate),
+                    ),
+                    _MetricTile(
+                      label: 'Co-Op Rate',
+                      value: '${(stats.coOpPointRate * 100).round()}%',
+                      color: _getSuccessRateColor(context, stats.coOpPointRate),
+                    ),
+                  ]),
+
+                  // Capabilities
+                  _buildSectionHeader(context, 'Capabilities'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      'Coral Pickup: ${stats.preferredCoralPickupMethod}',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
                   ),
-                  const SizedBox(height: 16),
 
                   // Strengths and weaknesses
                   if (stats.getStrengths().isNotEmpty) ...[
@@ -259,6 +474,33 @@ class TeamAnalysisCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      child: Text(
+        title.toUpperCase(),
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          color: Theme.of(context).colorScheme.primary,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetricGrid(BuildContext context, List<Widget> metrics) {
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: NeverScrollableScrollPhysics(),
+      childAspectRatio: 2.5,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 8,
+      children: metrics,
     );
   }
 
@@ -290,6 +532,13 @@ class TeamAnalysisCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getSuccessRateColor(BuildContext context, double rate) {
+    if (rate >= 0.8) return Colors.green;
+    if (rate >= 0.6) return Colors.blue;
+    if (rate >= 0.4) return Colors.orange;
+    return Colors.red;
   }
 
   Widget _buildStrengthsSection(BuildContext context, List<String> strengths) {
@@ -354,19 +603,6 @@ class TeamAnalysisCard extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  Color _getSuccessRateColor(BuildContext context, double rate) {
-    if (rate >= 0.8) return Colors.green;
-    if (rate >= 0.6) return Colors.blue;
-    if (rate >= 0.4) return Colors.orange;
-    return Colors.red;
-  }
-
-  Color _getBreakdownColor(BuildContext context, double rate) {
-    if (rate <= 0.1) return Colors.green;
-    if (rate <= 0.2) return Colors.orange;
-    return Colors.red;
   }
 }
 
