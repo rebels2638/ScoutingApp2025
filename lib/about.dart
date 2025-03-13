@@ -25,7 +25,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Version 0.7.6-Stable',
+                    'Version 0.8.0-Stable',
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
@@ -42,6 +42,38 @@ class AboutPage extends StatelessWidget {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildUpdateNote('0.8.0-Stable', [
+                  'Updated scouting page to have more granular data input fields.',
+                  'Added sorting to team analysis page.',
+                  'Improved team analysis page UI',
+                  'Added more metrics and analysis features to team analysis page.',
+                ]),
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  padding: const EdgeInsets.all(AppSpacing.sm),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.red),
+                      SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          'Warning: Data from version 0.7.6 and earlier is not compatible with version 0.8.0',
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                /*
+                const SizedBox(height: AppSpacing.md),
                 _buildUpdateNote('0.7.6-Stable', [
                   'Decreased friction and improved UX for QR code scanning.',
                   'Added features in data and settings pages.',
@@ -49,6 +81,7 @@ class AboutPage extends StatelessWidget {
                   'Changed order for match data records to show newest first.',
                   'Added a refresh button to the match data page.',
                 ]),
+                
                 const SizedBox(height: AppSpacing.md),
                 _buildUpdateNote('0.7.5-Stable', [
                   'Added Bluetooth connectivity support with device scanning and management.',
@@ -60,7 +93,6 @@ class AboutPage extends StatelessWidget {
                   'Added Team Data Visualization.',
                   'Fixed various bugs and improved stability.',
                 ]),
-                /*
                 const SizedBox(height: AppSpacing.md),
                 _buildUpdateNote('0.7.4-Beta', [
                   'Fixed major bugs and improved performance.',
