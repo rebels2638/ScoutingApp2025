@@ -110,7 +110,44 @@ class TeamStats {
     return max(0, min(score, 100));
   }
 
-  // Helper methods
+  // Overall success rates
+  double get autoOverallSuccessRate {
+    int totalSuccesses = records.map((r) => 
+      r.autoCoralHeight4Success + 
+      r.autoCoralHeight3Success + 
+      r.autoCoralHeight2Success + 
+      r.autoCoralHeight1Success
+    ).reduce((a, b) => a + b);
+    
+    int totalAttempts = records.map((r) => 
+      r.autoCoralHeight4Success + r.autoCoralHeight4Failure +
+      r.autoCoralHeight3Success + r.autoCoralHeight3Failure +
+      r.autoCoralHeight2Success + r.autoCoralHeight2Failure +
+      r.autoCoralHeight1Success + r.autoCoralHeight1Failure
+    ).reduce((a, b) => a + b);
+    
+    return totalAttempts > 0 ? totalSuccesses / totalAttempts : 0;
+  }
+
+  double get teleopOverallSuccessRate {
+    int totalSuccesses = records.map((r) => 
+      r.teleopCoralHeight4Success + 
+      r.teleopCoralHeight3Success + 
+      r.teleopCoralHeight2Success + 
+      r.teleopCoralHeight1Success
+    ).reduce((a, b) => a + b);
+    
+    int totalAttempts = records.map((r) => 
+      r.teleopCoralHeight4Success + r.teleopCoralHeight4Failure +
+      r.teleopCoralHeight3Success + r.teleopCoralHeight3Failure +
+      r.teleopCoralHeight2Success + r.teleopCoralHeight2Failure +
+      r.teleopCoralHeight1Success + r.teleopCoralHeight1Failure
+    ).reduce((a, b) => a + b);
+    
+    return totalAttempts > 0 ? totalSuccesses / totalAttempts : 0;
+  }
+
+  // helper methods
   double _average(num Function(ScoutingRecord) selector) {
     if (records.isEmpty) return 0;
     return records.map(selector).reduce((a, b) => a + b) / records.length;
@@ -403,6 +440,11 @@ class TeamAnalysisCard extends StatelessWidget {
           _buildSectionHeader(context, 'auto coral success rates'),
           _buildMetricGrid(context, [
             _MetricTile(
+              label: 'Overall Success Rate',
+              value: '${(stats.autoOverallSuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.autoOverallSuccessRate),
+            ),
+            _MetricTile(
               label: 'L4 Rate',
               value: '${(stats.autoL4SuccessRate * 100).round()}%',
               color: _getSuccessRateColor(context, stats.autoL4SuccessRate),
@@ -470,6 +512,11 @@ class TeamAnalysisCard extends StatelessWidget {
           // teleop coral success rates
           _buildSectionHeader(context, 'teleop coral success rates'),
           _buildMetricGrid(context, [
+            _MetricTile(
+              label: 'Overall Success Rate',
+              value: '${(stats.teleopOverallSuccessRate * 100).round()}%',
+              color: _getSuccessRateColor(context, stats.teleopOverallSuccessRate),
+            ),
             _MetricTile(
               label: 'L4 Rate',
               value: '${(stats.teleopL4SuccessRate * 100).round()}%',
