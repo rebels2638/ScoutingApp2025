@@ -755,7 +755,7 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
 
   Widget _buildSectionSubheader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(top: 8, bottom: 8),
+      padding: const EdgeInsets.only(top: 8, bottom: 10),
       child: Text(
         title,
         style: TextStyle(
