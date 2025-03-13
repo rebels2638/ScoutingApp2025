@@ -263,7 +263,7 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                filled: true,
+                // filled: true,
               ),
               onChanged: (value) {
                 setState(() {
