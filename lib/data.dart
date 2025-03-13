@@ -1248,6 +1248,7 @@ class DataPageState extends State<DataPage> {
           onTap: () => _showTeamAnalysis(context),
         ),
         */
+        /*
         SpeedDialChild(
           child: const Icon(Icons.bar_chart),
           label: 'Visualizations',
@@ -1258,6 +1259,7 @@ class DataPageState extends State<DataPage> {
             ),
           ),
         ),
+        */
         SpeedDialChild(
           backgroundColor: Colors.red,
           foregroundColor: Colors.white,

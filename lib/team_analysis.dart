@@ -3,6 +3,7 @@ import 'data.dart';
 import 'theme/app_theme.dart';
 import 'comparison.dart';
 import 'dart:math' show max, min;
+import 'visualization_page.dart';
 
 class TeamStats {
   final int teamNumber;
@@ -371,6 +372,19 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
                                 ),
                               ),
                               _buildScoreIndicator(context, stats.scoringPotential),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                icon: const Icon(Icons.bar_chart),
+                                tooltip: 'View Visualizations',
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => VisualizationPage(records: stats.records),
+                                    ),
+                                  );
+                                },
+                              ),
                               const SizedBox(width: 8),
                               Icon(
                                 isExpanded ? Icons.expand_less : Icons.expand_more,
