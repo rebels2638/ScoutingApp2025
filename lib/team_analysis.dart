@@ -531,28 +531,6 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
             context,
             'auto',
             [
-              // auto performance
-              _buildSectionSubheader(context, 'Performance'),
-              _buildMetricGrid(context, [
-                _MetricTile(
-                  label: 'Taxis Rate',
-                  value: '${(widget.stats.autoTaxisRate * 100).round()}%',
-                  color: _getSuccessRateColor(context, widget.stats.autoTaxisRate),
-                ),
-                _MetricTile(
-                  label: 'Auto Algae',
-                  value: widget.stats.autoAlgaeAvg.toStringAsFixed(1),
-                ),
-                _MetricTile(
-                  label: 'Net Algae',
-                  value: widget.stats.autoAlgaeNetAvg.toStringAsFixed(1),
-                ),
-                _MetricTile(
-                  label: 'Processor',
-                  value: widget.stats.autoAlgaeProcessorAvg.toStringAsFixed(1),
-                ),
-              ]),
-
               // auto coral success rates
               _buildSectionSubheader(context, 'Coral Success Rates'),
               _buildMetricGrid(context, [
@@ -609,6 +587,28 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
                   value: widget.stats.autoL1Avg.toStringAsFixed(1),
                 ),
               ]),
+
+              // auto algae
+              _buildSectionSubheader(context, 'Algae'),
+              _buildMetricGrid(context, [
+                _MetricTile(
+                  label: 'Taxis Rate',
+                  value: '${(widget.stats.autoTaxisRate * 100).round()}%',
+                  color: _getSuccessRateColor(context, widget.stats.autoTaxisRate),
+                ),
+                _MetricTile(
+                  label: 'Auto Algae',
+                  value: widget.stats.autoAlgaeAvg.toStringAsFixed(1),
+                ),
+                _MetricTile(
+                  label: 'Net Algae',
+                  value: widget.stats.autoAlgaeNetAvg.toStringAsFixed(1),
+                ),
+                _MetricTile(
+                  label: 'Processor',
+                  value: widget.stats.autoAlgaeProcessorAvg.toStringAsFixed(1),
+                ),
+              ]),
             ],
           ),
 
@@ -617,28 +617,6 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
             context,
             'teleop',
             [
-              // teleop performance
-              _buildSectionSubheader(context, 'Performance'),
-              _buildMetricGrid(context, [
-                _MetricTile(
-                  label: 'Net Algae',
-                  value: widget.stats.teleopAlgaeNetAvg.toStringAsFixed(1),
-                ),
-                _MetricTile(
-                  label: 'Processed',
-                  value: widget.stats.teleopAlgaeProcessedAvg.toStringAsFixed(1),
-                ),
-                _MetricTile(
-                  label: 'Attempts',
-                  value: widget.stats.teleopAlgaeProcessorAttemptsAvg.toStringAsFixed(1),
-                ),
-                _MetricTile(
-                  label: 'Efficiency',
-                  value: '${(widget.stats.processorEfficiency * 100).round()}%',
-                  color: _getSuccessRateColor(context, widget.stats.processorEfficiency),
-                ),
-              ]),
-
               // teleop coral success rates
               _buildSectionSubheader(context, 'Coral Success Rates'),
               _buildMetricGrid(context, [
@@ -693,6 +671,28 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
                 _MetricTile(
                   label: 'L1 Avg',
                   value: widget.stats.teleopL1Avg.toStringAsFixed(1),
+                ),
+              ]),
+
+              // teleop algae
+              _buildSectionSubheader(context, 'Algae'),
+              _buildMetricGrid(context, [
+                _MetricTile(
+                  label: 'Net Algae',
+                  value: widget.stats.teleopAlgaeNetAvg.toStringAsFixed(1),
+                ),
+                _MetricTile(
+                  label: 'Processed',
+                  value: widget.stats.teleopAlgaeProcessedAvg.toStringAsFixed(1),
+                ),
+                _MetricTile(
+                  label: 'Attempts',
+                  value: widget.stats.teleopAlgaeProcessorAttemptsAvg.toStringAsFixed(1),
+                ),
+                _MetricTile(
+                  label: 'Efficiency',
+                  value: '${(widget.stats.processorEfficiency * 100).round()}%',
+                  color: _getSuccessRateColor(context, widget.stats.processorEfficiency),
                 ),
               ]),
             ],
