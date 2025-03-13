@@ -147,6 +147,27 @@ class TeamStats {
     return totalAttempts > 0 ? totalSuccesses / totalAttempts : 0;
   }
 
+  // total coral averages
+  double get autoTotalCoralAvg {
+    if (records.isEmpty) return 0;
+    return records.map((r) => 
+      r.autoCoralHeight4Success + 
+      r.autoCoralHeight3Success + 
+      r.autoCoralHeight2Success + 
+      r.autoCoralHeight1Success
+    ).reduce((a, b) => a + b) / records.length;
+  }
+
+  double get teleopTotalCoralAvg {
+    if (records.isEmpty) return 0;
+    return records.map((r) => 
+      r.teleopCoralHeight4Success + 
+      r.teleopCoralHeight3Success + 
+      r.teleopCoralHeight2Success + 
+      r.teleopCoralHeight1Success
+    ).reduce((a, b) => a + b) / records.length;
+  }
+
   // helper methods
   double _average(num Function(ScoutingRecord) selector) {
     if (records.isEmpty) return 0;
@@ -470,6 +491,12 @@ class TeamAnalysisCard extends StatelessWidget {
           _buildSectionHeader(context, 'auto coral averages'),
           _buildMetricGrid(context, [
             _MetricTile(
+              label: 'Total Avg',
+              value: stats.autoTotalCoralAvg.toStringAsFixed(1),
+              color: stats.autoTotalCoralAvg >= 2 ? Colors.green : 
+                     stats.autoTotalCoralAvg >= 1 ? Colors.blue : null,
+            ),
+            _MetricTile(
               label: 'L4 Avg',
               value: stats.autoL4Avg.toStringAsFixed(1),
             ),
@@ -543,6 +570,12 @@ class TeamAnalysisCard extends StatelessWidget {
           _buildSectionHeader(context, 'teleop coral averages'),
           _buildMetricGrid(context, [
             _MetricTile(
+              label: 'Total Avg',
+              value: stats.teleopTotalCoralAvg.toStringAsFixed(1),
+              color: stats.teleopTotalCoralAvg >= 4 ? Colors.green : 
+                     stats.teleopTotalCoralAvg >= 2 ? Colors.blue : null,
+            ),
+            _MetricTile(
               label: 'L4 Avg',
               value: stats.teleopL4Avg.toStringAsFixed(1),
             ),
@@ -609,7 +642,7 @@ class TeamAnalysisCard extends StatelessWidget {
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Padding(
-      padding: const EdgeInsets.only(top: 16, bottom: 8),
+      padding: const EdgeInsets.only(top: 1, bottom: 8),
       child: Text(
         title.toUpperCase(),
         style: TextStyle(
