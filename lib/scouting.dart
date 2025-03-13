@@ -22,6 +22,7 @@ import 'api.dart';
 import 'package:flutter/services.dart';  // Add this import
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bluetooth_page.dart';
+import 'team_analysis.dart';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -195,13 +196,13 @@ class _ScoutingPageState extends State<ScoutingPage> {
   void _onItemTapped(int index) {
     TelemetryService().logAction('navigation_changed', 'to index $index');
     
-    // Dismiss keyboard when switching tabs
+    // dismiss keyboard when switching tabs
     FocusScope.of(context).unfocus();
     
-    // Calculate the actual maximum index
-    final maxIndex = _bluetoothEnabled ? 5 : 5;  // Max is always 5
+    // calculate the actual maximum index
+    final maxIndex = _bluetoothEnabled ? 6 : 6;  // max is always 6
     
-    // Ensure the index is valid
+    // ensure the index is valid
     if (index > maxIndex) {
       index = maxIndex;
     }
@@ -227,28 +228,32 @@ class _ScoutingPageState extends State<ScoutingPage> {
         case 1:
           return DataPage(key: _dataPageKey);
         case 2:
-          return ApiPage(key: ApiPageState.globalKey);
+          return TeamAnalysisPage(records: _dataPageKey.currentState?.records ?? []);
         case 3:
-          return BluetoothPage();
+          return ApiPage(key: ApiPageState.globalKey);
         case 4:
-          return SettingsPage();
+          return BluetoothPage();
         case 5:
+          return SettingsPage();
+        case 6:
           return AboutPage();
         default:
           return _buildScoutingPage();
       }
     } else {
-      // When Bluetooth is disabled, skip index 3
+      // when bluetooth is disabled, skip index 4
       switch (index) {
         case 0:
           return _buildScoutingPage();
         case 1:
           return DataPage(key: _dataPageKey);
         case 2:
+          return TeamAnalysisPage(records: _dataPageKey.currentState?.records ?? []);
+        case 3:
           return ApiPage(key: ApiPageState.globalKey);
-        case 4:
-          return SettingsPage();
         case 5:
+          return SettingsPage();
+        case 6:
           return AboutPage();
         default:
           return _buildScoutingPage();
@@ -1303,28 +1308,32 @@ class _ScoutingPageState extends State<ScoutingPage> {
         case 1:
           return 'Data';
         case 2:
-          return 'API';
+          return 'Analysis';
         case 3:
-          return 'Bluetooth';
+          return 'API';
         case 4:
-          return 'Settings';
+          return 'Bluetooth';
         case 5:
+          return 'Settings';
+        case 6:
           return 'About';
         default:
           return 'Scouting';
       }
     } else {
-      // When Bluetooth is disabled, skip index 3
+      // when bluetooth is disabled, skip index 4
       switch (index) {
         case 0:
           return 'Scouting';
         case 1:
           return 'Data';
         case 2:
+          return 'Analysis';
+        case 3:
           return 'API';
-        case 4:
-          return 'Settings';
         case 5:
+          return 'Settings';
+        case 6:
           return 'About';
         default:
           return 'Scouting';

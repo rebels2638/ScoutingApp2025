@@ -822,6 +822,9 @@ class DataPageState extends State<DataPage> {
   bool _isScoutingLeader = false;
   bool _refreshButtonEnabled = false;
 
+  // add getter for records
+  List<ScoutingRecord> get records => _records;
+
   @override
   void initState() {
     super.initState();
@@ -1238,11 +1241,13 @@ class DataPageState extends State<DataPage> {
           label: 'Export Data',
           onTap: _exportData,
         ),
+        /*
         SpeedDialChild(
           child: const Icon(Icons.analytics),
           label: 'Team Analysis',
           onTap: () => _showTeamAnalysis(context),
         ),
+        */
         SpeedDialChild(
           child: const Icon(Icons.bar_chart),
           label: 'Visualizations',

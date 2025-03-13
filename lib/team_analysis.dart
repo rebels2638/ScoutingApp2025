@@ -306,9 +306,11 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
     }).toList();
 
     return Scaffold(
+      /*
       appBar: AppBar(
         title: const Text('Team Analysis'),
       ),
+      */
       body: Column(
         children: [
           // search bar
