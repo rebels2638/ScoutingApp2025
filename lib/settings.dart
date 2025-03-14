@@ -7,6 +7,7 @@ import 'theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'database_helper.dart';
 import 'dart:io';
+import 'widgets/navbar.dart';
 
 class SettingsPage extends StatefulWidget {
   @override
@@ -191,6 +192,7 @@ class _SettingsPageState extends State<SettingsPage> {
               onChanged: (value) async {
                 await _saveSetting(_scoutingLeaderKey, value);
                 setState(() => _scoutingLeaderEnabled = value);
+                notifyScoutingLeaderChange(value);
               },
             ),
           ],

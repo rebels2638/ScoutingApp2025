@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:async';
+
+// create a stream controller for scouting leader changes
+final _scoutingLeaderController = StreamController<bool>.broadcast();
+
+// function to notify listeners when the setting changes
+void notifyScoutingLeaderChange(bool value) {
+  _scoutingLeaderController.add(value);
+}
 
 class NavBar extends StatefulWidget {
   final int currentIndex;
@@ -20,18 +29,27 @@ class NavBar extends StatefulWidget {
 
 class _NavBarState extends State<NavBar> {
   bool? _isScoutingLeader;
+  StreamSubscription? _scoutingLeaderSubscription;
 
   @override
   void initState() {
     super.initState();
     _loadScoutingLeaderStatus();
+    
+    // subscribe to scouting leader changes
+    _scoutingLeaderSubscription = _scoutingLeaderController.stream.listen((enabled) {
+      if (mounted) {
+        setState(() {
+          _isScoutingLeader = enabled;
+        });
+      }
+    });
   }
 
   @override
-  void didUpdateWidget(NavBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // reload status when widget updates
-    _loadScoutingLeaderStatus();
+  void dispose() {
+    _scoutingLeaderSubscription?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadScoutingLeaderStatus() async {
