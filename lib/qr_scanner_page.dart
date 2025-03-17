@@ -5,6 +5,7 @@ import 'package:csv/csv.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
+import 'package:flutter/services.dart';
 
 class QrScannerPage extends StatefulWidget {
   @override
@@ -12,7 +13,13 @@ class QrScannerPage extends StatefulWidget {
 }
 
 class _QrScannerPageState extends State<QrScannerPage> {
-  MobileScannerController controller = MobileScannerController();
+  MobileScannerController controller = MobileScannerController(
+    facing: CameraFacing.back,
+    detectionSpeed: DetectionSpeed.normal,
+    // add these settings to prevent flipping
+    detectionTimeoutMs: 500,
+    returnImage: false,
+  );
   bool _isProcessing = false;
   DateTime? _lastScanTime;
   int _qrRateLimit = 1500; // Default value in milliseconds
@@ -24,6 +31,11 @@ class _QrScannerPageState extends State<QrScannerPage> {
   void initState() {
     super.initState();
     _loadRateLimit();
+    
+    // lock the screen orientation to portrait
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
     
     // Start periodic status check
     _statusCheckTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
@@ -42,6 +54,13 @@ class _QrScannerPageState extends State<QrScannerPage> {
   void dispose() {
     _statusCheckTimer?.cancel();
     controller.dispose();
+    // reset orientation settings
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
     super.dispose();
   }
 
@@ -243,6 +262,16 @@ class _QrScannerPageState extends State<QrScannerPage> {
                   break;
                 }
               }
+            },
+            scanWindow: Rect.largest,
+            startDelay: true,
+            placeholderBuilder: (context, child) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                ),
+                child: child,
+              );
             },
           ),
           // Animated border overlay
