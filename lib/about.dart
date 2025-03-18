@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class AboutPage extends StatelessWidget {
+  Future<void> _launchTutorial() async {
+    final Uri url = Uri.parse('https://r.wchiming.com/scouting?ref=2025scoutingapp');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -109,6 +117,35 @@ class AboutPage extends StatelessWidget {
                   'Enhanced UI consistency and visual appeal.',
                 ]),
                 */
+              ],
+            ),
+          ),
+          SizedBox(height: AppSpacing.md),
+          _buildSection(
+            context,
+            title: 'App Tutorial',
+            icon: Icons.school,
+            content: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Text(
+                    'New to the app? Check out our tutorial to learn how to use all the features effectively.',
+                    style: TextStyle(height: 1.4),
+                  ),
+                ),
+                SizedBox(height: 8),
+                ElevatedButton.icon(
+                  icon: Icon(Icons.open_in_new, color: Colors.white),
+                  label: Text('Open Tutorial'),
+                  onPressed: _launchTutorial,
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    backgroundColor: AppColors.primary,
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                ),
               ],
             ),
           ),
