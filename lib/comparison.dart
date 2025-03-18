@@ -247,45 +247,80 @@ class _ComparisonPageState extends State<ComparisonPage> with SingleTickerProvid
       // Calculate averages for multiple matches
       var matches = entry.value;
       return ScoutingRecord(
-        teamNumber: entry.key,
+        timestamp: matches.first.timestamp,
         matchNumber: matches.first.matchNumber,
         matchType: '${matches.length} Matches (Avg)',
+        teamNumber: entry.key,
         isRedAlliance: matches.first.isRedAlliance,
-        timestamp: matches.first.timestamp,
-        // Required fields
-        cageType: matches.first.cageType,
+        
+        // Auto
+        autoTaxis: _mostCommon(matches.map((r) => r.autoTaxis)),
+        autoCoralPreloaded: _mostCommon(matches.map((r) => r.autoCoralPreloaded)),
+        autoAlgaeRemoved: _average(matches.map((r) => r.autoAlgaeRemoved)).round(),
+        autoCoralHeight4Success: _average(matches.map((r) => r.autoCoralHeight4Success)).round(),
+        autoCoralHeight4Failure: _average(matches.map((r) => r.autoCoralHeight4Failure)).round(),
+        autoCoralHeight3Success: _average(matches.map((r) => r.autoCoralHeight3Success)).round(),
+        autoCoralHeight3Failure: _average(matches.map((r) => r.autoCoralHeight3Failure)).round(),
+        autoCoralHeight2Success: _average(matches.map((r) => r.autoCoralHeight2Success)).round(),
+        autoCoralHeight2Failure: _average(matches.map((r) => r.autoCoralHeight2Failure)).round(),
+        autoCoralHeight1Success: _average(matches.map((r) => r.autoCoralHeight1Success)).round(),
+        autoCoralHeight1Failure: _average(matches.map((r) => r.autoCoralHeight1Failure)).round(),
+        autoAlgaeInNet: _average(matches.map((r) => r.autoAlgaeInNet)).round(),
+        autoAlgaeInProcessor: _average(matches.map((r) => r.autoAlgaeInProcessor)).round(),
+
+        // Teleop
+        teleopCoralHeight4Success: _average(matches.map((r) => r.teleopCoralHeight4Success)).round(),
+        teleopCoralHeight4Failure: _average(matches.map((r) => r.teleopCoralHeight4Failure)).round(),
+        teleopCoralHeight3Success: _average(matches.map((r) => r.teleopCoralHeight3Success)).round(),
+        teleopCoralHeight3Failure: _average(matches.map((r) => r.teleopCoralHeight3Failure)).round(),
+        teleopCoralHeight2Success: _average(matches.map((r) => r.teleopCoralHeight2Success)).round(),
+        teleopCoralHeight2Failure: _average(matches.map((r) => r.teleopCoralHeight2Failure)).round(),
+        teleopCoralHeight1Success: _average(matches.map((r) => r.teleopCoralHeight1Success)).round(),
+        teleopCoralHeight1Failure: _average(matches.map((r) => r.teleopCoralHeight1Failure)).round(),
+        teleopCoralRankingPoint: _mostCommon(matches.map((r) => r.teleopCoralRankingPoint)),
+        teleopAlgaeRemoved: _average(matches.map((r) => r.teleopAlgaeRemoved)).round(),
+        teleopAlgaeProcessorAttempts: _average(matches.map((r) => r.teleopAlgaeProcessorAttempts)).round(),
+        teleopAlgaeProcessed: _average(matches.map((r) => r.teleopAlgaeProcessed)).round(),
+        teleopAlgaeScoredInNet: _average(matches.map((r) => r.teleopAlgaeScoredInNet)).round(),
+        teleopCanPickupAlgae: _mostCommon(matches.map((r) => r.teleopCanPickupAlgae)),
+        teleopCoralPickupMethod: _mostCommonString(matches.map((r) => r.teleopCoralPickupMethod)),
+
+        // Endgame
+        endgameReturnedToBarge: _mostCommon(matches.map((r) => r.endgameReturnedToBarge)),
+        endgameCageHang: _mostCommonString(matches.map((r) => r.endgameCageHang)),
+        endgameBargeRankingPoint: _mostCommon(matches.map((r) => r.endgameBargeRankingPoint)),
+
+        // Other
+        otherCoOpPoint: _mostCommon(matches.map((r) => r.otherCoOpPoint)),
+        otherBreakdown: _mostCommon(matches.map((r) => r.otherBreakdown)),
+        otherComments: matches.map((r) => r.otherComments).where((c) => c.isNotEmpty).join('; '),
+
+        // Legacy fields
+        cageType: _mostCommonString(matches.map((r) => r.cageType)),
         coralPreloaded: _mostCommon(matches.map((r) => r.coralPreloaded)),
         taxis: _mostCommon(matches.map((r) => r.taxis)),
-        algaeRemoved: _average(matches.map((r) => r.algaeRemoved)),
+        algaeRemoved: _average(matches.map((r) => r.algaeRemoved)).round(),
         coralPlaced: _mostCommonString(matches.map((r) => r.coralPlaced)),
         rankingPoint: _mostCommon(matches.map((r) => r.rankingPoint)),
         canPickupCoral: _mostCommon(matches.map((r) => r.canPickupCoral)),
         canPickupAlgae: _mostCommon(matches.map((r) => r.canPickupAlgae)),
-        coralPickupMethod: _mostCommonString(matches.map((r) => r.coralPickupMethod)),
-        // Auto
-        autoAlgaeInNet: _average(matches.map((r) => r.autoAlgaeInNet)),
-        autoAlgaeInProcessor: _average(matches.map((r) => r.autoAlgaeInProcessor)),
-        // Teleop
-        algaeScoredInNet: _average(matches.map((r) => r.algaeScoredInNet)),
+        algaeScoredInNet: _average(matches.map((r) => r.algaeScoredInNet)).round(),
         coralRankingPoint: _mostCommon(matches.map((r) => r.coralRankingPoint)),
-        algaeProcessed: _average(matches.map((r) => r.algaeProcessed)),
-        processedAlgaeScored: _average(matches.map((r) => r.processedAlgaeScored)),
-        processorCycles: _average(matches.map((r) => r.processorCycles)),
+        algaeProcessed: _average(matches.map((r) => r.algaeProcessed)).round(),
+        processedAlgaeScored: _average(matches.map((r) => r.processedAlgaeScored)).round(),
+        processorCycles: _average(matches.map((r) => r.processorCycles)).round(),
         coOpPoint: _mostCommon(matches.map((r) => r.coOpPoint)),
-        // Endgame
         returnedToBarge: _mostCommon(matches.map((r) => r.returnedToBarge)),
         cageHang: _mostCommonString(matches.map((r) => r.cageHang)),
         bargeRankingPoint: _mostCommon(matches.map((r) => r.bargeRankingPoint)),
-        // Other
         breakdown: _mostCommon(matches.map((r) => r.breakdown)),
         comments: matches.map((r) => r.comments).where((c) => c.isNotEmpty).join('; '),
-        // Coral placement
-        coralOnReefHeight1: _average(matches.map((r) => r.coralOnReefHeight1)),
-        coralOnReefHeight2: _average(matches.map((r) => r.coralOnReefHeight2)),
-        coralOnReefHeight3: _average(matches.map((r) => r.coralOnReefHeight3)),
-        coralOnReefHeight4: _average(matches.map((r) => r.coralOnReefHeight4)),
-        // Additional fields
+        coralPickupMethod: _mostCommonString(matches.map((r) => r.coralPickupMethod)),
         feederStation: _mostCommonString(matches.map((r) => r.feederStation)),
+        coralOnReefHeight1: _average(matches.map((r) => r.coralOnReefHeight1)).round(),
+        coralOnReefHeight2: _average(matches.map((r) => r.coralOnReefHeight2)).round(),
+        coralOnReefHeight3: _average(matches.map((r) => r.coralOnReefHeight3)).round(),
+        coralOnReefHeight4: _average(matches.map((r) => r.coralOnReefHeight4)).round(),
         robotPath: matches.first.robotPath, // Take the first match's path
       );
     }).toList();
@@ -399,7 +434,7 @@ class AutoTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16),  // Remove left padding
+      padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -409,35 +444,24 @@ class AutoTab extends StatelessWidget {
             color: Theme.of(context).colorScheme.primary,
           ),
           ComparisonMetric(
-            label: 'Cage Type',
-            values: records.map((r) => r.cageType).toList(),
+            label: 'Taxis',
+            values: records.map((r) => r.autoTaxis ? 'Yes' : 'No').toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
             label: 'Coral Preloaded',
-            values: records.map((r) => r.coralPreloaded ? 'Yes' : 'No').toList(),
+            values: records.map((r) => r.autoCoralPreloaded ? 'Yes' : 'No').toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
 
-          // Auto Movement
+          // auto Algae
           SectionHeader(
-            title: 'Auto Movement',
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          ComparisonMetric(
-            label: 'Taxis',
-            values: records.map((r) => r.taxis ? 'Yes' : 'No').toList(),
-            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
-          ),
-
-          // Auto Scoring
-          SectionHeader(
-            title: 'Auto Scoring',
+            title: 'Auto Algae',
             color: Theme.of(context).colorScheme.primary,
           ),
           ComparisonMetric(
             label: 'Algae Removed',
-            values: records.map((r) => r.algaeRemoved.toString()).toList(),
+            values: records.map((r) => r.autoAlgaeRemoved.toString()).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
@@ -450,14 +474,108 @@ class AutoTab extends StatelessWidget {
             values: records.map((r) => r.autoAlgaeInProcessor.toString()).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
+
+          // auto Coral L4
+          SectionHeader(
+            title: 'Auto L4 Coral',
+            color: Theme.of(context).colorScheme.primary,
+          ),
           ComparisonMetric(
-            label: 'Coral Placed',
-            values: records.map((r) => r.coralPlaced).toList(),
+            label: 'L4 Success',
+            values: records.map((r) => r.autoCoralHeight4Success.toString()).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
-            label: 'Ranking Point',
-            values: records.map((r) => r.rankingPoint ? 'Yes' : 'No').toList(),
+            label: 'L4 Failure',
+            values: records.map((r) => r.autoCoralHeight4Failure.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L4 Success Rate',
+            values: records.map((r) {
+              final attempts = r.autoCoralHeight4Success + r.autoCoralHeight4Failure;
+              return attempts > 0 
+                  ? '${((r.autoCoralHeight4Success / attempts) * 100).round()}%'
+                  : 'No Attempts';
+            }).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // auto Coral L3
+          SectionHeader(
+            title: 'Auto L3 Coral',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'L3 Success',
+            values: records.map((r) => r.autoCoralHeight3Success.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L3 Failure',
+            values: records.map((r) => r.autoCoralHeight3Failure.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L3 Success Rate',
+            values: records.map((r) {
+              final attempts = r.autoCoralHeight3Success + r.autoCoralHeight3Failure;
+              return attempts > 0 
+                  ? '${((r.autoCoralHeight3Success / attempts) * 100).round()}%'
+                  : 'No Attempts';
+            }).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // auto Coral L2
+          SectionHeader(
+            title: 'Auto L2 Coral',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'L2 Success',
+            values: records.map((r) => r.autoCoralHeight2Success.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L2 Failure',
+            values: records.map((r) => r.autoCoralHeight2Failure.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L2 Success Rate',
+            values: records.map((r) {
+              final attempts = r.autoCoralHeight2Success + r.autoCoralHeight2Failure;
+              return attempts > 0 
+                  ? '${((r.autoCoralHeight2Success / attempts) * 100).round()}%'
+                  : 'No Attempts';
+            }).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // auto Coral L1
+          SectionHeader(
+            title: 'Auto L1 Coral',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'L1 Success',
+            values: records.map((r) => r.autoCoralHeight1Success.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L1 Failure',
+            values: records.map((r) => r.autoCoralHeight1Failure.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L1 Success Rate',
+            values: records.map((r) {
+              final attempts = r.autoCoralHeight1Success + r.autoCoralHeight1Failure;
+              return attempts > 0 
+                  ? '${((r.autoCoralHeight1Success / attempts) * 100).round()}%'
+                  : 'No Attempts';
+            }).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
         ],
@@ -585,75 +703,174 @@ class TeleopTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16),  // Remove left padding
+      padding: const EdgeInsets.only(top: 16, right: 16, bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Coral Scoring Section
-          SectionHeader(
-            title: 'Coral Scoring',
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          ComparisonMetric(
-            label: 'Height 1 Coral',
-            values: records.map((r) => r.coralOnReefHeight1.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
-          ),
-          ComparisonMetric(
-            label: 'Height 2 Coral',
-            values: records.map((r) => r.coralOnReefHeight2.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
-          ),
-          ComparisonMetric(
-            label: 'Height 3 Coral',
-            values: records.map((r) => r.coralOnReefHeight3.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
-          ),
-          ComparisonMetric(
-            label: 'Height 4 Coral',
-            values: records.map((r) => r.coralOnReefHeight4.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
-          ),
-          ComparisonMetric(
-            label: 'Coral Ranking Point',
-            values: records.map((r) => r.coralRankingPoint ? 'Yes' : 'No').toList(),
-            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
-          ),
-
-          // Algae Processing Section
+          // algae processing Section
           SectionHeader(
             title: 'Algae Processing',
             color: Theme.of(context).colorScheme.primary,
           ),
           ComparisonMetric(
-            label: 'Algae Scored in Net',
-            values: records.map((r) => r.algaeScoredInNet.toString()).toList(),
+            label: 'Algae in Net',
+            values: records.map((r) => r.teleopAlgaeScoredInNet.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Processor Attempts',
+            values: records.map((r) => r.teleopAlgaeProcessorAttempts.toString()).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
             label: 'Algae Processed',
-            values: records.map((r) => r.algaeProcessed.toString()).toList(),
+            values: records.map((r) => r.teleopAlgaeProcessed.toString()).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
           ComparisonMetric(
-            label: 'Processed Algae Scored',
-            values: records.map((r) => r.processedAlgaeScored.toString()).toList(),
-            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
-          ),
-          ComparisonMetric(
-            label: 'Processor Cycles',
-            values: records.map((r) => r.processorCycles.toString()).toList(),
+            label: 'Processing Efficiency',
+            values: records.map((r) {
+              final attempts = r.teleopAlgaeProcessorAttempts;
+              return attempts > 0 
+                  ? '${((r.teleopAlgaeProcessed / attempts) * 100).round()}%'
+                  : 'No Attempts';
+            }).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
 
-          // Co-op Section
+          // teleop coral L4
           SectionHeader(
-            title: 'Co-op',
+            title: 'Teleop L4 Coral',
             color: Theme.of(context).colorScheme.primary,
           ),
           ComparisonMetric(
-            label: 'Co-op Point',
-            values: records.map((r) => r.coOpPoint ? 'Yes' : 'No').toList(),
+            label: 'L4 Success',
+            values: records.map((r) => r.teleopCoralHeight4Success.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L4 Failure',
+            values: records.map((r) => r.teleopCoralHeight4Failure.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L4 Success Rate',
+            values: records.map((r) {
+              final attempts = r.teleopCoralHeight4Success + r.teleopCoralHeight4Failure;
+              return attempts > 0 
+                  ? '${((r.teleopCoralHeight4Success / attempts) * 100).round()}%'
+                  : 'No Attempts';
+            }).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // teleop coral L3
+          SectionHeader(
+            title: 'Teleop L3 Coral',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'L3 Success',
+            values: records.map((r) => r.teleopCoralHeight3Success.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L3 Failure',
+            values: records.map((r) => r.teleopCoralHeight3Failure.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L3 Success Rate',
+            values: records.map((r) {
+              final attempts = r.teleopCoralHeight3Success + r.teleopCoralHeight3Failure;
+              return attempts > 0 
+                  ? '${((r.teleopCoralHeight3Success / attempts) * 100).round()}%'
+                  : 'No Attempts';
+            }).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // teleop coral L2
+          SectionHeader(
+            title: 'Teleop L2 Coral',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'L2 Success',
+            values: records.map((r) => r.teleopCoralHeight2Success.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L2 Failure',
+            values: records.map((r) => r.teleopCoralHeight2Failure.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L2 Success Rate',
+            values: records.map((r) {
+              final attempts = r.teleopCoralHeight2Success + r.teleopCoralHeight2Failure;
+              return attempts > 0 
+                  ? '${((r.teleopCoralHeight2Success / attempts) * 100).round()}%'
+                  : 'No Attempts';
+            }).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // teleop coral L1
+          SectionHeader(
+            title: 'Teleop L1 Coral',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'L1 Success',
+            values: records.map((r) => r.teleopCoralHeight1Success.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L1 Failure',
+            values: records.map((r) => r.teleopCoralHeight1Failure.toString()).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'L1 Success Rate',
+            values: records.map((r) {
+              final attempts = r.teleopCoralHeight1Success + r.teleopCoralHeight1Failure;
+              return attempts > 0 
+                  ? '${((r.teleopCoralHeight1Success / attempts) * 100).round()}%'
+                  : 'No Attempts';
+            }).toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // ranking points
+          SectionHeader(
+            title: 'Ranking Points',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'Coral RP',
+            values: records.map((r) => r.teleopCoralRankingPoint ? 'Yes' : 'No').toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Co-Op Point',
+            values: records.map((r) => r.otherCoOpPoint ? 'Yes' : 'No').toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+
+          // robot capabilities
+          SectionHeader(
+            title: 'Capabilities',
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          ComparisonMetric(
+            label: 'Can Pickup Algae',
+            values: records.map((r) => r.teleopCanPickupAlgae ? 'Yes' : 'No').toList(),
+            colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
+          ),
+          ComparisonMetric(
+            label: 'Coral Pickup',
+            values: records.map((r) => r.teleopCoralPickupMethod).toList(),
             colors: records.map((r) => r.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance).toList(),
           ),
         ],

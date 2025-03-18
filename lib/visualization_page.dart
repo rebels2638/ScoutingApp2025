@@ -144,13 +144,15 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final records = selectedTeamRecords;
     if (records.isEmpty) return const SizedBox.shrink();
 
+    // calculate total scoring (auto + teleop)
     final avgTotal = records.map((r) => 
-      r.algaeRemoved + r.algaeScoredInNet + r.processedAlgaeScored
+      (r.autoCoralHeight4Success + r.autoCoralHeight3Success + r.autoCoralHeight2Success + r.autoCoralHeight1Success) +
+      (r.teleopCoralHeight4Success + r.teleopCoralHeight3Success + r.teleopCoralHeight2Success + r.teleopCoralHeight1Success)
     ).average();
 
-    final hangRate = records.where((r) => r.cageHang != 'None').length / records.length * 100;
+    final hangRate = records.where((r) => r.endgameCageHang != 'None').length / records.length * 100;
     final rpRate = records.where((r) => 
-      r.rankingPoint || r.coralRankingPoint || r.bargeRankingPoint
+      r.teleopCoralRankingPoint || r.endgameBargeRankingPoint || r.otherCoOpPoint
     ).length / (records.length * 3) * 100;
 
     return Container(
@@ -169,7 +171,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
             const Color(0xFF64B5F6),
           ),
           _buildMetric(
-            'Avg Algae',
+            'Avg Coral',
             avgTotal.toStringAsFixed(1),
             const Color(0xFF81C784),
           ),
@@ -241,7 +243,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final maxMatch = matchNumbers.last;
     
     final maxY = records.map((r) => 
-      r.algaeRemoved + r.algaeScoredInNet + r.processedAlgaeScored
+      r.teleopAlgaeProcessed + r.teleopAlgaeScoredInNet
     ).reduce(max).toDouble();
     final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
 
@@ -335,9 +337,9 @@ class _VisualizationPageState extends State<VisualizationPage> {
                   LineChartBarData(
                     spots: records.map((r) => FlSpot(
                       r.matchNumber.toDouble(),
-                      (r.algaeRemoved + r.algaeScoredInNet + r.processedAlgaeScored).toDouble(),
+                      (r.teleopAlgaeProcessed + r.teleopAlgaeScoredInNet).toDouble(),
                     )).toList(),
-                    isCurved: true,
+                    isCurved: false,
                     color: const Color(0xFF64B5F6),
                     barWidth: 3,
                     dotData: FlDotData(
@@ -353,9 +355,9 @@ class _VisualizationPageState extends State<VisualizationPage> {
                   LineChartBarData(
                     spots: records.map((r) => FlSpot(
                       r.matchNumber.toDouble(),
-                      r.processedAlgaeScored.toDouble(),
+                      r.teleopAlgaeProcessed.toDouble(),
                     )).toList(),
-                    isCurved: true,
+                    isCurved: false,
                     color: const Color(0xFF81C784),
                     barWidth: 3,
                     dotData: FlDotData(
@@ -503,14 +505,25 @@ class _VisualizationPageState extends State<VisualizationPage> {
       return _buildEmptyState();
     }
 
-    final data = [
-      records.map((r) => r.coralOnReefHeight1.toDouble()).average(),
-      records.map((r) => r.coralOnReefHeight2.toDouble()).average(),
-      records.map((r) => r.coralOnReefHeight3.toDouble()).average(),
-      records.map((r) => r.coralOnReefHeight4.toDouble()).average(),
+    // calculate auto and teleop averages for each height
+    final autoData = [
+      records.map((r) => r.autoCoralHeight1Success.toDouble()).average(),
+      records.map((r) => r.autoCoralHeight2Success.toDouble()).average(),
+      records.map((r) => r.autoCoralHeight3Success.toDouble()).average(),
+      records.map((r) => r.autoCoralHeight4Success.toDouble()).average(),
     ];
 
-    final maxValue = data.reduce(max);
+    final teleopData = [
+      records.map((r) => r.teleopCoralHeight1Success.toDouble()).average(),
+      records.map((r) => r.teleopCoralHeight2Success.toDouble()).average(),
+      records.map((r) => r.teleopCoralHeight3Success.toDouble()).average(),
+      records.map((r) => r.teleopCoralHeight4Success.toDouble()).average(),
+    ];
+
+    final maxValue = max(
+      autoData.reduce(max),
+      teleopData.reduce(max)
+    );
     final maxY = max(maxValue + 1, 5.0);
 
     return Padding(
@@ -528,11 +541,19 @@ class _VisualizationPageState extends State<VisualizationPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Average pieces placed at each height',
+            'Average successful pieces placed at each height',
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
               fontSize: 14,
             ),
+          ),
+          const SizedBox(height: 24),
+          Row(
+            children: [
+              _buildLegendItem('Auto', const Color(0xFF64B5F6)),
+              const SizedBox(width: 16),
+              _buildLegendItem('Teleop', const Color(0xFF81C784)),
+            ],
           ),
           const SizedBox(height: 24),
           Expanded(
@@ -567,7 +588,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       getTitlesWidget: (value, meta) => Text(
-                        'Height ${value.toInt() + 1}',
+                        'L${value.toInt() + 1}',
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,
@@ -583,14 +604,14 @@ class _VisualizationPageState extends State<VisualizationPage> {
                   ),
                 ),
                 borderData: FlBorderData(show: false),
-                barGroups: data.asMap().entries.map((entry) {
+                barGroups: List.generate(4, (index) {
                   return BarChartGroupData(
-                    x: entry.key,
+                    x: index,
                     barRods: [
                       BarChartRodData(
-                        toY: entry.value,
+                        toY: autoData[index],
                         color: const Color(0xFF64B5F6),
-                        width: 32,
+                        width: 16,
                         borderRadius: BorderRadius.circular(4),
                         backDrawRodData: BackgroundBarChartRodData(
                           show: true,
@@ -598,9 +619,20 @@ class _VisualizationPageState extends State<VisualizationPage> {
                           color: const Color(0xFF64B5F6).withOpacity(0.1),
                         ),
                       ),
+                      BarChartRodData(
+                        toY: teleopData[index],
+                        color: const Color(0xFF81C784),
+                        width: 16,
+                        borderRadius: BorderRadius.circular(4),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: maxY,
+                          color: const Color(0xFF81C784).withOpacity(0.1),
+                        ),
+                      ),
                     ],
                   );
-                }).toList(),
+                }),
                 barTouchData: BarTouchData(
                   touchTooltipData: BarTouchTooltipData(
                     fitInsideHorizontally: true,
@@ -612,10 +644,13 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     ),
                     tooltipMargin: 16,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      final isAuto = rodIndex == 0;
+                      final color = isAuto ? const Color(0xFF64B5F6) : const Color(0xFF81C784);
+                      final phase = isAuto ? 'Auto' : 'Teleop';
                       return BarTooltipItem(
-                        'Height ${groupIndex + 1}\n${rod.toY.toStringAsFixed(1)} pieces',
-                        const TextStyle(
-                          color: Color(0xFF64B5F6),
+                        'L${group.x + 1} $phase\n${rod.toY.toStringAsFixed(1)} pieces',
+                        TextStyle(
+                          color: color,
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
@@ -637,8 +672,9 @@ class _VisualizationPageState extends State<VisualizationPage> {
       return _buildEmptyState();
     }
 
-    final hangRate = records.where((r) => r.cageHang != 'None').length / records.length;
-    final bargeRate = records.where((r) => r.returnedToBarge).length / records.length;
+    final hangRate = records.where((r) => r.endgameCageHang != 'None').length / records.length;
+    final bargeRate = records.where((r) => r.endgameReturnedToBarge).length / records.length;
+    final bargeRPRate = records.where((r) => r.endgameBargeRankingPoint).length / records.length;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -655,7 +691,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Success rates for cage hang and barge return',
+            'Success rates for endgame tasks',
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
               fontSize: 14,
@@ -667,6 +703,8 @@ class _VisualizationPageState extends State<VisualizationPage> {
               _buildLegendItem('Cage Hang', const Color(0xFFFFB74D)),
               const SizedBox(width: 16),
               _buildLegendItem('Barge Return', const Color(0xFFBA68C8)),
+              const SizedBox(width: 16),
+              _buildLegendItem('Barge RP', const Color(0xFF64B5F6)),
             ],
           ),
           const SizedBox(height: 24),
@@ -702,13 +740,16 @@ class _VisualizationPageState extends State<VisualizationPage> {
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
-                      getTitlesWidget: (value, meta) => Text(
-                        value == 0 ? 'Cage Hang' : 'Barge Return',
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
-                      ),
+                      getTitlesWidget: (value, meta) {
+                        final labels = ['Cage Hang', 'Barge Return', 'Barge RP'];
+                        return Text(
+                          labels[value.toInt()],
+                          style: const TextStyle(
+                            color: Colors.white54,
+                            fontSize: 12,
+                          ),
+                        );
+                      },
                     ),
                   ),
                   rightTitles: AxisTitles(
@@ -726,7 +767,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       BarChartRodData(
                         toY: hangRate,
                         color: const Color(0xFFFFB74D),
-                        width: 40,
+                        width: 32,
                         borderRadius: BorderRadius.circular(4),
                         backDrawRodData: BackgroundBarChartRodData(
                           show: true,
@@ -742,12 +783,28 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       BarChartRodData(
                         toY: bargeRate,
                         color: const Color(0xFFBA68C8),
-                        width: 40,
+                        width: 32,
                         borderRadius: BorderRadius.circular(4),
                         backDrawRodData: BackgroundBarChartRodData(
                           show: true,
                           toY: 1,
                           color: const Color(0xFFBA68C8).withOpacity(0.1),
+                        ),
+                      ),
+                    ],
+                  ),
+                  BarChartGroupData(
+                    x: 2,
+                    barRods: [
+                      BarChartRodData(
+                        toY: bargeRPRate,
+                        color: const Color(0xFF64B5F6),
+                        width: 32,
+                        borderRadius: BorderRadius.circular(4),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: 1,
+                          color: const Color(0xFF64B5F6).withOpacity(0.1),
                         ),
                       ),
                     ],
@@ -764,13 +821,16 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     ),
                     tooltipMargin: 16,
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                      final isHang = groupIndex == 0;
-                      final color = isHang ? const Color(0xFFFFB74D) : const Color(0xFFBA68C8);
-                      final label = isHang ? 'Cage Hang' : 'Barge Return';
+                      final labels = ['Cage Hang', 'Barge Return', 'Barge RP'];
+                      final colors = [
+                        const Color(0xFFFFB74D),
+                        const Color(0xFFBA68C8),
+                        const Color(0xFF64B5F6),
+                      ];
                       return BarTooltipItem(
-                        '$label\n${(rod.toY * 100).round()}%',
+                        '${labels[groupIndex]}\n${(rod.toY * 100).round()}%',
                         TextStyle(
-                          color: color,
+                          color: colors[groupIndex],
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
                         ),
@@ -790,9 +850,9 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final records = selectedTeamRecords;
     if (records.isEmpty) return const Center(child: Text('No data available', style: TextStyle(color: Colors.grey)));
 
-    final autoRP = records.where((r) => r.rankingPoint).length / records.length;
-    final coralRP = records.where((r) => r.coralRankingPoint).length / records.length;
-    final bargeRP = records.where((r) => r.bargeRankingPoint).length / records.length;
+    final coralRP = records.where((r) => r.teleopCoralRankingPoint).length / records.length;
+    final bargeRP = records.where((r) => r.endgameBargeRankingPoint).length / records.length;
+    final coOpRP = records.where((r) => r.otherCoOpPoint).length / records.length;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -810,11 +870,11 @@ class _VisualizationPageState extends State<VisualizationPage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              _buildLegendItem('Auto', Colors.blue),
+              _buildLegendItem('Coral', Colors.blue),
               const SizedBox(width: 16),
-              _buildLegendItem('Coral', Colors.green),
+              _buildLegendItem('Barge', Colors.green),
               const SizedBox(width: 16),
-              _buildLegendItem('Barge', Colors.orange),
+              _buildLegendItem('Co-Op', Colors.orange),
             ],
           ),
           const SizedBox(height: 24),
@@ -858,13 +918,13 @@ class _VisualizationPageState extends State<VisualizationPage> {
                         String text;
                         switch (value.toInt()) {
                           case 0:
-                            text = 'Auto RP';
-                            break;
-                          case 1:
                             text = 'Coral RP';
                             break;
-                          case 2:
+                          case 1:
                             text = 'Barge RP';
+                            break;
+                          case 2:
+                            text = 'Co-Op RP';
                             break;
                           default:
                             text = '';
@@ -892,7 +952,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     x: 0,
                     barRods: [
                       BarChartRodData(
-                        toY: autoRP.toDouble(),
+                        toY: coralRP,
                         color: Colors.blue.withOpacity(0.8),
                         width: 32,
                         borderRadius: BorderRadius.circular(4),
@@ -908,7 +968,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     x: 1,
                     barRods: [
                       BarChartRodData(
-                        toY: coralRP.toDouble(),
+                        toY: bargeRP,
                         color: Colors.green.withOpacity(0.8),
                         width: 32,
                         borderRadius: BorderRadius.circular(4),
@@ -924,7 +984,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     x: 2,
                     barRods: [
                       BarChartRodData(
-                        toY: bargeRP.toDouble(),
+                        toY: coOpRP,
                         color: Colors.orange.withOpacity(0.8),
                         width: 32,
                         borderRadius: BorderRadius.circular(4),
@@ -950,15 +1010,15 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       Color color;
                       switch (groupIndex) {
                         case 0:
-                          label = 'Auto RP';
+                          label = 'Coral RP';
                           color = Colors.blue;
                           break;
                         case 1:
-                          label = 'Coral RP';
+                          label = 'Barge RP';
                           color = Colors.green;
                           break;
                         case 2:
-                          label = 'Barge RP';
+                          label = 'Co-Op RP';
                           color = Colors.orange;
                           break;
                         default:
@@ -994,9 +1054,26 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final minMatch = matchNumbers.first;
     final maxMatch = matchNumbers.last;
     
-    final maxY = records.map((r) => 
-      max(r.algaeRemoved, r.algaeScoredInNet)
-    ).reduce(max).toDouble();
+    // create a map of match number to scores to handle potential duplicates
+    Map<int, int> autoScoresByMatch = {};
+    Map<int, int> teleopScoresByMatch = {};
+    
+    for (var record in records) {
+      autoScoresByMatch[record.matchNumber] = 
+        record.autoCoralHeight4Success + record.autoCoralHeight3Success + 
+        record.autoCoralHeight2Success + record.autoCoralHeight1Success +
+        record.autoAlgaeInNet + record.autoAlgaeInProcessor;
+      
+      teleopScoresByMatch[record.matchNumber] = 
+        record.teleopCoralHeight4Success + record.teleopCoralHeight3Success + 
+        record.teleopCoralHeight2Success + record.teleopCoralHeight1Success +
+        record.teleopAlgaeScoredInNet + record.teleopAlgaeProcessed;
+    }
+    
+    final maxY = max(
+      autoScoresByMatch.values.isEmpty ? 0 : autoScoresByMatch.values.reduce(max),
+      teleopScoresByMatch.values.isEmpty ? 0 : teleopScoresByMatch.values.reduce(max)
+    ).toDouble();
     final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
 
     return Padding(
@@ -1014,7 +1091,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Scoring comparison by phase',
+            'Total scoring by phase',
             style: TextStyle(
               color: Colors.white.withOpacity(0.7),
               fontSize: 14,
@@ -1095,11 +1172,11 @@ class _VisualizationPageState extends State<VisualizationPage> {
                 maxY: roundedMaxY,
                 lineBarsData: [
                   LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
-                      r.algaeRemoved.toDouble(),
+                    spots: matchNumbers.map((matchNum) => FlSpot(
+                      matchNum.toDouble(),
+                      autoScoresByMatch[matchNum]!.toDouble(),
                     )).toList(),
-                    isCurved: true,
+                    isCurved: false,
                     color: const Color(0xFFFFB74D),
                     barWidth: 3,
                     dotData: FlDotData(
@@ -1113,11 +1190,11 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     ),
                   ),
                   LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
-                      r.algaeScoredInNet.toDouble(),
+                    spots: matchNumbers.map((matchNum) => FlSpot(
+                      matchNum.toDouble(),
+                      teleopScoresByMatch[matchNum]!.toDouble(),
                     )).toList(),
-                    isCurved: true,
+                    isCurved: false,
                     color: const Color(0xFFBA68C8),
                     barWidth: 3,
                     dotData: FlDotData(

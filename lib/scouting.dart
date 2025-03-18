@@ -22,6 +22,7 @@ import 'api.dart';
 import 'package:flutter/services.dart';  // Add this import
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bluetooth_page.dart';
+import 'team_analysis.dart';
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -41,31 +42,54 @@ class _ScoutingPageState extends State<ScoutingPage> {
   bool isRedAlliance = true;
 
   // state vars for autonomous
-  String cageType = 'Shallow';
-  bool coralPreloaded = false;
-  bool taxis = false;
-  int algaeRemoved = 0;
-  String coralPlaced = 'No';
+  bool autoTaxis = false;
+  bool autoCoralPreloaded = false;
+  List<Map<String, dynamic>>? autoRobotPath;
+  
+  // auto coral scoring
+  int autoCoralHeight4Success = 0;
+  int autoCoralHeight4Failure = 0;
+  int autoCoralHeight3Success = 0;
+  int autoCoralHeight3Failure = 0;
+  int autoCoralHeight2Success = 0;
+  int autoCoralHeight2Failure = 0;
+  int autoCoralHeight1Success = 0;
+  int autoCoralHeight1Failure = 0;
+  
+  // auto algae scoring
+  int autoAlgaeRemoved = 0;
 
   // state vars for tele-op
-  int algaeScoredInNet = 0;
-  int coralOnReefHeight1 = 0;
-  int coralOnReefHeight2 = 0;
-  int coralOnReefHeight3 = 0;
-  int coralOnReefHeight4 = 0;
-  bool coralRankingPoint = false;
-  int algaeProcessed = 0;
-  int processedAlgaeScored = 0;
-  bool coOpPoint = false;
+  // teleop coral scoring
+  int teleopCoralHeight4Success = 0;
+  int teleopCoralHeight4Failure = 0;
+  int teleopCoralHeight3Success = 0;
+  int teleopCoralHeight3Failure = 0;
+  int teleopCoralHeight2Success = 0;
+  int teleopCoralHeight2Failure = 0;
+  int teleopCoralHeight1Success = 0;
+  int teleopCoralHeight1Failure = 0;
+  bool teleopCoralRankingPoint = false;
+
+  // teleop algae scoring
+  int teleopAlgaeRemoved = 0;
+  int teleopAlgaeProcessorAttempts = 0;
+  int teleopAlgaeProcessed = 0;
+  int teleopAlgaeScoredInNet = 0;
+
+  // teleop capabilities
+  bool teleopCanPickupAlgae = false;
+  String teleopCoralPickupMethod = 'Human';  // Default option
 
   // state vars for endgame
-  bool returnedToBarge = false;
-  String cageHang = 'None';
-  bool bargeRankingPoint = false;
+  bool endgameReturnedToBarge = false;
+  String endgameCageHang = 'None';  // Default option
+  bool endgameBargeRankingPoint = false;
 
   // state vars for other section
-  bool breakdown = false;
-  String comments = '';
+  bool otherCoOpPoint = false;
+  bool otherBreakdown = false;
+  String otherComments = '';
 
   // state vars for pickup capabilities
   bool canPickupAlgae = false;
@@ -172,13 +196,13 @@ class _ScoutingPageState extends State<ScoutingPage> {
   void _onItemTapped(int index) {
     TelemetryService().logAction('navigation_changed', 'to index $index');
     
-    // Dismiss keyboard when switching tabs
+    // dismiss keyboard when switching tabs
     FocusScope.of(context).unfocus();
     
-    // Calculate the actual maximum index
-    final maxIndex = _bluetoothEnabled ? 5 : 5;  // Max is always 5
+    // calculate the actual maximum index
+    final maxIndex = _bluetoothEnabled ? 6 : 6;  // max is always 6
     
-    // Ensure the index is valid
+    // ensure the index is valid
     if (index > maxIndex) {
       index = maxIndex;
     }
@@ -204,28 +228,32 @@ class _ScoutingPageState extends State<ScoutingPage> {
         case 1:
           return DataPage(key: _dataPageKey);
         case 2:
-          return ApiPage(key: ApiPageState.globalKey);
+          return TeamAnalysisPage(records: _dataPageKey.currentState?.records ?? []);
         case 3:
-          return BluetoothPage();
+          return ApiPage(key: ApiPageState.globalKey);
         case 4:
-          return SettingsPage();
+          return BluetoothPage();
         case 5:
+          return SettingsPage();
+        case 6:
           return AboutPage();
         default:
           return _buildScoutingPage();
       }
     } else {
-      // When Bluetooth is disabled, skip index 3
+      // when bluetooth is disabled, skip index 4
       switch (index) {
         case 0:
           return _buildScoutingPage();
         case 1:
           return DataPage(key: _dataPageKey);
         case 2:
+          return TeamAnalysisPage(records: _dataPageKey.currentState?.records ?? []);
+        case 3:
           return ApiPage(key: ApiPageState.globalKey);
-        case 4:
-          return SettingsPage();
         case 5:
+          return SettingsPage();
+        case 6:
           return AboutPage();
         default:
           return _buildScoutingPage();
@@ -368,23 +396,23 @@ class _ScoutingPageState extends State<ScoutingPage> {
           // Taxis and path first for importance
           SwitchCard(
             label: 'Taxis',
-            value: taxis,
+            value: autoTaxis,
             onChanged: (value) {
               setState(() {
-                final oldValue = taxis;
-                taxis = value;
-                _logStateChange('taxis', oldValue, value);
+                final oldValue = autoTaxis;
+                autoTaxis = value;
+                _logStateChange('autoTaxis', oldValue, value);
               });
             },
           ),
           DrawingButton(
             key: _drawingButtonKey,
             isRedAlliance: isRedAlliance,
-            initialHasPath: drawingData?.isNotEmpty ?? false,
+            initialHasPath: autoRobotPath?.isNotEmpty ?? false,
             onPathSaved: (path) {
               setState(() {
-                drawingData = path;
-                _logStateChange('drawingData', 'updated', 'new path');
+                autoRobotPath = path;
+                _logStateChange('autoRobotPath', 'updated', 'new path');
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -422,12 +450,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
           // Scoring section
           CounterRow(
             label: 'Algae Removed',
-            value: algaeRemoved,
+            value: autoAlgaeRemoved,
             onChanged: (value) {
               setState(() {
-                final oldValue = algaeRemoved;
-                algaeRemoved = value;
-                _logStateChange('algaeRemoved', oldValue, value);
+                final oldValue = autoAlgaeRemoved;
+                autoAlgaeRemoved = value;
+                _logStateChange('autoAlgaeRemoved', oldValue, value);
               });
             },
           ),
@@ -459,53 +487,93 @@ class _ScoutingPageState extends State<ScoutingPage> {
             title: 'Coral',
             color: Theme.of(context).colorScheme.primary,
           ),
-          FormRow(
-            label: 'Cage Type',
-            input: DropdownCard(
-              label: 'Cage Type',
-              value: cageType,
-              items: const [
-                'Shallow',
-                'Deep',
-              ],
-              onChanged: (value) {
-                setState(() {
-                  final oldValue = cageType;
-                  cageType = value!;
-                  _logStateChange('cageType', oldValue, value);
-                });
-              },
-            ),
-          ),
-          SwitchCard(
-            label: 'Coral Preloaded',
-            value: coralPreloaded,
+          CounterRow(
+            label: 'Auto L4 Success',
+            value: autoCoralHeight4Success,
             onChanged: (value) {
               setState(() {
-                final oldValue = coralPreloaded;
-                coralPreloaded = value;
-                _logStateChange('coralPreloaded', oldValue, value);
+                final oldValue = autoCoralHeight4Success;
+                autoCoralHeight4Success = value;
+                _logStateChange('autoCoralHeight4Success', oldValue, value);
               });
             },
           ),
-          FormRow(
-            label: 'Coral Placed',
-            input: DropdownCard(
-              label: 'Coral Placed',
-              value: coralPlaced,
-              items: const [
-                'No',
-                'Yes - Shallow',
-                'Yes - Deep',
-              ],
-              onChanged: (value) {
-                setState(() {
-                  final oldValue = coralPlaced;
-                  coralPlaced = value!;
-                  _logStateChange('coralPlaced', oldValue, value);
-                });
-              },
-            ),
+          CounterRow(
+            label: 'Auto L4 Failure',
+            value: autoCoralHeight4Failure,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = autoCoralHeight4Failure;
+                autoCoralHeight4Failure = value;
+                _logStateChange('autoCoralHeight4Failure', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Auto L3 Success',
+            value: autoCoralHeight3Success,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = autoCoralHeight3Success;
+                autoCoralHeight3Success = value;
+                _logStateChange('autoCoralHeight3Success', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Auto L3 Failure',
+            value: autoCoralHeight3Failure,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = autoCoralHeight3Failure;
+                autoCoralHeight3Failure = value;
+                _logStateChange('autoCoralHeight3Failure', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Auto L2 Success',
+            value: autoCoralHeight2Success,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = autoCoralHeight2Success;
+                autoCoralHeight2Success = value;
+                _logStateChange('autoCoralHeight2Success', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Auto L2 Failure',
+            value: autoCoralHeight2Failure,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = autoCoralHeight2Failure;
+                autoCoralHeight2Failure = value;
+                _logStateChange('autoCoralHeight2Failure', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Auto L1 Success',
+            value: autoCoralHeight1Success,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = autoCoralHeight1Success;
+                autoCoralHeight1Success = value;
+                _logStateChange('autoCoralHeight1Success', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Auto L1 Failure',
+            value: autoCoralHeight1Failure,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = autoCoralHeight1Failure;
+                autoCoralHeight1Failure = value;
+                _logStateChange('autoCoralHeight1Failure', oldValue, value);
+              });
+            },
           ),
         ],
       ),
@@ -527,34 +595,23 @@ class _ScoutingPageState extends State<ScoutingPage> {
           ),
           CounterRow(
             label: 'Algae in Net',
-            value: algaeScoredInNet,
+            value: teleopAlgaeScoredInNet,
             onChanged: (value) {
               setState(() {
-                final oldValue = algaeScoredInNet;
-                algaeScoredInNet = value;
-                _logStateChange('algaeScoredInNet', oldValue, value);
+                final oldValue = teleopAlgaeScoredInNet;
+                teleopAlgaeScoredInNet = value;
+                _logStateChange('teleopAlgaeScoredInNet', oldValue, value);
               });
             },
           ),
           CounterRow(
             label: 'Algae Processed',
-            value: algaeProcessed,
+            value: teleopAlgaeProcessed,
             onChanged: (value) {
               setState(() {
-                final oldValue = algaeProcessed;
-                algaeProcessed = value;
-                _logStateChange('algaeProcessed', oldValue, value);
-              });
-            },
-          ),
-          CounterRow(
-            label: 'Processed Scored',
-            value: processedAlgaeScored,
-            onChanged: (value) {
-              setState(() {
-                final oldValue = processedAlgaeScored;
-                processedAlgaeScored = value;
-                _logStateChange('processedAlgaeScored', oldValue, value);
+                final oldValue = teleopAlgaeProcessed;
+                teleopAlgaeProcessed = value;
+                _logStateChange('teleopAlgaeProcessed', oldValue, value);
               });
             },
           ),
@@ -576,57 +633,101 @@ class _ScoutingPageState extends State<ScoutingPage> {
             color: Theme.of(context).colorScheme.primary,
           ),
           CounterRow(
-            label: 'Height 1',
-            value: coralOnReefHeight1,
+            label: 'Teleop L4 Success',
+            value: teleopCoralHeight4Success,
             onChanged: (value) {
               setState(() {
-                final oldValue = coralOnReefHeight1;
-                coralOnReefHeight1 = value;
-                _logStateChange('coralOnReefHeight1', oldValue, value);
+                final oldValue = teleopCoralHeight4Success;
+                teleopCoralHeight4Success = value;
+                _logStateChange('teleopCoralHeight4Success', oldValue, value);
               });
             },
           ),
           CounterRow(
-            label: 'Height 2',
-            value: coralOnReefHeight2,
+            label: 'Teleop L4 Failure',
+            value: teleopCoralHeight4Failure,
             onChanged: (value) {
               setState(() {
-                final oldValue = coralOnReefHeight2;
-                coralOnReefHeight2 = value;
-                _logStateChange('coralOnReefHeight2', oldValue, value);
+                final oldValue = teleopCoralHeight4Failure;
+                teleopCoralHeight4Failure = value;
+                _logStateChange('teleopCoralHeight4Failure', oldValue, value);
               });
             },
           ),
           CounterRow(
-            label: 'Height 3',
-            value: coralOnReefHeight3,
+            label: 'Teleop L3 Success',
+            value: teleopCoralHeight3Success,
             onChanged: (value) {
               setState(() {
-                final oldValue = coralOnReefHeight3;
-                coralOnReefHeight3 = value;
-                _logStateChange('coralOnReefHeight3', oldValue, value);
+                final oldValue = teleopCoralHeight3Success;
+                teleopCoralHeight3Success = value;
+                _logStateChange('teleopCoralHeight3Success', oldValue, value);
               });
             },
           ),
           CounterRow(
-            label: 'Height 4',
-            value: coralOnReefHeight4,
+            label: 'Teleop L3 Failure',
+            value: teleopCoralHeight3Failure,
             onChanged: (value) {
               setState(() {
-                final oldValue = coralOnReefHeight4;
-                coralOnReefHeight4 = value;
-                _logStateChange('coralOnReefHeight4', oldValue, value);
+                final oldValue = teleopCoralHeight3Failure;
+                teleopCoralHeight3Failure = value;
+                _logStateChange('teleopCoralHeight3Failure', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Teleop L2 Success',
+            value: teleopCoralHeight2Success,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = teleopCoralHeight2Success;
+                teleopCoralHeight2Success = value;
+                _logStateChange('teleopCoralHeight2Success', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Teleop L2 Failure',
+            value: teleopCoralHeight2Failure,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = teleopCoralHeight2Failure;
+                teleopCoralHeight2Failure = value;
+                _logStateChange('teleopCoralHeight2Failure', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Teleop L1 Success',
+            value: teleopCoralHeight1Success,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = teleopCoralHeight1Success;
+                teleopCoralHeight1Success = value;
+                _logStateChange('teleopCoralHeight1Success', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
+            label: 'Teleop L1 Failure',
+            value: teleopCoralHeight1Failure,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = teleopCoralHeight1Failure;
+                teleopCoralHeight1Failure = value;
+                _logStateChange('teleopCoralHeight1Failure', oldValue, value);
               });
             },
           ),
           SwitchCard(
             label: 'Coral Ranking Point',
-            value: coralRankingPoint,
+            value: teleopCoralRankingPoint,
             onChanged: (value) {
               setState(() {
-                final oldValue = coralRankingPoint;
-                coralRankingPoint = value;
-                _logStateChange('coralRankingPoint', oldValue, value);
+                final oldValue = teleopCoralRankingPoint;
+                teleopCoralRankingPoint = value;
+                _logStateChange('teleopCoralRankingPoint', oldValue, value);
               });
             },
           ),
@@ -641,12 +742,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
             children: [
               SwitchCard(
                 label: 'Pickup Algae',
-                value: canPickupAlgae,
+                value: teleopCanPickupAlgae,
                 onChanged: (value) {
                   setState(() {
-                    final oldValue = canPickupAlgae;
-                    canPickupAlgae = value;
-                    _logStateChange('canPickupAlgae', oldValue, value);
+                    final oldValue = teleopCanPickupAlgae;
+                    teleopCanPickupAlgae = value;
+                    _logStateChange('teleopCanPickupAlgae', oldValue, value);
                   });
                 },
               ),
@@ -667,7 +768,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 label: 'Coral Pickup',
                 input: DropdownCard(
                   label: 'Method',
-                  value: coralPickupMethod,
+                  value: teleopCoralPickupMethod,
                   items: const [
                     'None',
                     'Ground',
@@ -677,13 +778,13 @@ class _ScoutingPageState extends State<ScoutingPage> {
                   onChanged: (value) {
                     if (value != null) {
                       setState(() {
-                        final oldValue = coralPickupMethod;
-                        coralPickupMethod = value;
+                        final oldValue = teleopCoralPickupMethod;
+                        teleopCoralPickupMethod = value;
                         // If they can pickup from either location, set canPickupCoral to true
                         if (value != 'None') {
                           canPickupCoral = true;
                         }
-                        _logStateChange('coralPickupMethod', oldValue, value);
+                        _logStateChange('teleopCoralPickupMethod', oldValue, value);
                       });
                     }
                   },
@@ -711,12 +812,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
           ),
           SwitchCard(
             label: 'Returned to Barge',
-            value: returnedToBarge,
+            value: endgameReturnedToBarge,
             onChanged: (value) {
               setState(() {
-                final oldValue = returnedToBarge;
-                returnedToBarge = value;
-                _logStateChange('returnedToBarge', oldValue, value);
+                final oldValue = endgameReturnedToBarge;
+                endgameReturnedToBarge = value;
+                _logStateChange('endgameReturnedToBarge', oldValue, value);
               });
             },
           ),
@@ -730,7 +831,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
             label: 'Cage Hang',
             input: DropdownCard(
               label: '',
-              value: cageHang,
+              value: endgameCageHang,
               items: const [
                 'None',
                 'Shallow',
@@ -738,21 +839,21 @@ class _ScoutingPageState extends State<ScoutingPage> {
               ],
               onChanged: (value) {
                 setState(() {
-                  final oldValue = cageHang;
-                  cageHang = value!;
-                  _logStateChange('cageHang', oldValue, value);
+                  final oldValue = endgameCageHang;
+                  endgameCageHang = value!;
+                  _logStateChange('endgameCageHang', oldValue, value);
                 });
               },
             ),
           ),
           SwitchCard(
             label: 'Barge RP',
-            value: bargeRankingPoint,
+            value: endgameBargeRankingPoint,
             onChanged: (value) {
               setState(() {
-                final oldValue = bargeRankingPoint;
-                bargeRankingPoint = value;
-                _logStateChange('bargeRankingPoint', oldValue, value);
+                final oldValue = endgameBargeRankingPoint;
+                endgameBargeRankingPoint = value;
+                _logStateChange('endgameBargeRankingPoint', oldValue, value);
               });
             },
           ),
@@ -772,12 +873,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
           // Co-Op Point at the top
           SwitchCard(
             label: 'Co-Op Point',
-            value: coOpPoint,
+            value: otherCoOpPoint,
             onChanged: (value) {
               setState(() {
-                final oldValue = coOpPoint;
-                coOpPoint = value;
-                _logStateChange('coOpPoint', oldValue, value);
+                final oldValue = otherCoOpPoint;
+                otherCoOpPoint = value;
+                _logStateChange('otherCoOpPoint', oldValue, value);
               });
             },
           ),
@@ -789,12 +890,12 @@ class _ScoutingPageState extends State<ScoutingPage> {
           ),
           SwitchCard(
             label: 'Robot Breakdown',
-            value: breakdown,
+            value: otherBreakdown,
             onChanged: (value) {
               setState(() {
-                final oldValue = breakdown;
-                breakdown = value;
-                _logStateChange('breakdown', oldValue, value);
+                final oldValue = otherBreakdown;
+                otherBreakdown = value;
+                _logStateChange('otherBreakdown', oldValue, value);
               });
             },
           ),
@@ -826,9 +927,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
                   textInputAction: TextInputAction.done,
                   onChanged: (value) {
                     setState(() {
-                      final oldValue = comments;
-                      comments = value;
-                      _logStateChange('comments', oldValue, 'new comment');
+                      final oldValue = otherComments;
+                      otherComments = value;
+                      _logStateChange('otherComments', oldValue, 'new comment');
                     });
                   },
                   onEditingComplete: () {
@@ -903,24 +1004,27 @@ class _ScoutingPageState extends State<ScoutingPage> {
 
       // Log all values before saving
       TelemetryService().logInfo('save_record_debug', {
-        'coralPreloaded': coralPreloaded,
-        'taxis': taxis,
-        'rankingPoint': coralRankingPoint,
-        'canPickupCoral': canPickupCoral,
-        'canPickupAlgae': canPickupAlgae,
-        'coralRankingPoint': coralRankingPoint,
-        'coOpPoint': coOpPoint,
-        'returnedToBarge': returnedToBarge,
-        'bargeRankingPoint': bargeRankingPoint,
-        'breakdown': breakdown,
+        'autoTaxis': autoTaxis,
+        'autoCoralPreloaded': autoCoralPreloaded,
+        'teleopCoralRankingPoint': teleopCoralRankingPoint,
+        'teleopCanPickupCoral': canPickupCoral,
+        'teleopCanPickupAlgae': teleopCanPickupAlgae,
+        'endgameReturnedToBarge': endgameReturnedToBarge,
+        'endgameBargeRankingPoint': endgameBargeRankingPoint,
+        'otherCoOpPoint': otherCoOpPoint,
+        'otherBreakdown': otherBreakdown,
         'autoAlgaeInNet': autoAlgaeInNet,
         'autoAlgaeInProcessor': autoAlgaeInProcessor,
-        'coralPickupMethod': canPickupCoral ? coralPickupMethod : 'None',
+        'teleopCoralPickupMethod': canPickupCoral ? teleopCoralPickupMethod : 'None',
         'feederStation': feederStation,
-        'coralOnReefHeight1': coralOnReefHeight1,
-        'coralOnReefHeight2': coralOnReefHeight2,
-        'coralOnReefHeight3': coralOnReefHeight3,
-        'coralOnReefHeight4': coralOnReefHeight4,
+        'teleopCoralHeight4Success': teleopCoralHeight4Success,
+        'teleopCoralHeight4Failure': teleopCoralHeight4Failure,
+        'teleopCoralHeight3Success': teleopCoralHeight3Success,
+        'teleopCoralHeight3Failure': teleopCoralHeight3Failure,
+        'teleopCoralHeight2Success': teleopCoralHeight2Success,
+        'teleopCoralHeight2Failure': teleopCoralHeight2Failure,
+        'teleopCoralHeight1Success': teleopCoralHeight1Success,
+        'teleopCoralHeight1Failure': teleopCoralHeight1Failure,
       }.toString());
 
       final record = ScoutingRecord(
@@ -929,34 +1033,76 @@ class _ScoutingPageState extends State<ScoutingPage> {
         matchType: matchType,
         teamNumber: teamNumber,
         isRedAlliance: isRedAlliance,
-        cageType: cageType,
-        coralPreloaded: coralPreloaded,
-        taxis: taxis,
-        algaeRemoved: algaeRemoved,
-        coralPlaced: coralPlaced,
-        rankingPoint: coralRankingPoint,
-        canPickupCoral: canPickupCoral,
-        canPickupAlgae: canPickupAlgae,
-        algaeScoredInNet: algaeScoredInNet,
-        coralRankingPoint: coralRankingPoint,
-        algaeProcessed: algaeProcessed,
-        processedAlgaeScored: processedAlgaeScored,
-        processorCycles: processorCycles,
-        coOpPoint: coOpPoint,
-        returnedToBarge: returnedToBarge,
-        cageHang: cageHang,
-        bargeRankingPoint: bargeRankingPoint,
-        breakdown: breakdown,
-        comments: comments,
+        
+        // Auto
+        autoTaxis: autoTaxis,
+        autoCoralPreloaded: autoCoralPreloaded,
+        autoAlgaeRemoved: autoAlgaeRemoved,
+        autoCoralHeight4Success: autoCoralHeight4Success,
+        autoCoralHeight4Failure: autoCoralHeight4Failure,
+        autoCoralHeight3Success: autoCoralHeight3Success,
+        autoCoralHeight3Failure: autoCoralHeight3Failure,
+        autoCoralHeight2Success: autoCoralHeight2Success,
+        autoCoralHeight2Failure: autoCoralHeight2Failure,
+        autoCoralHeight1Success: autoCoralHeight1Success,
+        autoCoralHeight1Failure: autoCoralHeight1Failure,
         autoAlgaeInNet: autoAlgaeInNet,
         autoAlgaeInProcessor: autoAlgaeInProcessor,
-        coralPickupMethod: canPickupCoral ? coralPickupMethod : 'None',
+
+        // Teleop
+        teleopCoralHeight4Success: teleopCoralHeight4Success,
+        teleopCoralHeight4Failure: teleopCoralHeight4Failure,
+        teleopCoralHeight3Success: teleopCoralHeight3Success,
+        teleopCoralHeight3Failure: teleopCoralHeight3Failure,
+        teleopCoralHeight2Success: teleopCoralHeight2Success,
+        teleopCoralHeight2Failure: teleopCoralHeight2Failure,
+        teleopCoralHeight1Success: teleopCoralHeight1Success,
+        teleopCoralHeight1Failure: teleopCoralHeight1Failure,
+        teleopCoralRankingPoint: teleopCoralRankingPoint,
+        teleopAlgaeRemoved: teleopAlgaeRemoved,
+        teleopAlgaeProcessorAttempts: teleopAlgaeProcessorAttempts,
+        teleopAlgaeProcessed: teleopAlgaeProcessed,
+        teleopAlgaeScoredInNet: teleopAlgaeScoredInNet,
+        teleopCanPickupAlgae: teleopCanPickupAlgae,
+        teleopCoralPickupMethod: teleopCoralPickupMethod,
+
+        // Endgame
+        endgameReturnedToBarge: endgameReturnedToBarge,
+        endgameCageHang: endgameCageHang,
+        endgameBargeRankingPoint: endgameBargeRankingPoint,
+
+        // Other
+        otherCoOpPoint: otherCoOpPoint,
+        otherBreakdown: otherBreakdown,
+        otherComments: otherComments,
+
+        // Legacy fields
+        cageType: 'Shallow',
+        coralPreloaded: autoCoralPreloaded,
+        taxis: autoTaxis,
+        algaeRemoved: autoAlgaeRemoved,
+        coralPlaced: 'No',
+        rankingPoint: teleopCoralRankingPoint,
+        canPickupCoral: canPickupCoral,
+        canPickupAlgae: teleopCanPickupAlgae,
+        algaeScoredInNet: teleopAlgaeScoredInNet,
+        coralRankingPoint: teleopCoralRankingPoint,
+        algaeProcessed: teleopAlgaeProcessed,
+        processedAlgaeScored: teleopAlgaeProcessed,
+        processorCycles: processorCycles,
+        coOpPoint: otherCoOpPoint,
+        returnedToBarge: endgameReturnedToBarge,
+        cageHang: endgameCageHang,
+        bargeRankingPoint: endgameBargeRankingPoint,
+        breakdown: otherBreakdown,
+        comments: otherComments,
+        coralPickupMethod: teleopCoralPickupMethod,
         feederStation: feederStation,
-        coralOnReefHeight1: coralOnReefHeight1,
-        coralOnReefHeight2: coralOnReefHeight2,
-        coralOnReefHeight3: coralOnReefHeight3,
-        coralOnReefHeight4: coralOnReefHeight4,
-        robotPath: drawingData,
+        coralOnReefHeight1: teleopCoralHeight1Success,
+        coralOnReefHeight2: teleopCoralHeight2Success,
+        coralOnReefHeight3: teleopCoralHeight3Success,
+        coralOnReefHeight4: teleopCoralHeight4Success,
+        robotPath: autoRobotPath,
       );
 
       await DataManager.saveRecord(record);
@@ -979,32 +1125,34 @@ class _ScoutingPageState extends State<ScoutingPage> {
       // reset form
       setState(() {
         matchNumber = matchNumber + 1; // increment match number
-        algaeRemoved = 0;
-        algaeScoredInNet = 0;
-        coralOnReefHeight1 = 0;
-        coralOnReefHeight2 = 0;
-        coralOnReefHeight3 = 0;
-        coralOnReefHeight4 = 0;
-        algaeProcessed = 0;
-        processedAlgaeScored = 0;
+        autoAlgaeRemoved = 0;
+        teleopAlgaeScoredInNet = 0;
+        teleopCoralHeight4Success = 0;
+        teleopCoralHeight3Success = 0;
+        teleopCoralHeight2Success = 0;
+        teleopCoralHeight1Success = 0;
+        teleopAlgaeProcessed = 0;
         processorCycles = 0;
-        coralPlaced = 'No';
-        cageHang = 'None';
-        comments = '';
-        taxis = false;
-        coralRankingPoint = false;
-        coOpPoint = false;
-        returnedToBarge = false;
-        bargeRankingPoint = false;
-        breakdown = false;
-        autoAlgaeInNet = 0;
-        autoAlgaeInProcessor = 0;
+        autoCoralHeight4Success = 0;
+        autoCoralHeight3Success = 0;
+        autoCoralHeight2Success = 0;
+        autoCoralHeight1Success = 0;
+        autoCoralHeight4Failure = 0;
+        autoCoralHeight3Failure = 0;
+        autoCoralHeight2Failure = 0;
+        autoCoralHeight1Failure = 0;
+        endgameReturnedToBarge = false;
+        endgameBargeRankingPoint = false;
+        otherCoOpPoint = false;
+        otherBreakdown = false;
+        otherComments = '';
+        autoCoralPreloaded = false;
+        autoTaxis = false;
+        autoRobotPath = null;
+        teleopCoralPickupMethod = 'Human';
+        teleopCanPickupAlgae = false;
         canPickupCoral = false;
-        coralPickupMethod = 'None';
-        drawingData = null;
-        if (_drawingButtonKey.currentState != null) {
-          _drawingButtonKey.currentState!.resetPath();
-        }
+        teleopCoralRankingPoint = false;
         updateTime();
       });
 
@@ -1085,32 +1233,34 @@ class _ScoutingPageState extends State<ScoutingPage> {
                         onPressed: () {
                           Navigator.pop(context);
                           setState(() {
-                            algaeRemoved = 0;
-                            algaeScoredInNet = 0;
-                            coralOnReefHeight1 = 0;
-                            coralOnReefHeight2 = 0;
-                            coralOnReefHeight3 = 0;
-                            coralOnReefHeight4 = 0;
-                            algaeProcessed = 0;
-                            processedAlgaeScored = 0;
+                            autoAlgaeRemoved = 0;
+                            teleopAlgaeScoredInNet = 0;
+                            teleopCoralHeight4Success = 0;
+                            teleopCoralHeight3Success = 0;
+                            teleopCoralHeight2Success = 0;
+                            teleopCoralHeight1Success = 0;
+                            teleopAlgaeProcessed = 0;
                             processorCycles = 0;
-                            coralPlaced = 'No';
-                            cageHang = 'None';
-                            comments = '';
-                            taxis = false;
-                            coralRankingPoint = false;
-                            coOpPoint = false;
-                            returnedToBarge = false;
-                            bargeRankingPoint = false;
-                            breakdown = false;
-                            autoAlgaeInNet = 0;
-                            autoAlgaeInProcessor = 0;
+                            autoCoralHeight4Success = 0;
+                            autoCoralHeight3Success = 0;
+                            autoCoralHeight2Success = 0;
+                            autoCoralHeight1Success = 0;
+                            autoCoralHeight4Failure = 0;
+                            autoCoralHeight3Failure = 0;
+                            autoCoralHeight2Failure = 0;
+                            autoCoralHeight1Failure = 0;
+                            endgameReturnedToBarge = false;
+                            endgameBargeRankingPoint = false;
+                            otherCoOpPoint = false;
+                            otherBreakdown = false;
+                            otherComments = '';
+                            autoCoralPreloaded = false;
+                            autoTaxis = false;
+                            autoRobotPath = null;
+                            teleopCoralPickupMethod = 'Human';
+                            teleopCanPickupAlgae = false;
                             canPickupCoral = false;
-                            coralPickupMethod = 'None';
-                            drawingData = null;
-                            if (_drawingButtonKey.currentState != null) {
-                              _drawingButtonKey.currentState!.resetPath();
-                            }
+                            teleopCoralRankingPoint = false;
                             updateTime();
                           });
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -1158,28 +1308,32 @@ class _ScoutingPageState extends State<ScoutingPage> {
         case 1:
           return 'Data';
         case 2:
-          return 'API';
+          return 'Analysis';
         case 3:
-          return 'Bluetooth';
+          return 'API';
         case 4:
-          return 'Settings';
+          return 'Bluetooth';
         case 5:
+          return 'Settings';
+        case 6:
           return 'About';
         default:
           return 'Scouting';
       }
     } else {
-      // When Bluetooth is disabled, skip index 3
+      // when bluetooth is disabled, skip index 4
       switch (index) {
         case 0:
           return 'Scouting';
         case 1:
           return 'Data';
         case 2:
+          return 'Analysis';
+        case 3:
           return 'API';
-        case 4:
-          return 'Settings';
         case 5:
+          return 'Settings';
+        case 6:
           return 'About';
         default:
           return 'Scouting';
