@@ -15,8 +15,8 @@ class _QrScannerPageState extends State<QrScannerPage> {
   MobileScannerController controller = MobileScannerController();
   bool _isProcessing = false;
   DateTime? _lastScanTime;
-  int _qrRateLimit = 1500; // Default value in milliseconds
-  static const int qrSuccessIndicatorDuration = 200; // Duration to show green border in milliseconds
+  int _qrRateLimit = 1500; // default val (ms)
+  static const int qrSuccessIndicatorDuration = 200; // duration to show green border (ms)
   Color _borderColor = Colors.yellow;
   Timer? _statusCheckTimer;
 
@@ -82,7 +82,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
       // Parse the JSON array
       final List<dynamic> data = jsonDecode(rawData);
       
-      // Create a ScoutingRecord from the array data
+      // create ScoutingRecord from array data
       final record = ScoutingRecord(
         timestamp: data[0] as String? ?? '',
         matchNumber: data[1] as int? ?? 0,
@@ -91,7 +91,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
         isRedAlliance: data[4] == 1,
         cageType: data[5] as String? ?? 'Shallow',
         
-        // Auto
+        // auto
         autoCoralPreloaded: data[6] == 1,
         autoTaxis: data[7] == 1,
         autoAlgaeRemoved: data[8] as int? ?? 0,
