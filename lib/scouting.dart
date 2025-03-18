@@ -1125,34 +1125,51 @@ class _ScoutingPageState extends State<ScoutingPage> {
       // reset form
       setState(() {
         matchNumber = matchNumber + 1; // increment match number
+        // Reset all auto fields
+        autoTaxis = false;
+        autoCoralPreloaded = false;
+        autoRobotPath = null;
         autoAlgaeRemoved = 0;
-        teleopAlgaeScoredInNet = 0;
-        teleopCoralHeight4Success = 0;
-        teleopCoralHeight3Success = 0;
-        teleopCoralHeight2Success = 0;
-        teleopCoralHeight1Success = 0;
-        teleopAlgaeProcessed = 0;
-        processorCycles = 0;
         autoCoralHeight4Success = 0;
-        autoCoralHeight3Success = 0;
-        autoCoralHeight2Success = 0;
-        autoCoralHeight1Success = 0;
         autoCoralHeight4Failure = 0;
+        autoCoralHeight3Success = 0;
         autoCoralHeight3Failure = 0;
+        autoCoralHeight2Success = 0;
         autoCoralHeight2Failure = 0;
+        autoCoralHeight1Success = 0;
         autoCoralHeight1Failure = 0;
+        autoAlgaeInNet = 0;
+        autoAlgaeInProcessor = 0;
+
+        // Reset all teleop fields
+        teleopCoralHeight4Success = 0;
+        teleopCoralHeight4Failure = 0;
+        teleopCoralHeight3Success = 0;
+        teleopCoralHeight3Failure = 0;
+        teleopCoralHeight2Success = 0;
+        teleopCoralHeight2Failure = 0;
+        teleopCoralHeight1Success = 0;
+        teleopCoralHeight1Failure = 0;
+        teleopCoralRankingPoint = false;
+        teleopAlgaeRemoved = 0;
+        teleopAlgaeProcessorAttempts = 0;
+        teleopAlgaeProcessed = 0;
+        teleopAlgaeScoredInNet = 0;
+        teleopCanPickupAlgae = false;
+        teleopCoralPickupMethod = 'Human';
+
+        // Reset all endgame fields
         endgameReturnedToBarge = false;
+        endgameCageHang = 'None';
         endgameBargeRankingPoint = false;
+
+        // Reset all other fields
         otherCoOpPoint = false;
         otherBreakdown = false;
         otherComments = '';
-        autoCoralPreloaded = false;
-        autoTaxis = false;
-        autoRobotPath = null;
-        teleopCoralPickupMethod = 'Human';
-        teleopCanPickupAlgae = false;
         canPickupCoral = false;
-        teleopCoralRankingPoint = false;
+        processorCycles = 0;
+
         updateTime();
       });
 
