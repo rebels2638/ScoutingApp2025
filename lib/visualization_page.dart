@@ -211,45 +211,56 @@ class _VisualizationPageState extends State<VisualizationPage> {
         color: const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Wrap(
-        spacing: 4,
-        runSpacing: 8,
-        alignment: WrapAlignment.spaceEvenly,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildMetric(
-            'Matches',
-            records.length.toString(),
-            const Color(0xFF64B5F6),
+          // Top row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildMetric(
+                'Matches',
+                records.length.toString(),
+                const Color(0xFF64B5F6),
+              ),
+              _buildMetric(
+                'Teleop Coral',
+                teleopCoralScored.toStringAsFixed(1),
+                const Color(0xFF81C784),
+              ),
+              _buildMetric(
+                'Teleop Success',
+                '${teleopSuccessRate.round()}%',
+                const Color(0xFF81C784),
+              ),
+            ],
           ),
-          _buildMetric(
-            'Teleop Coral',
-            teleopCoralScored.toStringAsFixed(1),
-            const Color(0xFF81C784),
-          ),
-          _buildMetric(
-            'Teleop Success',
-            '${teleopSuccessRate.round()}%',
-            const Color(0xFF81C784),
-          ),
-          _buildMetric(
-            'Auto Coral',
-            autoCoralScored.toStringAsFixed(1),
-            const Color(0xFFFFB74D),
-          ),
-          _buildMetric(
-            'Auto Success',
-            '${autoSuccessRate.round()}%',
-            const Color(0xFFFFB74D),
-          ),
-          _buildMetric(
-            'Algae Processed',
-            avgAlgaeProcessed.toStringAsFixed(1),
-            const Color(0xFFBA68C8),
-          ),
-          _buildMetric(
-            'Algae in Net',
-            avgAlgaeInNet.toStringAsFixed(1),
-            const Color(0xFFBA68C8),
+          const SizedBox(height: 8),
+          // Bottom row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildMetric(
+                'Auto Coral',
+                autoCoralScored.toStringAsFixed(1),
+                const Color(0xFFFFB74D),
+              ),
+              _buildMetric(
+                'Auto Success',
+                '${autoSuccessRate.round()}%',
+                const Color(0xFFFFB74D),
+              ),
+              _buildMetric(
+                'Algae Processed',
+                avgAlgaeProcessed.toStringAsFixed(1),
+                const Color(0xFFBA68C8),
+              ),
+              _buildMetric(
+                'Algae in Net',
+                avgAlgaeInNet.toStringAsFixed(1),
+                const Color(0xFFBA68C8),
+              ),
+            ],
           ),
         ],
       ),
