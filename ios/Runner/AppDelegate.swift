@@ -7,11 +7,7 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    let registrar = NSClassFromString("GeneratedPluginRegistrant") as! NSObject.Type
-    let selector = NSSelectorFromString("register:")
-    if registrar.responds(to: selector) {
-      registrar.perform(selector, with: self)
-    }
+    GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }

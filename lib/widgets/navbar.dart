@@ -107,14 +107,8 @@ class _NavBarState extends State<NavBar> {
         icon: Icon(Icons.data_usage),
         label: 'Data',
       ),
-      
-      const BottomNavigationBarItem(
-      icon: Icon(Icons.api),
-      label: 'API',
-    )
     ];
-    
-    
+
     // add analysis tab only if scouting leader is enabled
     if (_isScoutingLeader!) {
       items.add(const BottomNavigationBarItem(
@@ -123,7 +117,11 @@ class _NavBarState extends State<NavBar> {
       ));
     }
 
-    
+    // always add API tab
+    items.add(const BottomNavigationBarItem(
+      icon: Icon(Icons.api),
+      label: 'API',
+    ));
 
     // Add Bluetooth item if enabled
     if (widget.showBluetooth) {
@@ -147,7 +145,7 @@ class _NavBarState extends State<NavBar> {
 
     // calculate display index based on current state
     int displayIndex = widget.currentIndex;
-    if (!_isScoutingLeader! && displayIndex > 2) {
+    if (!_isScoutingLeader! && displayIndex > 1) {
       displayIndex--;  // adjust for missing analysis tab
     }
     if (!widget.showBluetooth && displayIndex >= (_isScoutingLeader! ? 4 : 3)) {
@@ -160,20 +158,11 @@ class _NavBarState extends State<NavBar> {
       onTap: (index) {
         // convert display index back to actual index
         int actualIndex = index;
-        if (!_isScoutingLeader!) {
-          // When scouting leader is off, adjust for missing analysis tab
-          if (index > 2) {
-            actualIndex++;  // skip the analysis tab position
-          }
-          // Then adjust for bluetooth if needed
-          if (!widget.showBluetooth && actualIndex >= 3) {
-            actualIndex++;  // adjust for missing bluetooth tab
-          }
-        } else {
-          // When scouting leader is on, only adjust for bluetooth if needed
-          if (!widget.showBluetooth && actualIndex >= 4) {
-            actualIndex++;  // adjust for missing bluetooth tab
-          }
+        if (!_isScoutingLeader! && index > 1) {
+          actualIndex++;  // adjust for missing analysis tab
+        }
+        if (!widget.showBluetooth && actualIndex >= (_isScoutingLeader! ? 4 : 3)) {
+          actualIndex++;  // adjust for missing bluetooth tab
         }
         widget.onTap(actualIndex);
       },
