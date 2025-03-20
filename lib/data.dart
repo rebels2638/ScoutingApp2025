@@ -911,74 +911,93 @@ class DataPageState extends State<DataPage> {
   Widget _buildSearchAndFilterBar() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
-    return Card(
-      margin: const EdgeInsets.all(8),
-      color: isDark 
-          ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
-          : Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: isDark
-              ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
-              : Colors.transparent,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search by team number...',
-                  hintStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                  prefixIcon: Icon(
-                    Icons.search,
-                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(
-                      color: isDark
-                          ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
-                          : Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  filled: true,
-                  fillColor: isDark
-                      ? Theme.of(context).colorScheme.surface
-                      : Theme.of(context).colorScheme.surface,
-                ),
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+          child: Row(
+            children: [
+              Text(
+                'Matches saved: ${_records.length}',
                 style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurface,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                 ),
-                onChanged: (value) {
-                  setState(() => _searchQuery = value);
-                },
-              ),
-            ),
-            if (_refreshButtonEnabled) ...[
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Refresh data',
-                onPressed: () {
-                  loadRecords();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Records refreshed'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
               ),
             ],
-          ],
+          ),
         ),
-      ),
+        Card(
+          margin: const EdgeInsets.all(8),
+          color: isDark 
+              ? Theme.of(context).colorScheme.surface.withOpacity(0.8)
+              : Theme.of(context).colorScheme.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: isDark
+                  ? Theme.of(context).colorScheme.outline.withOpacity(0.2)
+                  : Colors.transparent,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search by team number...',
+                      hintStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(
+                          color: isDark
+                              ? Theme.of(context).colorScheme.outline.withOpacity(0.3)
+                              : Theme.of(context).colorScheme.outline.withOpacity(0.2),
+                        ),
+                      ),
+                      filled: true,
+                      fillColor: isDark
+                          ? Theme.of(context).colorScheme.surface
+                          : Theme.of(context).colorScheme.surface,
+                    ),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    onChanged: (value) {
+                      setState(() => _searchQuery = value);
+                    },
+                  ),
+                ),
+                if (_refreshButtonEnabled) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    tooltip: 'Refresh data',
+                    onPressed: () {
+                      loadRecords();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Records refreshed'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
