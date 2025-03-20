@@ -1673,15 +1673,17 @@ class DataPageState extends State<DataPage> {
             onPressed: () async {
               try {
                 if (isMultipleDelete) {
-                  // Sort indices in descending order to avoid index shifting
-                  final sortedIndices = selectedRecords.toList()..sort((a, b) => b.compareTo(a));
+                  // get all records
                   final records = await DatabaseHelper.instance.getAllRecords();
                   
-                  for (final index in sortedIndices) {
-                    records.removeAt(index);
-                  }
+                  // create a new list with non-selected records
+                  final updatedRecords = records.asMap().entries
+                    .where((entry) => !selectedRecords.contains(entry.key))
+                    .map((entry) => entry.value)
+                    .toList();
                   
-                  await DatabaseHelper.instance.saveRecords(records);
+                  // save the filtered records
+                  await DatabaseHelper.instance.saveRecords(updatedRecords);
                   
                   if (!mounted) return;
                   setState(() {
