@@ -21,7 +21,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'auto_path_photo_page.dart';
 import 'visualization_page.dart';
-import 'qr_code_dialog.dart';
+import 'widgets/qr_code_dialog.dart';
 
 class ScoutingRecord {
   final String timestamp;

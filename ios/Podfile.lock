@@ -109,7 +109,6 @@ SPEC REPOS:
     - GoogleDataTransport
     - GoogleMLKit
     - GoogleToolboxForMac
-    - GoogleUtilities
     - GoogleUtilitiesComponents
     - GTMSessionFetcher
     - MLImage
