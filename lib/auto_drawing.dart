@@ -338,6 +338,47 @@ class _AutoDrawingPageState extends State<AutoDrawingPage> {
                     },
                   ),
                 ],
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.delete_forever),
+                  onPressed: _paths.isEmpty ? null : () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Delete All Paths?'),
+                        content: const Text(
+                          'Are you sure you want to delete all auto paths? This cannot be undone.',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.pop(context);
+                              setState(() {
+                                _paths.clear();
+                              });
+                              await _savePaths();
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('All paths deleted'),
+                                  ),
+                                );
+                              }
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: Colors.red,
+                            ),
+                            child: const Text('Delete All'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ],
             ),
           ),
@@ -352,103 +393,137 @@ class _AutoDrawingPageState extends State<AutoDrawingPage> {
                     style: Theme.of(context).textTheme.bodyLarge,
                   ),
                 )
-              : ListView.builder(
+              : GridView.builder(
+                  padding: const EdgeInsets.all(8),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 1,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
                   itemCount: filteredPaths.length,
                   itemBuilder: (context, index) {
                     final path = filteredPaths[index];
                     return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      child: ListTile(
-                        leading: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: path.isRedAlliance
-                                ? AppColors.redAlliance.withOpacity(0.1)
-                                : AppColors.blueAlliance.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            path.isRedAlliance ? 'Red' : 'Blue',
-                            style: TextStyle(
-                              color: path.isRedAlliance
-                                  ? AppColors.redAlliance
-                                  : AppColors.blueAlliance,
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => drawing.DrawingPage(
+                                isRedAlliance: path.isRedAlliance,
+                                initialDrawing: path.path,
+                                readOnly: true,
+                                imagePath: path.imagePath,
+                                useDefaultImage: true,
+                              ),
                             ),
-                          ),
-                        ),
-                        title: Text(
-                          'Team ${path.teamNumber}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        subtitle: Text(
-                          '${path.matchType} Match ${path.matchNumber}',
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                          );
+                        },
+                        onLongPress: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text('Delete Auto Path?'),
+                              content: Text(
+                                'Are you sure you want to delete the auto path for Team ${path.teamNumber} (${path.matchType} Match ${path.matchNumber})?',
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () async {
+                                    Navigator.pop(context);
+                                    setState(() {
+                                      _paths.remove(path);
+                                    });
+                                    await _savePaths();
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Path deleted'),
+                                        ),
+                                      );
+                                    }
+                                  },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
+                                  child: const Text('Delete'),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.visibility),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => drawing.DrawingPage(
+                            Expanded(
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: path.isRedAlliance
+                                          ? AppColors.redAlliance.withOpacity(0.1)
+                                          : AppColors.blueAlliance.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: drawing.DrawingPage(
                                       isRedAlliance: path.isRedAlliance,
                                       initialDrawing: path.path,
                                       readOnly: true,
                                       imagePath: path.imagePath,
+                                      hideControls: true,
                                     ),
                                   ),
-                                );
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () {
-                                showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Delete Auto Path?'),
-                                    content: const Text(
-                                      'Are you sure you want to delete this auto path? This cannot be undone.',
-                                    ),
-                                    actions: [
-                                      TextButton(
-                                        onPressed: () => Navigator.pop(context),
-                                        child: const Text('Cancel'),
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
                                       ),
-                                      TextButton(
-                                        onPressed: () async {
-                                          Navigator.pop(context);
-                                          setState(() {
-                                            _paths.remove(path);
-                                          });
-                                          await _savePaths();
-                                          if (context.mounted) {
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(
-                                                content: Text('Auto path deleted'),
-                                              ),
-                                            );
-                                          }
-                                        },
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Colors.red,
+                                      decoration: BoxDecoration(
+                                        color: path.isRedAlliance
+                                            ? AppColors.redAlliance
+                                            : AppColors.blueAlliance,
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Text(
+                                        path.isRedAlliance ? 'Red' : 'Blue',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
                                         ),
-                                        child: const Text('Delete'),
                                       ),
-                                    ],
+                                    ),
                                   ),
-                                );
-                              },
+                                ],
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Team ${path.teamNumber}',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Text(
+                                    '${path.matchType} Match ${path.matchNumber}',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),

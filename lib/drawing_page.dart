@@ -85,6 +85,7 @@ class DrawingPage extends StatefulWidget {
   final List<Map<String, dynamic>>? initialDrawing;
   final String? imagePath;
   final bool useDefaultImage;
+  final bool hideControls;
 
   const DrawingPage({
     Key? key,
@@ -93,6 +94,7 @@ class DrawingPage extends StatefulWidget {
     this.initialDrawing,
     this.imagePath,
     this.useDefaultImage = true,
+    this.hideControls = false,
   }) : super(key: key);
 
   @override
@@ -131,17 +133,51 @@ class _DrawingPageState extends State<DrawingPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.hideControls) {
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: widget.useDefaultImage
+                ? Image.asset(
+                    'assets/field_image.png',
+                    fit: BoxFit.contain,
+                  )
+                : imagePath != null && File(imagePath!).existsSync()
+                    ? Image.file(
+                        File(imagePath!),
+                        fit: BoxFit.contain,
+                      )
+                    : Container(),
+          ),
+          Positioned.fill(
+            child: CustomPaint(
+              painter: DrawingPainter(
+                lines: lines,
+                currentColor: currentColor,
+                strokeWidth: strokeWidth,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Auto Path Drawing'),
-        actions: widget.readOnly ? [] : [
+        title: const Text('Auto Path Drawing'),
+        actions: widget.readOnly ? [
           IconButton(
-            icon: Icon(Icons.undo),
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ] : [
+          IconButton(
+            icon: const Icon(Icons.undo),
             onPressed: lines.isEmpty ? null : undo,
             tooltip: 'Undo',
           ),
           IconButton(
-            icon: Icon(Icons.redo),
+            icon: const Icon(Icons.redo),
             onPressed: redoHistory.isEmpty ? null : redo,
             tooltip: 'Redo',
           ),
@@ -154,23 +190,21 @@ class _DrawingPageState extends State<DrawingPage> {
             },
             tooltip: isErasing ? 'Draw Mode' : 'Erase Mode',
           ),
-          if (!widget.readOnly)
-            IconButton(
-              icon: Icon(Icons.save),
-              onPressed: () {
-                final pathData = lines.map((line) => {
-                  ...line.toMap(),
-                  'imagePath': imagePath,
-                }).toList();
-                Navigator.pop(context, pathData);
-              },
-              tooltip: 'Save Drawing',
-            ),
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: () {
+              final pathData = lines.map((line) => {
+                ...line.toMap(),
+                'imagePath': imagePath,
+              }).toList();
+              Navigator.pop(context, pathData);
+            },
+            tooltip: 'Save Drawing',
+          ),
         ],
       ),
       body: Stack(
         children: [
-          // Background image logic
           Positioned.fill(
             child: imagePath != null && File(imagePath!).existsSync()
                 ? Image.file(
@@ -182,9 +216,8 @@ class _DrawingPageState extends State<DrawingPage> {
                         'assets/field_image.png',
                         fit: BoxFit.contain,
                       )
-                    : Container(),  // Empty container if no image should be shown
+                    : Container(),
           ),
-          // Drawing area
           Container(
             child: CustomPaint(
               painter: DrawingPainter(
@@ -203,7 +236,20 @@ class _DrawingPageState extends State<DrawingPage> {
           ),
         ],
       ),
-      bottomNavigationBar: widget.readOnly ? null : BottomAppBar(
+      bottomNavigationBar: widget.readOnly ? BottomAppBar(
+        child: Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Text(
+                'View Only Mode',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      ) : BottomAppBar(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
