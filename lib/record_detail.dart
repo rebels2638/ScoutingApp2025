@@ -122,7 +122,6 @@ class RecordDetailPage extends StatelessWidget {
       color: Colors.blue,
       children: [
         _buildStatRow('Starting Configuration', [
-          _buildStat('Cage Type', record.cageType),
           _buildStat('Coral Preloaded', record.autoCoralPreloaded ? 'Yes' : 'No'),
         ]),
         _buildStatRow('Movement', [
@@ -164,7 +163,6 @@ class RecordDetailPage extends StatelessWidget {
         _buildStatRow('Algae Scoring', [
           _buildStat('Removed', record.teleopAlgaeRemoved.toString()),
           _buildStat('In Net', record.teleopAlgaeScoredInNet.toString()),
-          _buildStat('Processor Attempts', record.teleopAlgaeProcessorAttempts.toString()),
           _buildStat('Processed', record.teleopAlgaeProcessed.toString()),
         ]),
         _buildStatRow('Coral Height 1', [
