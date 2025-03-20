@@ -18,6 +18,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
   int? selectedTeam;
   List<int> teamNumbers = [];
   int _selectedIndex = 0;
+  String _coralView = 'Total'; // 'Total', 'Teleop', or 'Auto'
   
   final List<ChartType> _chartTypes = [
     ChartType(
@@ -1270,21 +1271,82 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final matchNumbers = records.map((r) => r.matchNumber).toList()..sort();
     final minMatch = matchNumbers.first;
     final maxMatch = matchNumbers.last;
+
+    // Create data points based on selected view
+    List<List<FlSpot>> coralData = List.generate(5, (index) => []);
+    final labels = ['Total', 'L4', 'L3', 'L2', 'L1'];
+    final colors = [
+      const Color(0xFFBA68C8), // Total - Purple
+      const Color(0xFFE57373), // L4 - Red
+      const Color(0xFF81C784), // L3 - Green
+      const Color(0xFF64B5F6), // L2 - Blue
+      const Color(0xFFFFB74D), // L1 - Orange
+    ];
     
-    // Calculate max Y value considering all coral levels and total
-    final maxY = records.map((r) => 
-      max(
-        r.teleopCoralHeight4Success + r.teleopCoralHeight3Success + 
-        r.teleopCoralHeight2Success + r.teleopCoralHeight1Success,
-        max(
-          r.teleopCoralHeight4Success,
-          max(
-            r.teleopCoralHeight3Success,
-            max(r.teleopCoralHeight2Success, r.teleopCoralHeight1Success)
-          )
-        )
-      )
-    ).reduce(max).toDouble();
+    if (_coralView == 'Total') {
+      // Show total data for both phases
+      for (var record in records) {
+        final matchNum = record.matchNumber.toDouble();
+        // Total coral (auto + teleop)
+        coralData[0].add(FlSpot(matchNum, 
+          (record.autoCoralHeight4Success + record.autoCoralHeight3Success + 
+           record.autoCoralHeight2Success + record.autoCoralHeight1Success +
+           record.teleopCoralHeight4Success + record.teleopCoralHeight3Success + 
+           record.teleopCoralHeight2Success + record.teleopCoralHeight1Success).toDouble()
+        ));
+        // L4 (auto + teleop)
+        coralData[1].add(FlSpot(matchNum, 
+          (record.autoCoralHeight4Success + record.teleopCoralHeight4Success).toDouble()
+        ));
+        // L3 (auto + teleop)
+        coralData[2].add(FlSpot(matchNum, 
+          (record.autoCoralHeight3Success + record.teleopCoralHeight3Success).toDouble()
+        ));
+        // L2 (auto + teleop)
+        coralData[3].add(FlSpot(matchNum, 
+          (record.autoCoralHeight2Success + record.teleopCoralHeight2Success).toDouble()
+        ));
+        // L1 (auto + teleop)
+        coralData[4].add(FlSpot(matchNum, 
+          (record.autoCoralHeight1Success + record.teleopCoralHeight1Success).toDouble()
+        ));
+      }
+    } else {
+      // Show data for selected phase (Auto or Teleop)
+      for (var record in records) {
+        final matchNum = record.matchNumber.toDouble();
+        if (_coralView == 'Auto') {
+          // total auto
+          coralData[0].add(FlSpot(matchNum, 
+            (record.autoCoralHeight4Success + 
+             record.autoCoralHeight3Success + 
+             record.autoCoralHeight2Success + 
+             record.autoCoralHeight1Success).toDouble()
+          ));
+          // individual heights
+          coralData[1].add(FlSpot(matchNum, record.autoCoralHeight4Success.toDouble()));
+          coralData[2].add(FlSpot(matchNum, record.autoCoralHeight3Success.toDouble()));
+          coralData[3].add(FlSpot(matchNum, record.autoCoralHeight2Success.toDouble()));
+          coralData[4].add(FlSpot(matchNum, record.autoCoralHeight1Success.toDouble()));
+        } else { // Teleop
+          // Total teleop
+          coralData[0].add(FlSpot(matchNum, 
+            (record.teleopCoralHeight4Success + 
+             record.teleopCoralHeight3Success + 
+             record.teleopCoralHeight2Success + 
+             record.teleopCoralHeight1Success).toDouble()
+          ));
+          // Individual heights
+          coralData[1].add(FlSpot(matchNum, record.teleopCoralHeight4Success.toDouble()));
+          coralData[2].add(FlSpot(matchNum, record.teleopCoralHeight3Success.toDouble()));
+          coralData[3].add(FlSpot(matchNum, record.teleopCoralHeight2Success.toDouble()));
+          coralData[4].add(FlSpot(matchNum, record.teleopCoralHeight1Success.toDouble()));
+        }
+      }
+    }
+
+    // Calculate maxY for the chart
+    final maxY = coralData.expand((list) => list).map((spot) => spot.y).reduce(max);
     final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
 
     return Padding(
@@ -1292,27 +1354,60 @@ class _VisualizationPageState extends State<VisualizationPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Coral Scoring Over Time',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Coral Over Time',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2D2D2D),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: DropdownButton<String>(
+                  value: _coralView,
+                  underline: const SizedBox(),
+                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                  dropdownColor: const Color(0xFF2D2D2D),
+                  items: ['Total', 'Teleop', 'Auto'].map((view) => DropdownMenuItem(
+                    value: view,
+                    child: Text(
+                      view,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  )).toList(),
+                  onChanged: (value) => setState(() => _coralView = value!),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
-          Row(
-            children: [
-              _buildLegendItem('Total', const Color(0xFF64B5F6)),
-              const SizedBox(width: 16),
-              _buildLegendItem('L4', const Color(0xFF81C784)),
-              const SizedBox(width: 16),
-              _buildLegendItem('L3', const Color(0xFFFFB74D)),
-              const SizedBox(width: 16),
-              _buildLegendItem('L2', const Color(0xFFBA68C8)),
-              const SizedBox(width: 16),
-              _buildLegendItem('L1', const Color(0xFFF06292)),
-            ],
+          Text(
+            _coralView == 'Total' 
+              ? 'Combined auto and teleop coral scoring by height'
+              : '${_coralView} coral scoring by height',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: List.generate(5, (i) => 
+              _buildLegendItem(labels[i], colors[i])
+            ),
           ),
           const SizedBox(height: 24),
           Expanded(
@@ -1379,104 +1474,23 @@ class _VisualizationPageState extends State<VisualizationPage> {
                 maxX: maxMatch.toDouble(),
                 minY: 0,
                 maxY: roundedMaxY,
-                lineBarsData: [
-                  // Total coral line
+                lineBarsData: List.generate(5, (i) => 
                   LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
-                      (r.teleopCoralHeight4Success + r.teleopCoralHeight3Success + 
-                       r.teleopCoralHeight2Success + r.teleopCoralHeight1Success).toDouble(),
-                    )).toList(),
+                    spots: coralData[i],
                     isCurved: false,
-                    color: const Color(0xFF64B5F6),
+                    color: colors[i],
                     barWidth: 3,
                     dotData: FlDotData(
                       show: true,
                       getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
                         radius: 5,
-                        color: const Color(0xFF64B5F6),
+                        color: colors[i],
                         strokeWidth: 2,
                         strokeColor: const Color(0xFF1A1A1A),
                       ),
                     ),
                   ),
-                  // L4 line
-                  LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
-                      r.teleopCoralHeight4Success.toDouble(),
-                    )).toList(),
-                    isCurved: false,
-                    color: const Color(0xFF81C784),
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: const Color(0xFF81C784),
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                  // L3 line
-                  LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
-                      r.teleopCoralHeight3Success.toDouble(),
-                    )).toList(),
-                    isCurved: false,
-                    color: const Color(0xFFFFB74D),
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: const Color(0xFFFFB74D),
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                  // L2 line
-                  LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
-                      r.teleopCoralHeight2Success.toDouble(),
-                    )).toList(),
-                    isCurved: false,
-                    color: const Color(0xFFBA68C8),
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: const Color(0xFFBA68C8),
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                  // L1 line
-                  LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
-                      r.teleopCoralHeight1Success.toDouble(),
-                    )).toList(),
-                    isCurved: false,
-                    color: const Color(0xFFF06292),
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: const Color(0xFFF06292),
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
                     fitInsideHorizontally: true,
@@ -1489,28 +1503,11 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     tooltipMargin: 16,
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
-                        String label;
-                        Color color;
-                        if (spot.bar.color == const Color(0xFF64B5F6)) {
-                          label = "Total";
-                          color = const Color(0xFF64B5F6);
-                        } else if (spot.bar.color == const Color(0xFF81C784)) {
-                          label = "L4";
-                          color = const Color(0xFF81C784);
-                        } else if (spot.bar.color == const Color(0xFFFFB74D)) {
-                          label = "L3";
-                          color = const Color(0xFFFFB74D);
-                        } else if (spot.bar.color == const Color(0xFFBA68C8)) {
-                          label = "L2";
-                          color = const Color(0xFFBA68C8);
-                        } else {
-                          label = "L1";
-                          color = const Color(0xFFF06292);
-                        }
+                        final index = spot.barIndex;
                         return LineTooltipItem(
-                          'Match ${spot.x.toInt()}\n${spot.y.toStringAsFixed(0)} $label',
+                          'Match ${spot.x.toInt()}\n${labels[index]}: ${spot.y.toStringAsFixed(0)}',
                           TextStyle(
-                            color: color,
+                            color: colors[index],
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
