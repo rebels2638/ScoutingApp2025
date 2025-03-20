@@ -1444,7 +1444,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     }
                     if ((value - upperLine).abs() < 0.01 || (value - lowerLine).abs() < 0.01) {
                       return FlLine(
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white.withOpacity(1.0),
                         strokeWidth: 1,
                         dashArray: [3, 3], // Make it dashed
                       );
@@ -1527,7 +1527,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     ),
                     HorizontalLine(
                       y: upperLine,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withOpacity(1.0),
                       strokeWidth: 1,
                       dashArray: [3, 3], // make it dashed
                       label: HorizontalLineLabel(
@@ -1535,7 +1535,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                         alignment: Alignment.topRight,
                         padding: const EdgeInsets.only(right: 8, bottom: 4),
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withOpacity(1.0),
                           fontSize: 10,
                         ),
                         labelResolver: (line) => '+1σ: ${line.y.toStringAsFixed(1)}',
@@ -1543,7 +1543,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     ),
                     HorizontalLine(
                       y: lowerLine,
-                      color: Colors.white.withOpacity(0.5),
+                      color: Colors.white.withOpacity(1.0),
                       strokeWidth: 1,
                       dashArray: [3, 3],
                       label: HorizontalLineLabel(
@@ -1551,7 +1551,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                         alignment: Alignment.topRight,
                         padding: const EdgeInsets.only(right: 8, bottom: 4),
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
+                          color: Colors.white.withOpacity(1.0),
                           fontSize: 10,
                         ),
                         labelResolver: (line) => '-1σ: ${line.y.toStringAsFixed(1)}',
