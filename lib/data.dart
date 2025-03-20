@@ -1299,8 +1299,29 @@ class DataPageState extends State<DataPage> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               ListTile(
+                leading: const Icon(Icons.qr_code),
+                title: const Text('Generate QR Code'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showQRCodeDialog(context, record);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.visibility),
+                title: const Text('View Details'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RecordDetailPage(record: record),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
                 leading: const Icon(Icons.edit),
-                title: const Text('Edit Data'),
+                title: const Text('Edit Details'),
                 onTap: () async {
                   Navigator.pop(context);
                   final updatedRecord = await Navigator.push<ScoutingRecord>(
