@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'data.dart';
 import 'theme/app_theme.dart';
-import 'dart:math' show max, min;
+import 'dart:math' show max, min, pow, sqrt;
 import 'package:flutter/services.dart';
 
 class VisualizationPage extends StatefulWidget {
@@ -1349,9 +1349,16 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final maxY = coralData.expand((list) => list).map((spot) => spot.y).reduce(max);
     final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
 
-    // Calculate average line for all views
+    // calculate average and stdev for the total line
     final totalSpots = coralData[0];  // Use the total line for any view
-    final averageLine = totalSpots.map((spot) => spot.y).average();
+    final values = totalSpots.map((spot) => spot.y).toList();
+    final averageLine = values.average();
+    
+    // calculate stdev
+    final variance = values.map((v) => pow(v - averageLine, 2)).average();
+    final stdDev = sqrt(variance).toDouble();
+    final upperLine = (averageLine + stdDev).toDouble();
+    final lowerLine = max(0, averageLine - stdDev).toDouble();
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -1413,7 +1420,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
               ...List.generate(5, (i) => _buildLegendItem(labels[i], colors[i])),
               const SizedBox(width: 8),
               _buildLegendItem(
-                'Avg (${averageLine.toStringAsFixed(1)})',
+                'Avg (${averageLine.toStringAsFixed(1)} ± ${stdDev.toStringAsFixed(1)})',
                 Colors.white,
               ),
             ],
@@ -1427,12 +1434,19 @@ class _VisualizationPageState extends State<VisualizationPage> {
                   drawVerticalLine: true,
                   horizontalInterval: 1,
                   getDrawingHorizontalLine: (value) {
-                    // Special styling for the average line
+                    // special styling for the average and stdev lines
                     if ((value - averageLine).abs() < 0.01) {
                       return FlLine(
                         color: Colors.white,
                         strokeWidth: 1,
                         dashArray: [5, 5], // Make it dashed
+                      );
+                    }
+                    if ((value - upperLine).abs() < 0.01 || (value - lowerLine).abs() < 0.01) {
+                      return FlLine(
+                        color: Colors.white.withOpacity(0.5),
+                        strokeWidth: 1,
+                        dashArray: [3, 3], // Make it dashed
                       );
                     }
                     return FlLine(
@@ -1511,25 +1525,79 @@ class _VisualizationPageState extends State<VisualizationPage> {
                         labelResolver: (line) => 'Avg: ${line.y.toStringAsFixed(1)}',
                       ),
                     ),
+                    HorizontalLine(
+                      y: upperLine,
+                      color: Colors.white.withOpacity(0.5),
+                      strokeWidth: 1,
+                      dashArray: [3, 3], // make it dashed
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        padding: const EdgeInsets.only(right: 8, bottom: 4),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 10,
+                        ),
+                        labelResolver: (line) => '+1σ: ${line.y.toStringAsFixed(1)}',
+                      ),
+                    ),
+                    HorizontalLine(
+                      y: lowerLine,
+                      color: Colors.white.withOpacity(0.5),
+                      strokeWidth: 1,
+                      dashArray: [3, 3],
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        padding: const EdgeInsets.only(right: 8, bottom: 4),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.5),
+                          fontSize: 10,
+                        ),
+                        labelResolver: (line) => '-1σ: ${line.y.toStringAsFixed(1)}',
+                      ),
+                    ),
                   ],
+                  extraLinesOnTop: false,
                 ),
-                lineBarsData: List.generate(5, (i) => 
+                backgroundColor: Colors.white.withOpacity(0.05),
+                lineBarsData: [
+                  // stdev range area
                   LineChartBarData(
-                    spots: coralData[i],
+                    spots: List.generate(matchNumbers.length, (i) => FlSpot(
+                      matchNumbers[i].toDouble(),
+                      upperLine,
+                    )),
                     isCurved: false,
-                    color: colors[i],
-                    barWidth: 3,
-                    dotData: FlDotData(
+                    color: Colors.white.withOpacity(0.1),
+                    barWidth: 0,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
                       show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: colors[i],
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
+                      color: Colors.white.withOpacity(0.05),
+                      cutOffY: lowerLine,
+                      applyCutOffY: true,
+                    ),
+                  ),
+                  // Regular data lines
+                  ...List.generate(5, (i) => 
+                    LineChartBarData(
+                      spots: coralData[i],
+                      isCurved: false,
+                      color: colors[i],
+                      barWidth: 3,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                          radius: 5,
+                          color: colors[i],
+                          strokeWidth: 2,
+                          strokeColor: const Color(0xFF1A1A1A),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
                 lineTouchData: LineTouchData(
                   touchTooltipData: LineTouchTooltipData(
                     fitInsideHorizontally: true,
