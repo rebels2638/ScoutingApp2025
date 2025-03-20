@@ -32,6 +32,16 @@ class ScoutingRecord {
   final int teamNumber;
   final bool isRedAlliance;
 
+  // getter to format the timestamp
+  String get formattedTimestamp {
+    try {
+      final date = DateTime.fromMillisecondsSinceEpoch(int.parse(timestamp));
+      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return timestamp; // return original if parsing fails
+    }
+  }
+
   // Auto
   final bool autoTaxis;
   final bool autoCoralPreloaded;
@@ -1182,7 +1192,7 @@ class DataPageState extends State<DataPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '${record.timestamp} Match ${record.matchNumber}',
+              '${record.formattedTimestamp} Match ${record.matchNumber}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
               ),

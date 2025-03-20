@@ -100,7 +100,7 @@ class RecordDetailPage extends StatelessWidget {
               ),
               const SizedBox(height: 4),
               Text(
-                record.timestamp,
+                record.formattedTimestamp,
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.white.withOpacity(0.8),
