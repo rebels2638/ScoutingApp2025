@@ -4,6 +4,7 @@ import 'data.dart';
 import 'theme/app_theme.dart';
 import 'dart:math' show max, min, pow, sqrt;
 import 'package:flutter/services.dart';
+import 'database_helper.dart';
 
 class VisualizationPage extends StatefulWidget {
   final List<ScoutingRecord> records;
@@ -51,6 +52,11 @@ class _VisualizationPageState extends State<VisualizationPage> {
       title: 'Auto vs Teleop',
       icon: Icons.compare_arrows,
       description: 'Scoring comparison by phase',
+    ),
+    ChartType(
+      title: 'Comments',
+      icon: Icons.comment,
+      description: 'Match comments',
     ),
   ];
 
@@ -305,6 +311,8 @@ class _VisualizationPageState extends State<VisualizationPage> {
         return _buildRankingPointChart();
       case 5:
         return _buildAutoTeleopComparisonChart();
+      case 6:
+        return _buildCommentsChart();
       default:
         return const SizedBox.shrink();
     }
@@ -730,6 +738,10 @@ class _VisualizationPageState extends State<VisualizationPage> {
       BottomNavigationBarItem(
         icon: Icon(Icons.compare_arrows),
         label: 'Auto/Teleop',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.comment),
+        label: 'Comments',
       ),
     ];
 
@@ -1867,6 +1879,227 @@ class _VisualizationPageState extends State<VisualizationPage> {
         ],
       ),
     );
+  }
+
+  Widget _buildCommentsChart() {
+    final records = selectedTeamRecords;
+    if (records.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Match Comments',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Comments from each match',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: ListView.builder(
+              itemCount: records.length,
+              itemBuilder: (context, index) {
+                final record = records[index];
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2D2D2D),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.purple.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              'Match ${record.matchNumber}',
+                              style: const TextStyle(
+                                color: Colors.purple,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            record.matchType,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                            ),
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.purple),
+                            onPressed: () => _showEditCommentDialog(context, record),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        record.otherComments.isEmpty ? 'No comments' : record.otherComments,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showEditCommentDialog(BuildContext context, ScoutingRecord record) async {
+    final commentController = TextEditingController(text: record.otherComments);
+    // Set the cursor to the end of the text
+    commentController.selection = TextSelection.fromPosition(
+      TextPosition(offset: commentController.text.length),
+    );
+    
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Edit Comments for Match ${record.matchNumber}'),
+        content: TextField(
+          controller: commentController,
+          maxLines: 5,
+          decoration: const InputDecoration(
+            hintText: 'Enter comments...',
+            border: OutlineInputBorder(),
+            contentPadding: EdgeInsets.all(12),
+          ),
+          style: const TextStyle(fontSize: 14),
+          textInputAction: TextInputAction.done,
+          onTapOutside: (_) {
+            // dismiss keyboard when tapping outside
+            FocusScope.of(context).unfocus();
+          },
+          onSubmitted: (_) {
+            // dismiss keyboard when submitting
+            FocusScope.of(context).unfocus();
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, commentController.text),
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+
+    // clean up the controller
+    commentController.dispose();
+
+    if (result != null) {
+      // Create a new record with updated comments
+      final updatedRecord = ScoutingRecord(
+        timestamp: record.timestamp,
+        matchNumber: record.matchNumber,
+        matchType: record.matchType,
+        teamNumber: record.teamNumber,
+        isRedAlliance: record.isRedAlliance,
+        autoTaxis: record.autoTaxis,
+        autoCoralPreloaded: record.autoCoralPreloaded,
+        autoAlgaeRemoved: record.autoAlgaeRemoved,
+        autoCoralHeight4Success: record.autoCoralHeight4Success,
+        autoCoralHeight4Failure: record.autoCoralHeight4Failure,
+        autoCoralHeight3Success: record.autoCoralHeight3Success,
+        autoCoralHeight3Failure: record.autoCoralHeight3Failure,
+        autoCoralHeight2Success: record.autoCoralHeight2Success,
+        autoCoralHeight2Failure: record.autoCoralHeight2Failure,
+        autoCoralHeight1Success: record.autoCoralHeight1Success,
+        autoCoralHeight1Failure: record.autoCoralHeight1Failure,
+        autoAlgaeInNet: record.autoAlgaeInNet,
+        autoAlgaeInProcessor: record.autoAlgaeInProcessor,
+        teleopCoralHeight4Success: record.teleopCoralHeight4Success,
+        teleopCoralHeight4Failure: record.teleopCoralHeight4Failure,
+        teleopCoralHeight3Success: record.teleopCoralHeight3Success,
+        teleopCoralHeight3Failure: record.teleopCoralHeight3Failure,
+        teleopCoralHeight2Success: record.teleopCoralHeight2Success,
+        teleopCoralHeight2Failure: record.teleopCoralHeight2Failure,
+        teleopCoralHeight1Success: record.teleopCoralHeight1Success,
+        teleopCoralHeight1Failure: record.teleopCoralHeight1Failure,
+        teleopCoralRankingPoint: record.teleopCoralRankingPoint,
+        teleopAlgaeRemoved: record.teleopAlgaeRemoved,
+        teleopAlgaeProcessorAttempts: record.teleopAlgaeProcessorAttempts,
+        teleopAlgaeProcessed: record.teleopAlgaeProcessed,
+        teleopAlgaeScoredInNet: record.teleopAlgaeScoredInNet,
+        teleopCanPickupAlgae: record.teleopCanPickupAlgae,
+        teleopCoralPickupMethod: record.teleopCoralPickupMethod,
+        endgameReturnedToBarge: record.endgameReturnedToBarge,
+        endgameCageHang: record.endgameCageHang,
+        endgameBargeRankingPoint: record.endgameBargeRankingPoint,
+        otherCoOpPoint: record.otherCoOpPoint,
+        otherBreakdown: record.otherBreakdown,
+        otherComments: result,
+        cageType: record.cageType,
+        coralPreloaded: record.coralPreloaded,
+        taxis: record.taxis,
+        algaeRemoved: record.algaeRemoved,
+        coralPlaced: record.coralPlaced,
+        rankingPoint: record.rankingPoint,
+        canPickupCoral: record.canPickupCoral,
+        canPickupAlgae: record.canPickupAlgae,
+        algaeScoredInNet: record.algaeScoredInNet,
+        coralRankingPoint: record.coralRankingPoint,
+        algaeProcessed: record.algaeProcessed,
+        processedAlgaeScored: record.processedAlgaeScored,
+        processorCycles: record.processorCycles,
+        coOpPoint: record.coOpPoint,
+        returnedToBarge: record.returnedToBarge,
+        cageHang: record.cageHang,
+        bargeRankingPoint: record.bargeRankingPoint,
+        breakdown: record.breakdown,
+        comments: result,
+        coralPickupMethod: record.coralPickupMethod,
+        feederStation: record.feederStation,
+        coralOnReefHeight1: record.coralOnReefHeight1,
+        coralOnReefHeight2: record.coralOnReefHeight2,
+        coralOnReefHeight3: record.coralOnReefHeight3,
+        coralOnReefHeight4: record.coralOnReefHeight4,
+        robotPath: record.robotPath,
+      );
+
+      // Update the record in the database
+      final records = await DataManager.getRecords();
+      final index = records.indexWhere((r) => r.timestamp == record.timestamp);
+      if (index != -1) {
+        records[index] = updatedRecord;
+        await DatabaseHelper.instance.saveRecords(records);
+        
+        // Refresh the widget
+        setState(() {});
+      }
+    }
   }
 }
 
