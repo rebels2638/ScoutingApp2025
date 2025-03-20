@@ -504,7 +504,7 @@ class DrawingPainter extends CustomPainter {
     for (var line in lines) {
       final paint = Paint()
         ..color = line.color
-        ..strokeWidth = line.strokeWidth * (scaleX / 1000) // scale stroke width proportionally
+        ..strokeWidth = line.strokeWidth * (scaleX / 500) // increased scaling factor for thicker lines
         ..strokeCap = StrokeCap.round;
 
       if (line.points.length < 2) continue;
