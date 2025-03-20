@@ -31,9 +31,14 @@ class _VisualizationPageState extends State<VisualizationPage> {
       description: 'Average pieces at each height',
     ),
     ChartType(
-      title: 'Match Performance',
-      icon: Icons.trending_up,
-      description: 'Scoring progression across matches',
+      title: 'Coral OT',
+      icon: Icons.timeline,
+      description: 'Coral scoring over time',
+    ),
+    ChartType(
+      title: 'Algae',
+      icon: Icons.circle,
+      description: 'Algae data',
     ),
     ChartType(
       title: 'Endgame',
@@ -221,10 +226,12 @@ class _VisualizationPageState extends State<VisualizationPage> {
       case 1:
         return _buildCoralPlacementChart();
       case 2:
-        return _buildMatchPerformanceChart();
+        return _buildCoralOverTimeChart();
       case 3:
-        return _buildEndgameChart();
+        return _buildMatchPerformanceChart();
       case 4:
+        return _buildEndgameChart();
+      case 5:
         return _buildRankingPointChart();
       default:
         return const SizedBox.shrink();
@@ -243,7 +250,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final maxMatch = matchNumbers.last;
     
     final maxY = records.map((r) => 
-      r.teleopAlgaeProcessed + r.teleopAlgaeScoredInNet
+      max(r.teleopAlgaeProcessed, r.teleopAlgaeScoredInNet)
     ).reduce(max).toDouble();
     final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
 
@@ -253,7 +260,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Match Performance',
+            'Algae',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -263,9 +270,9 @@ class _VisualizationPageState extends State<VisualizationPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              _buildLegendItem('Total Algae', const Color(0xFF64B5F6)),
-              const SizedBox(width: 16),
               _buildLegendItem('Processed', const Color(0xFF81C784)),
+              const SizedBox(width: 16),
+              _buildLegendItem('In Net', const Color(0xFFBA68C8)),
             ],
           ),
           const SizedBox(height: 24),
@@ -337,24 +344,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
                   LineChartBarData(
                     spots: records.map((r) => FlSpot(
                       r.matchNumber.toDouble(),
-                      (r.teleopAlgaeProcessed + r.teleopAlgaeScoredInNet).toDouble(),
-                    )).toList(),
-                    isCurved: false,
-                    color: const Color(0xFF64B5F6),
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: const Color(0xFF64B5F6),
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                  LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
                       r.teleopAlgaeProcessed.toDouble(),
                     )).toList(),
                     isCurved: false,
@@ -365,6 +354,24 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
                         radius: 5,
                         color: const Color(0xFF81C784),
+                        strokeWidth: 2,
+                        strokeColor: const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  LineChartBarData(
+                    spots: records.map((r) => FlSpot(
+                      r.matchNumber.toDouble(),
+                      r.teleopAlgaeScoredInNet.toDouble(),
+                    )).toList(),
+                    isCurved: false,
+                    color: const Color(0xFFBA68C8),
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 5,
+                        color: const Color(0xFFBA68C8),
                         strokeWidth: 2,
                         strokeColor: const Color(0xFF1A1A1A),
                       ),
@@ -383,11 +390,19 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     tooltipMargin: 16,
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
-                        final isTotal = spot.bar.color == const Color(0xFF64B5F6);
+                        String label;
+                        Color color;
+                        if (spot.bar.color == const Color(0xFF81C784)) {
+                          label = "Processed";
+                          color = const Color(0xFF81C784);
+                        } else {
+                          label = "In Net";
+                          color = const Color(0xFFBA68C8);
+                        }
                         return LineTooltipItem(
-                          'Match ${spot.x.toInt()}\n${spot.y.toStringAsFixed(1)} ${isTotal ? "Total" : "Processed"}',
+                          'Match ${spot.x.toInt()}\n${spot.y.toStringAsFixed(1)} $label',
                           TextStyle(
-                            color: spot.bar.color,
+                            color: color,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
@@ -462,8 +477,12 @@ class _VisualizationPageState extends State<VisualizationPage> {
         label: 'Coral',
       ),
       BottomNavigationBarItem(
-        icon: Icon(Icons.show_chart),
-        label: 'Performance',
+        icon: Icon(Icons.timeline),
+        label: 'Coral OT',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.circle),
+        label: 'Algae',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.flag),
@@ -1225,6 +1244,273 @@ class _VisualizationPageState extends State<VisualizationPage> {
                           'Match ${spot.x.toInt()}\n${spot.y.toStringAsFixed(1)} ${isAuto ? "Auto" : "Teleop"}',
                           TextStyle(
                             color: spot.bar.color,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoralOverTimeChart() {
+    final records = selectedTeamRecords;
+    if (records.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    // Sort records by match number and get unique match numbers
+    final matchNumbers = records.map((r) => r.matchNumber).toList()..sort();
+    final minMatch = matchNumbers.first;
+    final maxMatch = matchNumbers.last;
+    
+    // Calculate max Y value considering all coral levels and total
+    final maxY = records.map((r) => 
+      max(
+        r.teleopCoralHeight4Success + r.teleopCoralHeight3Success + 
+        r.teleopCoralHeight2Success + r.teleopCoralHeight1Success,
+        max(
+          r.teleopCoralHeight4Success,
+          max(
+            r.teleopCoralHeight3Success,
+            max(r.teleopCoralHeight2Success, r.teleopCoralHeight1Success)
+          )
+        )
+      )
+    ).reduce(max).toDouble();
+    final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Coral Scoring Over Time',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              _buildLegendItem('Total', const Color(0xFF64B5F6)),
+              const SizedBox(width: 16),
+              _buildLegendItem('L4', const Color(0xFF81C784)),
+              const SizedBox(width: 16),
+              _buildLegendItem('L3', const Color(0xFFFFB74D)),
+              const SizedBox(width: 16),
+              _buildLegendItem('L2', const Color(0xFFBA68C8)),
+              const SizedBox(width: 16),
+              _buildLegendItem('L1', const Color(0xFFF06292)),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  horizontalInterval: 1,
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: Colors.white10,
+                    strokeWidth: 1,
+                  ),
+                  getDrawingVerticalLine: (value) => FlLine(
+                    color: Colors.white10,
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toInt().toString(),
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) {
+                        final matchNum = value.toInt();
+                        if (!matchNumbers.contains(matchNum)) {
+                          return const Text('');
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'M$matchNum',
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                minX: minMatch.toDouble(),
+                maxX: maxMatch.toDouble(),
+                minY: 0,
+                maxY: roundedMaxY,
+                lineBarsData: [
+                  // Total coral line
+                  LineChartBarData(
+                    spots: records.map((r) => FlSpot(
+                      r.matchNumber.toDouble(),
+                      (r.teleopCoralHeight4Success + r.teleopCoralHeight3Success + 
+                       r.teleopCoralHeight2Success + r.teleopCoralHeight1Success).toDouble(),
+                    )).toList(),
+                    isCurved: false,
+                    color: const Color(0xFF64B5F6),
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 5,
+                        color: const Color(0xFF64B5F6),
+                        strokeWidth: 2,
+                        strokeColor: const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  // L4 line
+                  LineChartBarData(
+                    spots: records.map((r) => FlSpot(
+                      r.matchNumber.toDouble(),
+                      r.teleopCoralHeight4Success.toDouble(),
+                    )).toList(),
+                    isCurved: false,
+                    color: const Color(0xFF81C784),
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 5,
+                        color: const Color(0xFF81C784),
+                        strokeWidth: 2,
+                        strokeColor: const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  // L3 line
+                  LineChartBarData(
+                    spots: records.map((r) => FlSpot(
+                      r.matchNumber.toDouble(),
+                      r.teleopCoralHeight3Success.toDouble(),
+                    )).toList(),
+                    isCurved: false,
+                    color: const Color(0xFFFFB74D),
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 5,
+                        color: const Color(0xFFFFB74D),
+                        strokeWidth: 2,
+                        strokeColor: const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  // L2 line
+                  LineChartBarData(
+                    spots: records.map((r) => FlSpot(
+                      r.matchNumber.toDouble(),
+                      r.teleopCoralHeight2Success.toDouble(),
+                    )).toList(),
+                    isCurved: false,
+                    color: const Color(0xFFBA68C8),
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 5,
+                        color: const Color(0xFFBA68C8),
+                        strokeWidth: 2,
+                        strokeColor: const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  // L1 line
+                  LineChartBarData(
+                    spots: records.map((r) => FlSpot(
+                      r.matchNumber.toDouble(),
+                      r.teleopCoralHeight1Success.toDouble(),
+                    )).toList(),
+                    isCurved: false,
+                    color: const Color(0xFFF06292),
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 5,
+                        color: const Color(0xFFF06292),
+                        strokeWidth: 2,
+                        strokeColor: const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
+                    tooltipRoundedRadius: 8,
+                    tooltipPadding: const EdgeInsets.all(8),
+                    tooltipBorder: BorderSide(
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                    tooltipMargin: 16,
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        String label;
+                        Color color;
+                        if (spot.bar.color == const Color(0xFF64B5F6)) {
+                          label = "Total";
+                          color = const Color(0xFF64B5F6);
+                        } else if (spot.bar.color == const Color(0xFF81C784)) {
+                          label = "L4";
+                          color = const Color(0xFF81C784);
+                        } else if (spot.bar.color == const Color(0xFFFFB74D)) {
+                          label = "L3";
+                          color = const Color(0xFFFFB74D);
+                        } else if (spot.bar.color == const Color(0xFFBA68C8)) {
+                          label = "L2";
+                          color = const Color(0xFFBA68C8);
+                        } else {
+                          label = "L1";
+                          color = const Color(0xFFF06292);
+                        }
+                        return LineTooltipItem(
+                          'Match ${spot.x.toInt()}\n${spot.y.toStringAsFixed(0)} $label',
+                          TextStyle(
+                            color: color,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
