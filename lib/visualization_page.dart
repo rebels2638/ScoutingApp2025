@@ -1349,6 +1349,10 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final maxY = coralData.expand((list) => list).map((spot) => spot.y).reduce(max);
     final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
 
+    // Calculate average line for all views
+    final totalSpots = coralData[0];  // Use the total line for any view
+    final averageLine = totalSpots.map((spot) => spot.y).average();
+
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -1405,9 +1409,14 @@ class _VisualizationPageState extends State<VisualizationPage> {
           Wrap(
             spacing: 16,
             runSpacing: 8,
-            children: List.generate(5, (i) => 
-              _buildLegendItem(labels[i], colors[i])
-            ),
+            children: [
+              ...List.generate(5, (i) => _buildLegendItem(labels[i], colors[i])),
+              const SizedBox(width: 8),
+              _buildLegendItem(
+                'Avg (${averageLine.toStringAsFixed(1)})',
+                Colors.white,
+              ),
+            ],
           ),
           const SizedBox(height: 24),
           Expanded(
@@ -1417,10 +1426,20 @@ class _VisualizationPageState extends State<VisualizationPage> {
                   show: true,
                   drawVerticalLine: true,
                   horizontalInterval: 1,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.white10,
-                    strokeWidth: 1,
-                  ),
+                  getDrawingHorizontalLine: (value) {
+                    // Special styling for the average line
+                    if ((value - averageLine).abs() < 0.01) {
+                      return FlLine(
+                        color: Colors.white,
+                        strokeWidth: 1,
+                        dashArray: [5, 5], // Make it dashed
+                      );
+                    }
+                    return FlLine(
+                      color: Colors.white10,
+                      strokeWidth: 1,
+                    );
+                  },
                   getDrawingVerticalLine: (value) => FlLine(
                     color: Colors.white10,
                     strokeWidth: 1,
@@ -1474,6 +1493,26 @@ class _VisualizationPageState extends State<VisualizationPage> {
                 maxX: maxMatch.toDouble(),
                 minY: 0,
                 maxY: roundedMaxY,
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    HorizontalLine(
+                      y: averageLine,
+                      color: Colors.white,
+                      strokeWidth: 1,
+                      dashArray: [5, 5], // Make it dashed
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        padding: const EdgeInsets.only(right: 8, bottom: 4),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                        labelResolver: (line) => 'Avg: ${line.y.toStringAsFixed(1)}',
+                      ),
+                    ),
+                  ],
+                ),
                 lineBarsData: List.generate(5, (i) => 
                   LineChartBarData(
                     spots: coralData[i],
