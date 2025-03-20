@@ -50,6 +50,7 @@ dependencies:
   fl_chart: ^0.70.2
   app_settings: 5.1.1
   screen_brightness_platform_interface: ^1.0.1
+  wakelock: ^0.6.2
 
 dev_dependencies:
   flutter_launcher_icons: ^0.14.3
