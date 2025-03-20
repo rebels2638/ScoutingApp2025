@@ -59,7 +59,7 @@ class _SettingsPageState extends State<SettingsPage> {
       _confirmBeforeSaving = prefs.getBool(_confirmSaveKey) ?? true;
       _vibrateOnAction = prefs.getBool(_vibrateKey) ?? true;
       _bluetoothEnabled = prefs.getBool(_bluetoothEnabledKey) ?? false;
-      _scoutingLeaderEnabled = prefs.getBool(_scoutingLeaderKey) ?? false;
+      _scoutingLeaderEnabled = prefs.getBool(_scoutingLeaderKey) ?? true;
       _refreshButtonEnabled = prefs.getBool(_refreshButtonKey) ?? false;
       _keepScreenAwake = prefs.getBool(_keepScreenAwakeKey) ?? false;
       _qrRateLimitController.text = (prefs.getInt(_qrRateLimitKey) ?? 1500).toString();
