@@ -85,7 +85,33 @@ class TeamStats {
   
   // reliability metrics
   double get breakdownRate => _successRate((r) => r.otherBreakdown);
-  String get preferredCoralPickupMethod => _mostCommonValue(records.map((r) => r.teleopCoralPickupMethod));
+  String get preferredCoralPickupMethod {
+    if (records.isEmpty) return 'None';
+    
+    // check if any match has used both methods
+    bool hasBoth = records.any((r) => r.teleopCoralPickupMethod == 'Both');
+    
+    // check if different matches have used different methods
+    bool hasGround = records.any((r) => r.teleopCoralPickupMethod == 'Ground' || r.teleopCoralPickupMethod == 'Both');
+    bool hasHuman = records.any((r) => r.teleopCoralPickupMethod == 'Human' || r.teleopCoralPickupMethod == 'Both');
+    
+    // f they've used both methods in one match or across different matches
+    if (hasBoth || (hasGround && hasHuman)) {
+      return 'Human & Ground';
+    }
+    // if they've only used ground
+    else if (hasGround) {
+      return 'Ground';
+    }
+    // if they've only used human
+    else if (hasHuman) {
+      return 'Human';
+    }
+    // if they haven't used either method
+    else {
+      return 'None';
+    }
+  }
 
   // overall scoring potential (out of 100)
   double get scoringPotential {
@@ -203,28 +229,28 @@ class TeamStats {
     List<String> strengths = [];
     
     // auto strengths
-    if (autoTaxisRate >= 0.8) strengths.add('Reliable Auto Taxis');
-    if (autoAlgaeAvg >= 3) strengths.add('Strong Auto Algae');
-    if (autoL4SuccessRate >= 0.7) strengths.add('Accurate L4 Auto');
-    if ((autoL4Avg + autoL3Avg + autoL2Avg + autoL1Avg) >= 3) strengths.add('High Auto Coral Output');
+    // if (autoTaxisRate >= 0.8) strengths.add('Reliable Auto Taxis');
+    if (autoAlgaeAvg >= 2) strengths.add('Strong Auto Algae');
+    // if (autoL4SuccessRate >= 0.9) strengths.add('Accurate Auto Coral L4 (≥ 90%)');
+    if ((autoL4Avg + autoL3Avg + autoL2Avg + autoL1Avg) >= 3) strengths.add('Auto Coral ≥ 3');
     
     // teleop strengths
-    if (teleopAlgaeNetAvg >= 8) strengths.add('High Algae Output');
-    if (processorEfficiency >= 0.8) strengths.add('Efficient Processor');
-    if (teleopL4SuccessRate >= 0.7) strengths.add('Accurate L4 Scoring');
+    if (teleopAlgaeNetAvg >= 3) strengths.add('High Algae Output (≥ 3)');
+    // if (processorEfficiency >= 0.8) strengths.add('Efficient Processor');
+    if (teleopL4SuccessRate >= 0.9) strengths.add('Accurate Teleop L4 Scoring (>=90%)');
     if ((teleopL4Avg + teleopL3Avg + teleopL2Avg + teleopL1Avg) >= 5) strengths.add('High Coral Output');
     
     // endgame strengths
-    if (cageHangSuccessRate >= 0.8) strengths.add('Reliable Hanging');
-    if (bargeReturnRate >= 0.8) strengths.add('Consistent Barge Return');
+    if (cageHangSuccessRate >= 0.8) strengths.add('Hanging: ≥ 80%');
+    if (bargeReturnRate >= 0.8) strengths.add('Barge Return: ≥ 80% ');
     
     // ranking point strengths
-    if (coralRankingPointRate >= 0.5) strengths.add('Frequent Coral RP');
-    if (bargeRankingPointRate >= 0.5) strengths.add('Frequent Barge RP');
-    if (coOpPointRate >= 0.5) strengths.add('Good Co-op Partner');
+    if (coralRankingPointRate >= 0.7) strengths.add('Frequent Coral RP (≥ 70%)');
+    if (bargeRankingPointRate >= 0.7) strengths.add('Frequent Barge RP (≥ 70%)');
+    if (coOpPointRate >= 0.7) strengths.add('Good Co-op Partner (≥ 70% Co-op Point)');
     
     // reliability strength
-    if (breakdownRate <= 0.1) strengths.add('Very Reliable');
+    if (breakdownRate <= 0.4) strengths.add('Very Reliable');
     
     return strengths.take(4).toList(); // Limit to top 4 strengths
   }
@@ -758,7 +784,7 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
               ),
               if (widget.stats.getStrengths().isNotEmpty) ...[
                 _buildStrengthsSection(context, widget.stats.getStrengths()),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
               ],
               if (widget.stats.getWeaknesses().isNotEmpty)
                 _buildWeaknessesSection(context, widget.stats.getWeaknesses()),
@@ -815,10 +841,10 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
             color: Theme.of(context).colorScheme.primary,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 4,
+          runSpacing: 4,
           children: strengths.map((strength) => Chip(
             label: Text(
               strength,
@@ -847,10 +873,10 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
             color: Theme.of(context).colorScheme.error,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: 4,
+          runSpacing: 4,
           children: weaknesses.map((weakness) => Chip(
             label: Text(
               weakness,
