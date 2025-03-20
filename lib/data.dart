@@ -1246,6 +1246,7 @@ class DataPageState extends State<DataPage> {
             loadRecords();
           },
         ),
+        /*
         SpeedDialChild(
           child: const Icon(Icons.brush),
           label: 'Auto Drawing',
@@ -1258,6 +1259,7 @@ class DataPageState extends State<DataPage> {
             );
           },
         ),
+        */
         SpeedDialChild(
           child: const Icon(Icons.file_upload),
           label: 'Import Data',
