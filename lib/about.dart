@@ -25,7 +25,7 @@ class AboutPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Version 0.8.0-Stable',
+                    'Version 0.8.1-Beta',
                     style: TextStyle(
                       color: Theme.of(context).textTheme.bodySmall?.color,
                     ),
@@ -42,11 +42,10 @@ class AboutPage extends StatelessWidget {
             content: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildUpdateNote('0.8.0-Stable', [
-                  'Updated scouting page to have more granular data input fields.',
-                  'Added sorting to team analysis page.',
-                  'Improved team analysis page UI',
-                  'Added more metrics and analysis features to team analysis page.',
+                _buildUpdateNote('0.8.1-Beta', [
+                  'Refined main scouting page.',
+                  'Added edit match detail functionality.',
+                  'Much improved data analytics features.',
                 ]),
                 const SizedBox(height: AppSpacing.sm),
                 Container(
@@ -62,7 +61,7 @@ class AboutPage extends StatelessWidget {
                       SizedBox(width: AppSpacing.sm),
                       Expanded(
                         child: Text(
-                          'Warning: Data from version 0.7.6 and earlier is not compatible with version 0.8.0',
+                          'Warning: Data from version 0.7.6 and earlier is not compatible with version 0.8.0 and newer.',
                           style: TextStyle(
                             color: Colors.red,
                             fontWeight: FontWeight.w500,
@@ -72,6 +71,14 @@ class AboutPage extends StatelessWidget {
                     ],
                   ),
                 ),
+                /*
+                  _buildUpdateNote('0.8.1-Stable', [
+                  'Updated scouting page to have more granular data input fields.',
+                  'Added sorting to team analysis page.',
+                  'Improved team analysis page UI',
+                  'Added more metrics and analysis features to team analysis page.',
+                ]),
+                */
                 /*
                 const SizedBox(height: AppSpacing.md),
                 _buildUpdateNote('0.7.6-Stable', [
