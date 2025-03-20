@@ -54395,7 +54395,7 @@ p.w=q!==!1
 q=A.dJ(r.i(s,"bluetooth_enabled"))
 p.x=q===!0
 q=A.dJ(r.i(s,"scouting_leader_enabled"))
-p.y=q===!0
+p.y=q!==!1
 q=A.dJ(r.i(s,"refresh_button_enabled"))
 p.z=q===!0
 q=A.dJ(r.i(s,"keep_screen_awake"))
