@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
 import 'dart:io';
 
-// Add a class to store line properties
+// add a class to store line properties
 class DrawingLine {
   final List<Offset> points;
   final Color color;
@@ -26,7 +26,7 @@ class DrawingLine {
   }
 
   Map<String, dynamic> toCompressedJson() {
-    // Reduce precision of coordinates to 1 decimal place and use shorter key names
+    // reduce precision of coordinates to 1 decimal place and use shorter key names
     return {
       'p': points.map((p) => {
         'x': (p.dx * 10).round() / 10,
@@ -85,6 +85,7 @@ class DrawingPage extends StatefulWidget {
   final List<Map<String, dynamic>>? initialDrawing;
   final String? imagePath;
   final bool useDefaultImage;
+  final bool hideControls;
 
   const DrawingPage({
     Key? key,
@@ -93,6 +94,7 @@ class DrawingPage extends StatefulWidget {
     this.initialDrawing,
     this.imagePath,
     this.useDefaultImage = true,
+    this.hideControls = false,
   }) : super(key: key);
 
   @override
@@ -114,11 +116,11 @@ class _DrawingPageState extends State<DrawingPage> {
     currentColor = widget.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance;
     imagePath = widget.imagePath;
     
-    // Initialize lines from either initialLines or initialDrawing
+    // initialize lines from either initialLines or initialDrawing
     if (widget.initialDrawing != null) {
       lines = widget.initialDrawing!.map((map) {
         final line = DrawingLine.fromJson(map);
-        // If the line has an image path and we don't have one yet, use it
+        // if the line has an image path and we don't have one yet, use it
         if (imagePath == null && line.imagePath != null) {
           imagePath = line.imagePath;
         }
@@ -131,17 +133,53 @@ class _DrawingPageState extends State<DrawingPage> {
 
   @override
   Widget build(BuildContext context) {
+    Widget drawingContent = Stack(
+      children: [
+        Positioned.fill(
+          child: widget.useDefaultImage
+              ? Image.asset(
+                  'assets/field_image.png',
+                  fit: BoxFit.contain,
+                )
+              : imagePath != null && File(imagePath!).existsSync()
+                  ? Image.file(
+                      File(imagePath!),
+                      fit: BoxFit.contain,
+                    )
+                  : Container(),
+        ),
+        Positioned.fill(
+          child: CustomPaint(
+            painter: DrawingPainter(
+              lines: lines,
+              currentColor: currentColor,
+              strokeWidth: strokeWidth,
+            ),
+          ),
+        ),
+      ],
+    );
+
+    if (widget.hideControls) {
+      return drawingContent;
+    }
+
     return Scaffold(
       appBar: AppBar(
-        title: Text('Auto Path Drawing'),
-        actions: widget.readOnly ? [] : [
+        title: const Text('Auto Path Drawing'),
+        actions: widget.readOnly ? [
           IconButton(
-            icon: Icon(Icons.undo),
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ] : [
+          IconButton(
+            icon: const Icon(Icons.undo),
             onPressed: lines.isEmpty ? null : undo,
             tooltip: 'Undo',
           ),
           IconButton(
-            icon: Icon(Icons.redo),
+            icon: const Icon(Icons.redo),
             onPressed: redoHistory.isEmpty ? null : redo,
             tooltip: 'Redo',
           ),
@@ -154,56 +192,47 @@ class _DrawingPageState extends State<DrawingPage> {
             },
             tooltip: isErasing ? 'Draw Mode' : 'Erase Mode',
           ),
-          if (!widget.readOnly)
-            IconButton(
-              icon: Icon(Icons.save),
-              onPressed: () {
-                final pathData = lines.map((line) => {
-                  ...line.toMap(),
-                  'imagePath': imagePath,
-                }).toList();
-                Navigator.pop(context, pathData);
-              },
-              tooltip: 'Save Drawing',
-            ),
+          IconButton(
+            icon: const Icon(Icons.save),
+            onPressed: () {
+              final pathData = lines.map((line) => {
+                ...line.toMap(),
+                'imagePath': imagePath,
+              }).toList();
+              Navigator.pop(context, pathData);
+            },
+            tooltip: 'Save Drawing',
+          ),
         ],
       ),
       body: Stack(
         children: [
-          // Background image logic
-          Positioned.fill(
-            child: imagePath != null && File(imagePath!).existsSync()
-                ? Image.file(
-                    File(imagePath!),
-                    fit: BoxFit.contain,
-                  )
-                : widget.useDefaultImage
-                    ? Image.asset(
-                        'assets/field_image.png',
-                        fit: BoxFit.contain,
-                      )
-                    : Container(),  // Empty container if no image should be shown
-          ),
-          // Drawing area
+          drawingContent,
           Container(
-            child: CustomPaint(
-              painter: DrawingPainter(
-                lines: lines,
-                currentColor: currentColor,
-                strokeWidth: strokeWidth,
-              ),
-              child: widget.readOnly
-                  ? Container()
-                  : GestureDetector(
-                      onPanStart: _onPanStart,
-                      onPanUpdate: _onPanUpdate,
-                      onPanEnd: _onPanEnd,
-                    ),
-            ),
+            child: widget.readOnly
+                ? Container()
+                : GestureDetector(
+                    onPanStart: _onPanStart,
+                    onPanUpdate: _onPanUpdate,
+                    onPanEnd: _onPanEnd,
+                  ),
           ),
         ],
       ),
-      bottomNavigationBar: widget.readOnly ? null : BottomAppBar(
+      bottomNavigationBar: widget.readOnly ? BottomAppBar(
+        child: Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Text(
+                'View Only Mode',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+      ) : BottomAppBar(
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -254,8 +283,41 @@ class _DrawingPageState extends State<DrawingPage> {
   }
 
   void _onPanStart(DragStartDetails details) {
+    RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final localPosition = renderBox.globalToLocal(details.globalPosition);
+    
+    // calculate aspect ratio scaling
+    const originalAspectRatio = 16 / 9;
+    final currentAspectRatio = size.width / size.height;
+    
+    double scaleX, scaleY;
+    double translateX = 0, translateY = 0;
+    
+    if (currentAspectRatio > originalAspectRatio) {
+      // width is relatively larger, so fit to height
+      scaleY = size.height;
+      scaleX = size.height * originalAspectRatio;
+      translateX = (size.width - scaleX) / 2;
+    } else {
+      // height is relatively larger, so fit to width
+      scaleX = size.width;
+      scaleY = size.width / originalAspectRatio;
+      translateY = (size.height - scaleY) / 2;
+    }
+
+    // adjust position based on translation
+    final adjustedX = localPosition.dx - translateX;
+    final adjustedY = localPosition.dy - translateY;
+
+    // convert to relative coordinates (0.0 to 1.0) using the scaled dimensions
+    final relativePosition = Offset(
+      adjustedX / scaleX,
+      adjustedY / scaleY,
+    );
+
     currentLine = DrawingLine(
-      points: [details.localPosition],
+      points: [relativePosition],
       color: currentColor,
       strokeWidth: strokeWidth,
       imagePath: imagePath,
@@ -266,21 +328,54 @@ class _DrawingPageState extends State<DrawingPage> {
   void _onPanUpdate(DragUpdateDetails details) {
     if (currentLine == null) return;
     
+    RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final localPosition = renderBox.globalToLocal(details.globalPosition);
+    
+    // calculate aspect ratio scaling
+    const originalAspectRatio = 16 / 9;
+    final currentAspectRatio = size.width / size.height;
+    
+    double scaleX, scaleY;
+    double translateX = 0, translateY = 0;
+    
+    if (currentAspectRatio > originalAspectRatio) {
+      // width is relatively larger, so fit to height
+      scaleY = size.height;
+      scaleX = size.height * originalAspectRatio;
+      translateX = (size.width - scaleX) / 2;
+    } else {
+      // height is relatively larger, so fit to width
+      scaleX = size.width;
+      scaleY = size.width / originalAspectRatio;
+      translateY = (size.height - scaleY) / 2;
+    }
+
+    // adjust position based on translation
+    final adjustedX = localPosition.dx - translateX;
+    final adjustedY = localPosition.dy - translateY;
+
+    // convert to relative coordinates (0.0 to 1.0) using the scaled dimensions
+    final relativePosition = Offset(
+      adjustedX / scaleX,
+      adjustedY / scaleY,
+    );
+
     setState(() {
       if (!isErasing) {
-        currentLine!.points.add(details.localPosition);
-        // Only update the last line if it's the current one
+        currentLine!.points.add(relativePosition);
+        // only update the last line if it's the current one
         if (lines.isNotEmpty && lines.last == currentLine) {
           lines.last = currentLine!;
         } else {
           lines.add(currentLine!);
         }
       } else {
-        // Optimize erasing by using Rect.contains
-        final erasePoint = details.localPosition;
+        // optimize erasing by using rect.contains
+        final erasePoint = relativePosition;
         lines.removeWhere((line) {
           return line.points.any((point) =>
-              (point - erasePoint).distance < 20.0);
+              (point - erasePoint).distance < 0.02); // adjusted for relative coordinates
         });
       }
     });
@@ -383,17 +478,51 @@ class DrawingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // calculate the aspect ratio and scaling
+    const originalAspectRatio = 16 / 9;
+    final currentAspectRatio = size.width / size.height;
+    
+    double scaleX, scaleY;
+    double translateX = 0, translateY = 0;
+    
+    if (currentAspectRatio > originalAspectRatio) {
+      // width is relatively larger, so fit to height
+      scaleY = size.height;
+      scaleX = size.height * originalAspectRatio;
+      translateX = (size.width - scaleX) / 2;
+    } else {
+      // height is relatively larger, so fit to width
+      scaleX = size.width;
+      scaleY = size.width / originalAspectRatio;
+      translateY = (size.height - scaleY) / 2;
+    }
+
+    // save the canvas state before translating
+    canvas.save();
+    canvas.translate(translateX, translateY);
+
     for (var line in lines) {
       final paint = Paint()
         ..color = line.color
-        ..strokeWidth = line.strokeWidth
+        ..strokeWidth = line.strokeWidth * (scaleX / 500) // increased scaling factor for thicker lines
         ..strokeCap = StrokeCap.round;
 
       if (line.points.length < 2) continue;
-      for (int i = 0; i < line.points.length - 1; i++) {
-        canvas.drawLine(line.points[i], line.points[i + 1], paint);
+      
+      // create scaled points
+      final scaledPoints = line.points.map((point) => Offset(
+        point.dx * scaleX,
+        point.dy * scaleY,
+      )).toList();
+
+      // draw the line segments
+      for (int i = 0; i < scaledPoints.length - 1; i++) {
+        canvas.drawLine(scaledPoints[i], scaledPoints[i + 1], paint);
       }
     }
+
+    // restore the canvas state
+    canvas.restore();
   }
 
   @override
