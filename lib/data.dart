@@ -23,6 +23,7 @@ import 'auto_path_photo_page.dart';
 import 'visualization_page.dart';
 import 'widgets/qr_code_dialog.dart';
 import 'edit_record_page.dart';
+import 'auto_drawing.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -827,9 +828,10 @@ class DataPageState extends State<DataPage> {
   Set<int> selectedRecords = {};
   String _searchQuery = '';
   bool _isSelectionMode = false;
-  bool _isLoading = false;
+  bool _isLoading = true;
   bool _isScoutingLeader = false;
   bool _refreshButtonEnabled = false;
+  ScoutingRecord? _selectedRecord;
 
   // add getter for records
   List<ScoutingRecord> get records => _records;
@@ -838,7 +840,7 @@ class DataPageState extends State<DataPage> {
   void initState() {
     super.initState();
     loadRecords();
-    _loadScoutingLeaderStatus();
+    _checkScoutingLeader();
     _loadRefreshButtonSetting();
   }
 
@@ -862,7 +864,7 @@ class DataPageState extends State<DataPage> {
     }
   }
 
-  Future<void> _loadScoutingLeaderStatus() async {
+  Future<void> _checkScoutingLeader() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _isScoutingLeader = prefs.getBool('scouting_leader_enabled') ?? false;
@@ -1080,12 +1082,16 @@ class DataPageState extends State<DataPage> {
                 selectedRecords.remove(index);
                 if (selectedRecords.isEmpty) {
                   _isSelectionMode = false;
+                  _selectedRecord = null;
                 }
               } else {
                 selectedRecords.add(index);
               }
             });
           } else {
+            setState(() {
+              _selectedRecord = record;
+            });
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -1099,8 +1105,12 @@ class DataPageState extends State<DataPage> {
             _isSelectionMode = true;
             if (isSelected) {
               selectedRecords.remove(index);
+              if (selectedRecords.isEmpty) {
+                _selectedRecord = null;
+              }
             } else {
               selectedRecords.add(index);
+              _selectedRecord = record;
             }
           });
         },
@@ -1192,7 +1202,12 @@ class DataPageState extends State<DataPage> {
         ),
         trailing: IconButton(
           icon: const Icon(Icons.more_vert),
-          onPressed: () => _showRecordOptions(context, record),
+          onPressed: () {
+            setState(() {
+              _selectedRecord = record;
+            });
+            _showRecordOptions(context, record);
+          },
         ),
       ),
     );
@@ -1240,6 +1255,20 @@ class DataPageState extends State<DataPage> {
             loadRecords();
           },
         ),
+        /*
+        SpeedDialChild(
+          child: const Icon(Icons.brush),
+          label: 'Auto Drawing',
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const AutoDrawingPage(),
+              ),
+            );
+          },
+        ),
+        */
         SpeedDialChild(
           child: const Icon(Icons.file_upload),
           label: 'Import Data',
@@ -1250,25 +1279,6 @@ class DataPageState extends State<DataPage> {
           label: 'Export Data',
           onTap: _exportData,
         ),
-        /*
-        SpeedDialChild(
-          child: const Icon(Icons.analytics),
-          label: 'Team Analysis',
-          onTap: () => _showTeamAnalysis(context),
-        ),
-        */
-        /*
-        SpeedDialChild(
-          child: const Icon(Icons.bar_chart),
-          label: 'Visualizations',
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => VisualizationPage(records: _records),
-            ),
-          ),
-        ),
-        */
         SpeedDialChild(
           backgroundColor: Colors.red,
           foregroundColor: Colors.white,
@@ -1303,6 +1313,7 @@ class DataPageState extends State<DataPage> {
                     await DataManager.instance.updateRecord(updatedRecord);
                     setState(() {
                       loadRecords();
+                      _selectedRecord = updatedRecord;
                     });
                   }
                 },
@@ -1359,6 +1370,7 @@ class DataPageState extends State<DataPage> {
                 setState(() {
                   selectedRecords.clear();
                   _isSelectionMode = false;
+                  _selectedRecord = null;
                   loadRecords();
                 });
                 if (mounted) {
