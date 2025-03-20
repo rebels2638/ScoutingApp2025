@@ -61,8 +61,7 @@ class RecordDetailPage extends StatelessWidget {
                   const SizedBox(height: 16),
                   _buildEndgameSection(context),
                   const SizedBox(height: 16),
-                  if (record.comments.isNotEmpty)
-                    _buildCommentsSection(context),
+                  _buildCommentsSection(context),
                 ],
               ),
             ),
@@ -222,11 +221,24 @@ class RecordDetailPage extends StatelessWidget {
       icon: Icons.comment,
       color: Colors.purple,
       children: [
-        Padding(
-          padding: const EdgeInsets.all(8),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+            ),
+          ),
           child: Text(
-            record.otherComments,
-            style: Theme.of(context).textTheme.bodyMedium,
+            record.otherComments.isEmpty ? 'No comments' : record.otherComments,
+            style: TextStyle(
+              fontSize: 14,
+              color: record.otherComments.isEmpty 
+                ? Theme.of(context).colorScheme.onSurface.withOpacity(0.6)
+                : Theme.of(context).colorScheme.onSurface,
+            ),
           ),
         ),
       ],
@@ -240,114 +252,90 @@ class RecordDetailPage extends StatelessWidget {
     required Color color,
     required List<Widget> children,
   }) {
-    return Card(
-      elevation: 2,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              border: Border(
-                bottom: BorderSide(
-                  color: color.withOpacity(0.2),
+          Row(
+            children: [
+              Icon(icon, color: color),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: color,
                 ),
               ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: color),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: color,
-                  ),
-                ),
-              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatRow(String label, List<Widget> stats) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: children,
-            ),
+          const SizedBox(height: 8),
+          Row(
+            children: stats.map((stat) => Expanded(child: stat)).toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatRow(String title, List<Widget> stats) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title.isNotEmpty) ...[
+  Widget _buildStat(String label, String value, {Color? color}) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: (color ?? Colors.grey).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
           Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey,
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
             ),
           ),
           const SizedBox(height: 4),
-        ],
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: stats,
-        ),
-        const SizedBox(height: 12),
-      ],
-    );
-  }
-
-  Widget _buildStat(String label, String value, {Color? color}) {
-    return Builder(
-      builder: (context) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final defaultColor = isDark ? Colors.grey[300]! : Colors.grey[700]!;
-        final textColor = isDark ? Colors.white : Colors.black87;
-        
-        final effectiveColor = color ?? defaultColor;
-        
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: effectiveColor.withOpacity(isDark ? 0.15 : 0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: effectiveColor.withOpacity(isDark ? 0.3 : 0.2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: color ?? Colors.grey.shade600,
             ),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: effectiveColor,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: color ?? textColor,
-                ),
-              ),
-            ],
-          ),
-        );
-      }
+        ],
+      ),
     );
   }
 } 
