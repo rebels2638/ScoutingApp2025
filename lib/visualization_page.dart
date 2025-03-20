@@ -47,11 +47,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
       icon: Icons.star,
       description: 'Success rates by type',
     ),
-    ChartType(
-      title: 'Auto vs Teleop',
-      icon: Icons.compare_arrows,
-      description: 'Scoring comparison by phase',
-    ),
   ];
 
   @override
@@ -303,8 +298,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
         return _buildEndgameChart();
       case 4:
         return _buildRankingPointChart();
-      case 5:
-        return _buildAutoTeleopComparisonChart();
       default:
         return const SizedBox.shrink();
     }
@@ -726,10 +719,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
       BottomNavigationBarItem(
         icon: Icon(Icons.star),
         label: 'RP',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.compare_arrows),
-        label: 'Auto/Teleop',
       ),
     ];
 
@@ -1290,204 +1279,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       );
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAutoTeleopComparisonChart() {
-    final records = selectedTeamRecords;
-    if (records.isEmpty) {
-      return _buildEmptyState();
-    }
-
-    // Sort records by match number and get unique match numbers
-    final matchNumbers = records.map((r) => r.matchNumber).toList()..sort();
-    final minMatch = matchNumbers.first;
-    final maxMatch = matchNumbers.last;
-    
-    // create a map of match number to scores to handle potential duplicates
-    Map<int, int> autoScoresByMatch = {};
-    Map<int, int> teleopScoresByMatch = {};
-    
-    for (var record in records) {
-      autoScoresByMatch[record.matchNumber] = 
-        record.autoCoralHeight4Success + record.autoCoralHeight3Success + 
-        record.autoCoralHeight2Success + record.autoCoralHeight1Success +
-        record.autoAlgaeInNet + record.autoAlgaeInProcessor;
-      
-      teleopScoresByMatch[record.matchNumber] = 
-        record.teleopCoralHeight4Success + record.teleopCoralHeight3Success + 
-        record.teleopCoralHeight2Success + record.teleopCoralHeight1Success +
-        record.teleopAlgaeScoredInNet + record.teleopAlgaeProcessed;
-    }
-    
-    final maxY = max(
-      autoScoresByMatch.values.isEmpty ? 0 : autoScoresByMatch.values.reduce(max),
-      teleopScoresByMatch.values.isEmpty ? 0 : teleopScoresByMatch.values.reduce(max)
-    ).toDouble();
-    final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
-
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Auto vs Teleop',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Total scoring by phase',
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
-              fontSize: 14,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              _buildLegendItem('Auto', const Color(0xFFFFB74D)),
-              const SizedBox(width: 16),
-              _buildLegendItem('Teleop', const Color(0xFFBA68C8)),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: LineChart(
-              LineChartData(
-                gridData: FlGridData(
-                  show: true,
-                  drawVerticalLine: true,
-                  horizontalInterval: 5,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.white10,
-                    strokeWidth: 1,
-                  ),
-                  getDrawingVerticalLine: (value) => FlLine(
-                    color: Colors.white10,
-                    strokeWidth: 1,
-                  ),
-                ),
-                titlesData: FlTitlesData(
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      interval: 5,
-                      getTitlesWidget: (value, meta) => Text(
-                        value.toInt().toString(),
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      interval: 1,
-                      getTitlesWidget: (value, meta) {
-                        final matchNum = value.toInt();
-                        if (!matchNumbers.contains(matchNum)) {
-                          return const Text('');
-                        }
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text(
-                            'M$matchNum',
-                            style: const TextStyle(
-                              color: Colors.white54,
-                              fontSize: 12,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  rightTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                ),
-                minX: minMatch.toDouble(),
-                maxX: maxMatch.toDouble(),
-                minY: 0,
-                maxY: roundedMaxY,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: matchNumbers.map((matchNum) => FlSpot(
-                      matchNum.toDouble(),
-                      autoScoresByMatch[matchNum]!.toDouble(),
-                    )).toList(),
-                    isCurved: false,
-                    color: const Color(0xFFFFB74D),
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: const Color(0xFFFFB74D),
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                  LineChartBarData(
-                    spots: matchNumbers.map((matchNum) => FlSpot(
-                      matchNum.toDouble(),
-                      teleopScoresByMatch[matchNum]!.toDouble(),
-                    )).toList(),
-                    isCurved: false,
-                    color: const Color(0xFFBA68C8),
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: const Color(0xFFBA68C8),
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                ],
-                lineTouchData: LineTouchData(
-                  touchTooltipData: LineTouchTooltipData(
-                    fitInsideHorizontally: true,
-                    fitInsideVertically: true,
-                    tooltipRoundedRadius: 8,
-                    tooltipPadding: const EdgeInsets.all(8),
-                    tooltipBorder: BorderSide(
-                      color: Colors.white.withOpacity(0.1),
-                    ),
-                    tooltipMargin: 16,
-                    getTooltipItems: (touchedSpots) {
-                      return touchedSpots.map((spot) {
-                        final isAuto = spot.bar.color == const Color(0xFFFFB74D);
-                        return LineTooltipItem(
-                          'Match ${spot.x.toInt()}\n${spot.y.toStringAsFixed(1)} ${isAuto ? "Auto" : "Teleop"}',
-                          TextStyle(
-                            color: spot.bar.color,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
-                        );
-                      }).toList();
                     },
                   ),
                 ),
