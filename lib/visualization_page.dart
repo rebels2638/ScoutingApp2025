@@ -21,14 +21,19 @@ class _VisualizationPageState extends State<VisualizationPage> {
   
   final List<ChartType> _chartTypes = [
     ChartType(
-      title: 'Match Performance',
-      icon: Icons.trending_up,
-      description: 'Scoring progression across matches',
+      title: 'Auto vs Teleop',
+      icon: Icons.compare_arrows,
+      description: 'Scoring comparison by phase',
     ),
     ChartType(
       title: 'Coral Placement',
       icon: Icons.height,
       description: 'Average pieces at each height',
+    ),
+    ChartType(
+      title: 'Match Performance',
+      icon: Icons.trending_up,
+      description: 'Scoring progression across matches',
     ),
     ChartType(
       title: 'Endgame',
@@ -39,11 +44,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
       title: 'Ranking Points',
       icon: Icons.star,
       description: 'Success rates by type',
-    ),
-    ChartType(
-      title: 'Auto vs Teleop',
-      icon: Icons.compare_arrows,
-      description: 'Scoring comparison by phase',
     ),
   ];
 
@@ -217,15 +217,15 @@ class _VisualizationPageState extends State<VisualizationPage> {
   Widget _buildChart() {
     switch (_selectedIndex) {
       case 0:
-        return _buildMatchPerformanceChart();
+        return _buildAutoTeleopComparisonChart();
       case 1:
         return _buildCoralPlacementChart();
       case 2:
-        return _buildEndgameChart();
+        return _buildMatchPerformanceChart();
       case 3:
-        return _buildRankingPointChart();
+        return _buildEndgameChart();
       case 4:
-        return _buildAutoTeleopComparisonChart();
+        return _buildRankingPointChart();
       default:
         return const SizedBox.shrink();
     }
@@ -454,12 +454,16 @@ class _VisualizationPageState extends State<VisualizationPage> {
   Widget _buildBottomNav() {
     const items = [
       BottomNavigationBarItem(
-        icon: Icon(Icons.show_chart),
-        label: 'Performance',
+        icon: Icon(Icons.compare_arrows),
+        label: 'Auto/Teleop',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.height),
         label: 'Coral',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.show_chart),
+        label: 'Performance',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.flag),
@@ -468,10 +472,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
       BottomNavigationBarItem(
         icon: Icon(Icons.star),
         label: 'RP',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.compare_arrows),
-        label: 'Auto/Teleop',
       ),
     ];
 
