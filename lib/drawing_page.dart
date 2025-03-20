@@ -133,33 +133,35 @@ class _DrawingPageState extends State<DrawingPage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.hideControls) {
-      return Stack(
-        children: [
-          Positioned.fill(
-            child: widget.useDefaultImage
-                ? Image.asset(
-                    'assets/field_image.png',
-                    fit: BoxFit.contain,
-                  )
-                : imagePath != null && File(imagePath!).existsSync()
-                    ? Image.file(
-                        File(imagePath!),
-                        fit: BoxFit.contain,
-                      )
-                    : Container(),
-          ),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: DrawingPainter(
-                lines: lines,
-                currentColor: currentColor,
-                strokeWidth: strokeWidth,
-              ),
+    Widget drawingContent = Stack(
+      children: [
+        Positioned.fill(
+          child: widget.useDefaultImage
+              ? Image.asset(
+                  'assets/field_image.png',
+                  fit: BoxFit.contain,
+                )
+              : imagePath != null && File(imagePath!).existsSync()
+                  ? Image.file(
+                      File(imagePath!),
+                      fit: BoxFit.contain,
+                    )
+                  : Container(),
+        ),
+        Positioned.fill(
+          child: CustomPaint(
+            painter: DrawingPainter(
+              lines: lines,
+              currentColor: currentColor,
+              strokeWidth: strokeWidth,
             ),
           ),
-        ],
-      );
+        ),
+      ],
+    );
+
+    if (widget.hideControls) {
+      return drawingContent;
     }
 
     return Scaffold(
@@ -205,34 +207,15 @@ class _DrawingPageState extends State<DrawingPage> {
       ),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: imagePath != null && File(imagePath!).existsSync()
-                ? Image.file(
-                    File(imagePath!),
-                    fit: BoxFit.contain,
-                  )
-                : widget.useDefaultImage
-                    ? Image.asset(
-                        'assets/field_image.png',
-                        fit: BoxFit.contain,
-                      )
-                    : Container(),
-          ),
+          drawingContent,
           Container(
-            child: CustomPaint(
-              painter: DrawingPainter(
-                lines: lines,
-                currentColor: currentColor,
-                strokeWidth: strokeWidth,
-              ),
-              child: widget.readOnly
-                  ? Container()
-                  : GestureDetector(
-                      onPanStart: _onPanStart,
-                      onPanUpdate: _onPanUpdate,
-                      onPanEnd: _onPanEnd,
-                    ),
-            ),
+            child: widget.readOnly
+                ? Container()
+                : GestureDetector(
+                    onPanStart: _onPanStart,
+                    onPanUpdate: _onPanUpdate,
+                    onPanEnd: _onPanEnd,
+                  ),
           ),
         ],
       ),
@@ -300,8 +283,18 @@ class _DrawingPageState extends State<DrawingPage> {
   }
 
   void _onPanStart(DragStartDetails details) {
+    RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final localPosition = renderBox.globalToLocal(details.globalPosition);
+    
+    // Convert to relative coordinates (0.0 to 1.0)
+    final relativePosition = Offset(
+      localPosition.dx / size.width,
+      localPosition.dy / size.height,
+    );
+
     currentLine = DrawingLine(
-      points: [details.localPosition],
+      points: [relativePosition],
       color: currentColor,
       strokeWidth: strokeWidth,
       imagePath: imagePath,
@@ -312,9 +305,19 @@ class _DrawingPageState extends State<DrawingPage> {
   void _onPanUpdate(DragUpdateDetails details) {
     if (currentLine == null) return;
     
+    RenderBox renderBox = context.findRenderObject() as RenderBox;
+    final size = renderBox.size;
+    final localPosition = renderBox.globalToLocal(details.globalPosition);
+    
+    // Convert to relative coordinates (0.0 to 1.0)
+    final relativePosition = Offset(
+      localPosition.dx / size.width,
+      localPosition.dy / size.height,
+    );
+
     setState(() {
       if (!isErasing) {
-        currentLine!.points.add(details.localPosition);
+        currentLine!.points.add(relativePosition);
         // Only update the last line if it's the current one
         if (lines.isNotEmpty && lines.last == currentLine) {
           lines.last = currentLine!;
@@ -323,10 +326,10 @@ class _DrawingPageState extends State<DrawingPage> {
         }
       } else {
         // Optimize erasing by using Rect.contains
-        final erasePoint = details.localPosition;
+        final erasePoint = relativePosition;
         lines.removeWhere((line) {
           return line.points.any((point) =>
-              (point - erasePoint).distance < 20.0);
+              (point - erasePoint).distance < 0.02); // Adjusted for relative coordinates
         });
       }
     });
@@ -429,6 +432,10 @@ class DrawingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // calculate scaling factors
+    final scaleX = size.width;
+    final scaleY = size.height;
+
     for (var line in lines) {
       final paint = Paint()
         ..color = line.color
@@ -436,8 +443,16 @@ class DrawingPainter extends CustomPainter {
         ..strokeCap = StrokeCap.round;
 
       if (line.points.length < 2) continue;
-      for (int i = 0; i < line.points.length - 1; i++) {
-        canvas.drawLine(line.points[i], line.points[i + 1], paint);
+      
+      // create scaled points
+      final scaledPoints = line.points.map((point) => Offset(
+        point.dx * scaleX,
+        point.dy * scaleY,
+      )).toList();
+
+      // draw the line segments
+      for (int i = 0; i < scaledPoints.length - 1; i++) {
+        canvas.drawLine(scaledPoints[i], scaledPoints[i + 1], paint);
       }
     }
   }

@@ -473,12 +473,31 @@ class _AutoDrawingPageState extends State<AutoDrawingPage> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     clipBehavior: Clip.antiAlias,
-                                    child: drawing.DrawingPage(
-                                      isRedAlliance: path.isRedAlliance,
-                                      initialDrawing: path.path,
-                                      readOnly: true,
-                                      imagePath: path.imagePath,
-                                      hideControls: true,
+                                    child: LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        // Force 16:9 aspect ratio
+                                        final width = constraints.maxWidth;
+                                        final height = width * (9/16);
+                                        return SizedBox(
+                                          width: width,
+                                          height: height,
+                                          child: FittedBox(
+                                            fit: BoxFit.contain,
+                                            child: SizedBox(
+                                              width: width,
+                                              height: height,
+                                              child: drawing.DrawingPage(
+                                                isRedAlliance: path.isRedAlliance,
+                                                initialDrawing: path.path,
+                                                readOnly: true,
+                                                imagePath: path.imagePath,
+                                                hideControls: true,
+                                                useDefaultImage: true,
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
                                     ),
                                   ),
                                   Positioned(
