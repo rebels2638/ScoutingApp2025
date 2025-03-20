@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'data.dart';
 import 'theme/app_theme.dart';
-import 'dart:math' show max, min;
+import 'dart:math' show max, min, pow, sqrt;
 import 'package:flutter/services.dart';
 
 class VisualizationPage extends StatefulWidget {
@@ -18,17 +18,28 @@ class _VisualizationPageState extends State<VisualizationPage> {
   int? selectedTeam;
   List<int> teamNumbers = [];
   int _selectedIndex = 0;
+  String _coralView = 'Total'; // 'Total', 'Teleop', or 'Auto'
   
   final List<ChartType> _chartTypes = [
     ChartType(
-      title: 'Match Performance',
-      icon: Icons.trending_up,
-      description: 'Scoring progression across matches',
+      title: 'Auto vs Teleop',
+      icon: Icons.compare_arrows,
+      description: 'Scoring comparison by phase',
     ),
     ChartType(
       title: 'Coral Placement',
       icon: Icons.height,
       description: 'Average pieces at each height',
+    ),
+    ChartType(
+      title: 'Coral OT',
+      icon: Icons.timeline,
+      description: 'Coral scoring over time',
+    ),
+    ChartType(
+      title: 'Algae',
+      icon: Icons.circle,
+      description: 'Algae data',
     ),
     ChartType(
       title: 'Endgame',
@@ -39,11 +50,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
       title: 'Ranking Points',
       icon: Icons.star,
       description: 'Success rates by type',
-    ),
-    ChartType(
-      title: 'Auto vs Teleop',
-      icon: Icons.compare_arrows,
-      description: 'Scoring comparison by phase',
     ),
   ];
 
@@ -217,15 +223,17 @@ class _VisualizationPageState extends State<VisualizationPage> {
   Widget _buildChart() {
     switch (_selectedIndex) {
       case 0:
-        return _buildMatchPerformanceChart();
+        return _buildAutoTeleopComparisonChart();
       case 1:
         return _buildCoralPlacementChart();
       case 2:
-        return _buildEndgameChart();
+        return _buildCoralOverTimeChart();
       case 3:
-        return _buildRankingPointChart();
+        return _buildMatchPerformanceChart();
       case 4:
-        return _buildAutoTeleopComparisonChart();
+        return _buildEndgameChart();
+      case 5:
+        return _buildRankingPointChart();
       default:
         return const SizedBox.shrink();
     }
@@ -243,7 +251,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final maxMatch = matchNumbers.last;
     
     final maxY = records.map((r) => 
-      r.teleopAlgaeProcessed + r.teleopAlgaeScoredInNet
+      max(r.teleopAlgaeProcessed, r.teleopAlgaeScoredInNet)
     ).reduce(max).toDouble();
     final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
 
@@ -253,7 +261,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Match Performance',
+            'Algae',
             style: TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -263,9 +271,9 @@ class _VisualizationPageState extends State<VisualizationPage> {
           const SizedBox(height: 8),
           Row(
             children: [
-              _buildLegendItem('Total Algae', const Color(0xFF64B5F6)),
-              const SizedBox(width: 16),
               _buildLegendItem('Processed', const Color(0xFF81C784)),
+              const SizedBox(width: 16),
+              _buildLegendItem('In Net', const Color(0xFFBA68C8)),
             ],
           ),
           const SizedBox(height: 24),
@@ -337,24 +345,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
                   LineChartBarData(
                     spots: records.map((r) => FlSpot(
                       r.matchNumber.toDouble(),
-                      (r.teleopAlgaeProcessed + r.teleopAlgaeScoredInNet).toDouble(),
-                    )).toList(),
-                    isCurved: false,
-                    color: const Color(0xFF64B5F6),
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: const Color(0xFF64B5F6),
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
-                      ),
-                    ),
-                  ),
-                  LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
                       r.teleopAlgaeProcessed.toDouble(),
                     )).toList(),
                     isCurved: false,
@@ -365,6 +355,24 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
                         radius: 5,
                         color: const Color(0xFF81C784),
+                        strokeWidth: 2,
+                        strokeColor: const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                  ),
+                  LineChartBarData(
+                    spots: records.map((r) => FlSpot(
+                      r.matchNumber.toDouble(),
+                      r.teleopAlgaeScoredInNet.toDouble(),
+                    )).toList(),
+                    isCurved: false,
+                    color: const Color(0xFFBA68C8),
+                    barWidth: 3,
+                    dotData: FlDotData(
+                      show: true,
+                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                        radius: 5,
+                        color: const Color(0xFFBA68C8),
                         strokeWidth: 2,
                         strokeColor: const Color(0xFF1A1A1A),
                       ),
@@ -383,11 +391,19 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     tooltipMargin: 16,
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
-                        final isTotal = spot.bar.color == const Color(0xFF64B5F6);
+                        String label;
+                        Color color;
+                        if (spot.bar.color == const Color(0xFF81C784)) {
+                          label = "Processed";
+                          color = const Color(0xFF81C784);
+                        } else {
+                          label = "In Net";
+                          color = const Color(0xFFBA68C8);
+                        }
                         return LineTooltipItem(
-                          'Match ${spot.x.toInt()}\n${spot.y.toStringAsFixed(1)} ${isTotal ? "Total" : "Processed"}',
+                          'Match ${spot.x.toInt()}\n${spot.y.toStringAsFixed(1)} $label',
                           TextStyle(
-                            color: spot.bar.color,
+                            color: color,
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
@@ -454,12 +470,20 @@ class _VisualizationPageState extends State<VisualizationPage> {
   Widget _buildBottomNav() {
     const items = [
       BottomNavigationBarItem(
-        icon: Icon(Icons.show_chart),
-        label: 'Performance',
+        icon: Icon(Icons.compare_arrows),
+        label: 'Auto/Teleop',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.height),
         label: 'Coral',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.timeline),
+        label: 'Coral OT',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.circle),
+        label: 'Algae',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.flag),
@@ -468,10 +492,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
       BottomNavigationBarItem(
         icon: Icon(Icons.star),
         label: 'RP',
-      ),
-      BottomNavigationBarItem(
-        icon: Icon(Icons.compare_arrows),
-        label: 'Auto/Teleop',
       ),
     ];
 
@@ -1225,6 +1245,376 @@ class _VisualizationPageState extends State<VisualizationPage> {
                           'Match ${spot.x.toInt()}\n${spot.y.toStringAsFixed(1)} ${isAuto ? "Auto" : "Teleop"}',
                           TextStyle(
                             color: spot.bar.color,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12,
+                          ),
+                        );
+                      }).toList();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCoralOverTimeChart() {
+    final records = selectedTeamRecords;
+    if (records.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    // Sort records by match number and get unique match numbers
+    final matchNumbers = records.map((r) => r.matchNumber).toList()..sort();
+    final minMatch = matchNumbers.first;
+    final maxMatch = matchNumbers.last;
+
+    // Create data points based on selected view
+    List<List<FlSpot>> coralData = List.generate(5, (index) => []);
+    final labels = ['Total', 'L4', 'L3', 'L2', 'L1'];
+    final colors = [
+      const Color(0xFFBA68C8), // Total - Purple
+      const Color(0xFFE57373), // L4 - Red
+      const Color(0xFF81C784), // L3 - Green
+      const Color(0xFF64B5F6), // L2 - Blue
+      const Color(0xFFFFB74D), // L1 - Orange
+    ];
+    
+    if (_coralView == 'Total') {
+      // Show total data for both phases
+      for (var record in records) {
+        final matchNum = record.matchNumber.toDouble();
+        // Total coral (auto + teleop)
+        coralData[0].add(FlSpot(matchNum, 
+          (record.autoCoralHeight4Success + record.autoCoralHeight3Success + 
+           record.autoCoralHeight2Success + record.autoCoralHeight1Success +
+           record.teleopCoralHeight4Success + record.teleopCoralHeight3Success + 
+           record.teleopCoralHeight2Success + record.teleopCoralHeight1Success).toDouble()
+        ));
+        // L4 (auto + teleop)
+        coralData[1].add(FlSpot(matchNum, 
+          (record.autoCoralHeight4Success + record.teleopCoralHeight4Success).toDouble()
+        ));
+        // L3 (auto + teleop)
+        coralData[2].add(FlSpot(matchNum, 
+          (record.autoCoralHeight3Success + record.teleopCoralHeight3Success).toDouble()
+        ));
+        // L2 (auto + teleop)
+        coralData[3].add(FlSpot(matchNum, 
+          (record.autoCoralHeight2Success + record.teleopCoralHeight2Success).toDouble()
+        ));
+        // L1 (auto + teleop)
+        coralData[4].add(FlSpot(matchNum, 
+          (record.autoCoralHeight1Success + record.teleopCoralHeight1Success).toDouble()
+        ));
+      }
+    } else {
+      // Show data for selected phase (Auto or Teleop)
+      for (var record in records) {
+        final matchNum = record.matchNumber.toDouble();
+        if (_coralView == 'Auto') {
+          // total auto
+          coralData[0].add(FlSpot(matchNum, 
+            (record.autoCoralHeight4Success + 
+             record.autoCoralHeight3Success + 
+             record.autoCoralHeight2Success + 
+             record.autoCoralHeight1Success).toDouble()
+          ));
+          // individual heights
+          coralData[1].add(FlSpot(matchNum, record.autoCoralHeight4Success.toDouble()));
+          coralData[2].add(FlSpot(matchNum, record.autoCoralHeight3Success.toDouble()));
+          coralData[3].add(FlSpot(matchNum, record.autoCoralHeight2Success.toDouble()));
+          coralData[4].add(FlSpot(matchNum, record.autoCoralHeight1Success.toDouble()));
+        } else { // Teleop
+          // Total teleop
+          coralData[0].add(FlSpot(matchNum, 
+            (record.teleopCoralHeight4Success + 
+             record.teleopCoralHeight3Success + 
+             record.teleopCoralHeight2Success + 
+             record.teleopCoralHeight1Success).toDouble()
+          ));
+          // Individual heights
+          coralData[1].add(FlSpot(matchNum, record.teleopCoralHeight4Success.toDouble()));
+          coralData[2].add(FlSpot(matchNum, record.teleopCoralHeight3Success.toDouble()));
+          coralData[3].add(FlSpot(matchNum, record.teleopCoralHeight2Success.toDouble()));
+          coralData[4].add(FlSpot(matchNum, record.teleopCoralHeight1Success.toDouble()));
+        }
+      }
+    }
+
+    // Calculate maxY for the chart
+    final maxY = coralData.expand((list) => list).map((spot) => spot.y).reduce(max);
+    final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
+
+    // calculate average and stdev for the total line
+    final totalSpots = coralData[0];  // Use the total line for any view
+    final values = totalSpots.map((spot) => spot.y).toList();
+    final averageLine = values.average();
+    
+    // calculate stdev
+    final variance = values.map((v) => pow(v - averageLine, 2)).average();
+    final stdDev = sqrt(variance).toDouble();
+    final upperLine = (averageLine + stdDev).toDouble();
+    final lowerLine = max(0, averageLine - stdDev).toDouble();
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Coral Over Time',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2D2D2D),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: DropdownButton<String>(
+                  value: _coralView,
+                  underline: const SizedBox(),
+                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                  dropdownColor: const Color(0xFF2D2D2D),
+                  items: ['Total', 'Teleop', 'Auto'].map((view) => DropdownMenuItem(
+                    value: view,
+                    child: Text(
+                      view,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  )).toList(),
+                  onChanged: (value) => setState(() => _coralView = value!),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _coralView == 'Total' 
+              ? 'Combined auto and teleop coral scoring by height'
+              : '${_coralView} coral scoring by height',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: [
+              ...List.generate(5, (i) => _buildLegendItem(labels[i], colors[i])),
+              const SizedBox(width: 8),
+              _buildLegendItem(
+                'Avg (${averageLine.toStringAsFixed(1)} ± ${stdDev.toStringAsFixed(1)})',
+                Colors.white,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(
+                  show: true,
+                  drawVerticalLine: true,
+                  horizontalInterval: 1,
+                  getDrawingHorizontalLine: (value) {
+                    // special styling for the average and stdev lines
+                    if ((value - averageLine).abs() < 0.01) {
+                      return FlLine(
+                        color: Colors.white,
+                        strokeWidth: 1,
+                        dashArray: [5, 5], // Make it dashed
+                      );
+                    }
+                    if ((value - upperLine).abs() < 0.01 || (value - lowerLine).abs() < 0.01) {
+                      return FlLine(
+                        color: Colors.white.withOpacity(1.0),
+                        strokeWidth: 1,
+                        dashArray: [3, 3], // Make it dashed
+                      );
+                    }
+                    return FlLine(
+                      color: Colors.white10,
+                      strokeWidth: 1,
+                    );
+                  },
+                  getDrawingVerticalLine: (value) => FlLine(
+                    color: Colors.white10,
+                    strokeWidth: 1,
+                  ),
+                ),
+                titlesData: FlTitlesData(
+                  leftTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      reservedSize: 40,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toInt().toString(),
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  bottomTitles: AxisTitles(
+                    sideTitles: SideTitles(
+                      showTitles: true,
+                      interval: 1,
+                      getTitlesWidget: (value, meta) {
+                        final matchNum = value.toInt();
+                        if (!matchNumbers.contains(matchNum)) {
+                          return const Text('');
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Text(
+                            'M$matchNum',
+                            style: const TextStyle(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                ),
+                minX: minMatch.toDouble(),
+                maxX: maxMatch.toDouble(),
+                minY: 0,
+                maxY: roundedMaxY,
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    HorizontalLine(
+                      y: averageLine,
+                      color: Colors.white,
+                      strokeWidth: 1,
+                      dashArray: [5, 5], // Make it dashed
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        padding: const EdgeInsets.only(right: 8, bottom: 4),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                        labelResolver: (line) => 'Avg: ${line.y.toStringAsFixed(1)}',
+                      ),
+                    ),
+                    HorizontalLine(
+                      y: upperLine,
+                      color: Colors.white.withOpacity(1.0),
+                      strokeWidth: 1,
+                      dashArray: [3, 3], // make it dashed
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        padding: const EdgeInsets.only(right: 8, bottom: 4),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(1.0),
+                          fontSize: 10,
+                        ),
+                        labelResolver: (line) => '+1σ: ${line.y.toStringAsFixed(1)}',
+                      ),
+                    ),
+                    HorizontalLine(
+                      y: lowerLine,
+                      color: Colors.white.withOpacity(1.0),
+                      strokeWidth: 1,
+                      dashArray: [3, 3],
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        padding: const EdgeInsets.only(right: 8, bottom: 4),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(1.0),
+                          fontSize: 10,
+                        ),
+                        labelResolver: (line) => '-1σ: ${line.y.toStringAsFixed(1)}',
+                      ),
+                    ),
+                  ],
+                  extraLinesOnTop: false,
+                ),
+                backgroundColor: Colors.white.withOpacity(0.05),
+                lineBarsData: [
+                  // stdev range area
+                  LineChartBarData(
+                    spots: List.generate(matchNumbers.length, (i) => FlSpot(
+                      matchNumbers[i].toDouble(),
+                      upperLine,
+                    )),
+                    isCurved: false,
+                    color: Colors.white.withOpacity(0.1),
+                    barWidth: 0,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
+                      show: true,
+                      color: Colors.white.withOpacity(0.05),
+                      cutOffY: lowerLine,
+                      applyCutOffY: true,
+                    ),
+                  ),
+                  // Regular data lines
+                  ...List.generate(5, (i) => 
+                    LineChartBarData(
+                      spots: coralData[i],
+                      isCurved: false,
+                      color: colors[i],
+                      barWidth: 3,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                          radius: 5,
+                          color: colors[i],
+                          strokeWidth: 2,
+                          strokeColor: const Color(0xFF1A1A1A),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+                lineTouchData: LineTouchData(
+                  touchTooltipData: LineTouchTooltipData(
+                    fitInsideHorizontally: true,
+                    fitInsideVertically: true,
+                    tooltipRoundedRadius: 8,
+                    tooltipPadding: const EdgeInsets.all(8),
+                    tooltipBorder: BorderSide(
+                      color: Colors.white.withOpacity(0.1),
+                    ),
+                    tooltipMargin: 16,
+                    getTooltipItems: (touchedSpots) {
+                      return touchedSpots.map((spot) {
+                        final index = spot.barIndex;
+                        return LineTooltipItem(
+                          'Match ${spot.x.toInt()}\n${labels[index]}: ${spot.y.toStringAsFixed(0)}',
+                          TextStyle(
+                            color: colors[index],
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
