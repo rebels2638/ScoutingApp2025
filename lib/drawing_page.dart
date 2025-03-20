@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
 import 'dart:io';
 
-// Add a class to store line properties
+// add a class to store line properties
 class DrawingLine {
   final List<Offset> points;
   final Color color;
@@ -26,7 +26,7 @@ class DrawingLine {
   }
 
   Map<String, dynamic> toCompressedJson() {
-    // Reduce precision of coordinates to 1 decimal place and use shorter key names
+    // reduce precision of coordinates to 1 decimal place and use shorter key names
     return {
       'p': points.map((p) => {
         'x': (p.dx * 10).round() / 10,
@@ -116,11 +116,11 @@ class _DrawingPageState extends State<DrawingPage> {
     currentColor = widget.isRedAlliance ? AppColors.redAlliance : AppColors.blueAlliance;
     imagePath = widget.imagePath;
     
-    // Initialize lines from either initialLines or initialDrawing
+    // initialize lines from either initialLines or initialDrawing
     if (widget.initialDrawing != null) {
       lines = widget.initialDrawing!.map((map) {
         final line = DrawingLine.fromJson(map);
-        // If the line has an image path and we don't have one yet, use it
+        // if the line has an image path and we don't have one yet, use it
         if (imagePath == null && line.imagePath != null) {
           imagePath = line.imagePath;
         }
@@ -287,10 +287,33 @@ class _DrawingPageState extends State<DrawingPage> {
     final size = renderBox.size;
     final localPosition = renderBox.globalToLocal(details.globalPosition);
     
-    // Convert to relative coordinates (0.0 to 1.0)
+    // calculate aspect ratio scaling
+    const originalAspectRatio = 16 / 9;
+    final currentAspectRatio = size.width / size.height;
+    
+    double scaleX, scaleY;
+    double translateX = 0, translateY = 0;
+    
+    if (currentAspectRatio > originalAspectRatio) {
+      // width is relatively larger, so fit to height
+      scaleY = size.height;
+      scaleX = size.height * originalAspectRatio;
+      translateX = (size.width - scaleX) / 2;
+    } else {
+      // height is relatively larger, so fit to width
+      scaleX = size.width;
+      scaleY = size.width / originalAspectRatio;
+      translateY = (size.height - scaleY) / 2;
+    }
+
+    // adjust position based on translation
+    final adjustedX = localPosition.dx - translateX;
+    final adjustedY = localPosition.dy - translateY;
+
+    // convert to relative coordinates (0.0 to 1.0) using the scaled dimensions
     final relativePosition = Offset(
-      localPosition.dx / size.width,
-      localPosition.dy / size.height,
+      adjustedX / scaleX,
+      adjustedY / scaleY,
     );
 
     currentLine = DrawingLine(
@@ -309,27 +332,50 @@ class _DrawingPageState extends State<DrawingPage> {
     final size = renderBox.size;
     final localPosition = renderBox.globalToLocal(details.globalPosition);
     
-    // Convert to relative coordinates (0.0 to 1.0)
+    // calculate aspect ratio scaling
+    const originalAspectRatio = 16 / 9;
+    final currentAspectRatio = size.width / size.height;
+    
+    double scaleX, scaleY;
+    double translateX = 0, translateY = 0;
+    
+    if (currentAspectRatio > originalAspectRatio) {
+      // width is relatively larger, so fit to height
+      scaleY = size.height;
+      scaleX = size.height * originalAspectRatio;
+      translateX = (size.width - scaleX) / 2;
+    } else {
+      // height is relatively larger, so fit to width
+      scaleX = size.width;
+      scaleY = size.width / originalAspectRatio;
+      translateY = (size.height - scaleY) / 2;
+    }
+
+    // adjust position based on translation
+    final adjustedX = localPosition.dx - translateX;
+    final adjustedY = localPosition.dy - translateY;
+
+    // convert to relative coordinates (0.0 to 1.0) using the scaled dimensions
     final relativePosition = Offset(
-      localPosition.dx / size.width,
-      localPosition.dy / size.height,
+      adjustedX / scaleX,
+      adjustedY / scaleY,
     );
 
     setState(() {
       if (!isErasing) {
         currentLine!.points.add(relativePosition);
-        // Only update the last line if it's the current one
+        // only update the last line if it's the current one
         if (lines.isNotEmpty && lines.last == currentLine) {
           lines.last = currentLine!;
         } else {
           lines.add(currentLine!);
         }
       } else {
-        // Optimize erasing by using Rect.contains
+        // optimize erasing by using rect.contains
         final erasePoint = relativePosition;
         lines.removeWhere((line) {
           return line.points.any((point) =>
-              (point - erasePoint).distance < 0.02); // Adjusted for relative coordinates
+              (point - erasePoint).distance < 0.02); // adjusted for relative coordinates
         });
       }
     });
@@ -432,14 +478,33 @@ class DrawingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // calculate scaling factors
-    final scaleX = size.width;
-    final scaleY = size.height;
+    // calculate the aspect ratio and scaling
+    const originalAspectRatio = 16 / 9;
+    final currentAspectRatio = size.width / size.height;
+    
+    double scaleX, scaleY;
+    double translateX = 0, translateY = 0;
+    
+    if (currentAspectRatio > originalAspectRatio) {
+      // width is relatively larger, so fit to height
+      scaleY = size.height;
+      scaleX = size.height * originalAspectRatio;
+      translateX = (size.width - scaleX) / 2;
+    } else {
+      // height is relatively larger, so fit to width
+      scaleX = size.width;
+      scaleY = size.width / originalAspectRatio;
+      translateY = (size.height - scaleY) / 2;
+    }
+
+    // save the canvas state before translating
+    canvas.save();
+    canvas.translate(translateX, translateY);
 
     for (var line in lines) {
       final paint = Paint()
         ..color = line.color
-        ..strokeWidth = line.strokeWidth
+        ..strokeWidth = line.strokeWidth * (scaleX / 1000) // scale stroke width proportionally
         ..strokeCap = StrokeCap.round;
 
       if (line.points.length < 2) continue;
@@ -455,6 +520,9 @@ class DrawingPainter extends CustomPainter {
         canvas.drawLine(scaledPoints[i], scaledPoints[i + 1], paint);
       }
     }
+
+    // restore the canvas state
+    canvas.restore();
   }
 
   @override
