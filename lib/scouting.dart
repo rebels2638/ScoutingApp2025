@@ -95,9 +95,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
   bool canPickupAlgae = false;
   bool canPickupCoral = false;
 
-  // state var for processor cycles
-  int processorCycles = 0;
-
   // dev mode state
   bool _isVisible = false;
   bool _isDevMode = false;
@@ -405,6 +402,17 @@ class _ScoutingPageState extends State<ScoutingPage> {
               });
             },
           ),
+          SwitchCard(
+            label: 'Coral Preloaded',
+            value: autoCoralPreloaded,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = autoCoralPreloaded;
+                autoCoralPreloaded = value;
+                _logStateChange('autoCoralPreloaded', oldValue, value);
+              });
+            },
+          ),
           DrawingButton(
             key: _drawingButtonKey,
             isRedAlliance: isRedAlliance,
@@ -471,7 +479,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
             },
           ),
           CounterRow(
-            label: 'Algae in Processor',
+            label: 'Algae Processed',
             value: autoAlgaeInProcessor,
             onChanged: (value) {
               setState(() {
@@ -605,6 +613,17 @@ class _ScoutingPageState extends State<ScoutingPage> {
             },
           ),
           CounterRow(
+            label: 'Algae Removed',
+            value: teleopAlgaeRemoved,
+            onChanged: (value) {
+              setState(() {
+                final oldValue = teleopAlgaeRemoved;
+                teleopAlgaeRemoved = value;
+                _logStateChange('teleopAlgaeRemoved', oldValue, value);
+              });
+            },
+          ),
+          CounterRow(
             label: 'Algae Processed',
             value: teleopAlgaeProcessed,
             onChanged: (value) {
@@ -612,17 +631,6 @@ class _ScoutingPageState extends State<ScoutingPage> {
                 final oldValue = teleopAlgaeProcessed;
                 teleopAlgaeProcessed = value;
                 _logStateChange('teleopAlgaeProcessed', oldValue, value);
-              });
-            },
-          ),
-          CounterRow(
-            label: 'Processor Cycles',
-            value: processorCycles,
-            onChanged: (value) {
-              setState(() {
-                final oldValue = processorCycles;
-                processorCycles = value;
-                _logStateChange('processorCycles', oldValue, value);
               });
             },
           ),
@@ -1028,7 +1036,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
       }.toString());
 
       final record = ScoutingRecord(
-        timestamp: currentTime,
+        timestamp: DateTime.now().millisecondsSinceEpoch.toString(),
         matchNumber: matchNumber,
         matchType: matchType,
         teamNumber: teamNumber,
@@ -1077,11 +1085,11 @@ class _ScoutingPageState extends State<ScoutingPage> {
         otherComments: otherComments,
 
         // Legacy fields
-        cageType: 'Shallow',
+        cageType: endgameCageHang,
         coralPreloaded: autoCoralPreloaded,
         taxis: autoTaxis,
         algaeRemoved: autoAlgaeRemoved,
-        coralPlaced: 'No',
+        coralPlaced: (autoCoralHeight1Success + autoCoralHeight2Success + autoCoralHeight3Success + autoCoralHeight4Success).toString(),
         rankingPoint: teleopCoralRankingPoint,
         canPickupCoral: canPickupCoral,
         canPickupAlgae: teleopCanPickupAlgae,
@@ -1089,7 +1097,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
         coralRankingPoint: teleopCoralRankingPoint,
         algaeProcessed: teleopAlgaeProcessed,
         processedAlgaeScored: teleopAlgaeProcessed,
-        processorCycles: processorCycles,
+        processorCycles: teleopAlgaeProcessorAttempts,
         coOpPoint: otherCoOpPoint,
         returnedToBarge: endgameReturnedToBarge,
         cageHang: endgameCageHang,
@@ -1123,55 +1131,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
       );
       
       // reset form
-      setState(() {
-        matchNumber = matchNumber + 1; // increment match number
-        // Reset all auto fields
-        autoTaxis = false;
-        autoCoralPreloaded = false;
-        autoRobotPath = null;
-        autoAlgaeRemoved = 0;
-        autoCoralHeight4Success = 0;
-        autoCoralHeight4Failure = 0;
-        autoCoralHeight3Success = 0;
-        autoCoralHeight3Failure = 0;
-        autoCoralHeight2Success = 0;
-        autoCoralHeight2Failure = 0;
-        autoCoralHeight1Success = 0;
-        autoCoralHeight1Failure = 0;
-        autoAlgaeInNet = 0;
-        autoAlgaeInProcessor = 0;
-
-        // Reset all teleop fields
-        teleopCoralHeight4Success = 0;
-        teleopCoralHeight4Failure = 0;
-        teleopCoralHeight3Success = 0;
-        teleopCoralHeight3Failure = 0;
-        teleopCoralHeight2Success = 0;
-        teleopCoralHeight2Failure = 0;
-        teleopCoralHeight1Success = 0;
-        teleopCoralHeight1Failure = 0;
-        teleopCoralRankingPoint = false;
-        teleopAlgaeRemoved = 0;
-        teleopAlgaeProcessorAttempts = 0;
-        teleopAlgaeProcessed = 0;
-        teleopAlgaeScoredInNet = 0;
-        teleopCanPickupAlgae = false;
-        teleopCoralPickupMethod = 'Human';
-
-        // Reset all endgame fields
-        endgameReturnedToBarge = false;
-        endgameCageHang = 'None';
-        endgameBargeRankingPoint = false;
-
-        // Reset all other fields
-        otherCoOpPoint = false;
-        otherBreakdown = false;
-        otherComments = '';
-        canPickupCoral = false;
-        processorCycles = 0;
-
-        updateTime();
-      });
+      _resetForm();
 
       TelemetryService().logInfo('record_saved_successfully', 'Match $matchNumber');
 
@@ -1187,6 +1147,148 @@ class _ScoutingPageState extends State<ScoutingPage> {
         ),
       );
     }
+  }
+
+  void _resetForm() {
+    setState(() {
+      // Reset match info
+      matchNumber++;
+      updateTime();
+
+      // Reset team info
+      teamNumber = 0;
+
+      // Reset autonomous
+      autoTaxis = false;
+      autoCoralPreloaded = false;
+      autoRobotPath = null;
+      
+      // Reset auto coral scoring
+      autoCoralHeight4Success = 0;
+      autoCoralHeight4Failure = 0;
+      autoCoralHeight3Success = 0;
+      autoCoralHeight3Failure = 0;
+      autoCoralHeight2Success = 0;
+      autoCoralHeight2Failure = 0;
+      autoCoralHeight1Success = 0;
+      autoCoralHeight1Failure = 0;
+      
+      // Reset auto algae scoring
+      autoAlgaeRemoved = 0;
+      autoAlgaeInNet = 0;
+      autoAlgaeInProcessor = 0;
+
+      // Reset tele-op
+      // Reset teleop coral scoring
+      teleopCoralHeight4Success = 0;
+      teleopCoralHeight4Failure = 0;
+      teleopCoralHeight3Success = 0;
+      teleopCoralHeight3Failure = 0;
+      teleopCoralHeight2Success = 0;
+      teleopCoralHeight2Failure = 0;
+      teleopCoralHeight1Success = 0;
+      teleopCoralHeight1Failure = 0;
+      teleopCoralRankingPoint = false;
+
+      // Reset teleop algae scoring
+      teleopAlgaeRemoved = 0;
+      teleopAlgaeProcessorAttempts = 0;
+      teleopAlgaeProcessed = 0;
+      teleopAlgaeScoredInNet = 0;
+
+      // Reset teleop capabilities
+      teleopCanPickupAlgae = false;
+      teleopCoralPickupMethod = 'Human';
+
+      // Reset endgame
+      endgameReturnedToBarge = false;
+      endgameCageHang = 'None';
+      endgameBargeRankingPoint = false;
+
+      // Reset other section
+      otherCoOpPoint = false;
+      otherBreakdown = false;
+      otherComments = '';
+
+      // Reset pickup capabilities
+      canPickupAlgae = false;
+      canPickupCoral = false;
+
+      // Reset feeder station
+      feederStation = '';
+
+      // Reset drawing button
+      _drawingButtonKey.currentState?.resetPath();
+    });
+  }
+
+  void _resetFormWithoutIncrement() {
+    setState(() {
+      // Reset team info
+      teamNumber = 0;
+
+      // Reset autonomous
+      autoTaxis = false;
+      autoCoralPreloaded = false;
+      autoRobotPath = null;
+      
+      // Reset auto coral scoring
+      autoCoralHeight4Success = 0;
+      autoCoralHeight4Failure = 0;
+      autoCoralHeight3Success = 0;
+      autoCoralHeight3Failure = 0;
+      autoCoralHeight2Success = 0;
+      autoCoralHeight2Failure = 0;
+      autoCoralHeight1Success = 0;
+      autoCoralHeight1Failure = 0;
+      
+      // Reset auto algae scoring
+      autoAlgaeRemoved = 0;
+      autoAlgaeInNet = 0;
+      autoAlgaeInProcessor = 0;
+
+      // Reset tele-op
+      // Reset teleop coral scoring
+      teleopCoralHeight4Success = 0;
+      teleopCoralHeight4Failure = 0;
+      teleopCoralHeight3Success = 0;
+      teleopCoralHeight3Failure = 0;
+      teleopCoralHeight2Success = 0;
+      teleopCoralHeight2Failure = 0;
+      teleopCoralHeight1Success = 0;
+      teleopCoralHeight1Failure = 0;
+      teleopCoralRankingPoint = false;
+
+      // Reset teleop algae scoring
+      teleopAlgaeRemoved = 0;
+      teleopAlgaeProcessorAttempts = 0;
+      teleopAlgaeProcessed = 0;
+      teleopAlgaeScoredInNet = 0;
+
+      // Reset teleop capabilities
+      teleopCanPickupAlgae = false;
+      teleopCoralPickupMethod = 'Human';
+
+      // Reset endgame
+      endgameReturnedToBarge = false;
+      endgameCageHang = 'None';
+      endgameBargeRankingPoint = false;
+
+      // Reset other section
+      otherCoOpPoint = false;
+      otherBreakdown = false;
+      otherComments = '';
+
+      // Reset pickup capabilities
+      canPickupAlgae = false;
+      canPickupCoral = false;
+
+      // Reset feeder station
+      feederStation = '';
+
+      // Reset drawing button
+      _drawingButtonKey.currentState?.resetPath();
+    });
   }
 
   void _triggerHaptic() async {
@@ -1249,37 +1351,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
                       TextButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          setState(() {
-                            autoAlgaeRemoved = 0;
-                            teleopAlgaeScoredInNet = 0;
-                            teleopCoralHeight4Success = 0;
-                            teleopCoralHeight3Success = 0;
-                            teleopCoralHeight2Success = 0;
-                            teleopCoralHeight1Success = 0;
-                            teleopAlgaeProcessed = 0;
-                            processorCycles = 0;
-                            autoCoralHeight4Success = 0;
-                            autoCoralHeight3Success = 0;
-                            autoCoralHeight2Success = 0;
-                            autoCoralHeight1Success = 0;
-                            autoCoralHeight4Failure = 0;
-                            autoCoralHeight3Failure = 0;
-                            autoCoralHeight2Failure = 0;
-                            autoCoralHeight1Failure = 0;
-                            endgameReturnedToBarge = false;
-                            endgameBargeRankingPoint = false;
-                            otherCoOpPoint = false;
-                            otherBreakdown = false;
-                            otherComments = '';
-                            autoCoralPreloaded = false;
-                            autoTaxis = false;
-                            autoRobotPath = null;
-                            teleopCoralPickupMethod = 'Human';
-                            teleopCanPickupAlgae = false;
-                            canPickupCoral = false;
-                            teleopCoralRankingPoint = false;
-                            updateTime();
-                          });
+                          _resetFormWithoutIncrement();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Form reset')),
                           );

@@ -22,6 +22,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'auto_path_photo_page.dart';
 import 'visualization_page.dart';
 import 'widgets/qr_code_dialog.dart';
+import 'edit_record_page.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -703,9 +704,8 @@ class ScoutingRecord {
 }
 
 class DataManager {
-  static final DataManager _instance = DataManager._internal();
-  factory DataManager() => _instance;
-  DataManager._internal();
+  static final DataManager instance = DataManager._();
+  DataManager._();
 
   List<ScoutingRecord> _records = [];
   
@@ -804,6 +804,15 @@ class DataManager {
             })
         .toList();
   }
+
+  Future<void> updateRecord(ScoutingRecord record) async {
+    final records = await DatabaseHelper.instance.getAllRecords();
+    final index = records.indexWhere((r) => r.timestamp == record.timestamp);
+    if (index != -1) {
+      records[index] = record;
+      await DatabaseHelper.instance.saveRecords(records);
+    }
+  }
 }
 
 class DataPage extends StatefulWidget {
@@ -833,13 +842,6 @@ class DataPageState extends State<DataPage> {
     _loadRefreshButtonSetting();
   }
 
-  Future<void> _loadRefreshButtonSetting() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _refreshButtonEnabled = prefs.getBool('refresh_button_enabled') ?? false;
-    });
-  }
-
   Future<void> loadRecords() async {
     setState(() => _isLoading = true);
     try {
@@ -864,6 +866,13 @@ class DataPageState extends State<DataPage> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _isScoutingLeader = prefs.getBool('scouting_leader_enabled') ?? false;
+    });
+  }
+
+  Future<void> _loadRefreshButtonSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _refreshButtonEnabled = prefs.getBool('refresh_button_enabled') ?? false;
     });
   }
 
@@ -999,7 +1008,7 @@ class DataPageState extends State<DataPage> {
           IconButton(
             icon: const Icon(Icons.delete),
             tooltip: 'Delete selected',
-            onPressed: () => _showDeleteConfirmation(context),
+            onPressed: () => _handleDeleteSelected(),
           ),
           IconButton(
             icon: const Icon(Icons.close),
@@ -1183,7 +1192,7 @@ class DataPageState extends State<DataPage> {
         ),
         trailing: IconButton(
           icon: const Icon(Icons.more_vert),
-          onPressed: () => _showRecordOptions(context, record, index),
+          onPressed: () => _showRecordOptions(context, record),
         ),
       ),
     );
@@ -1271,190 +1280,104 @@ class DataPageState extends State<DataPage> {
     );
   }
 
-  void _showRecordOptions(BuildContext context, ScoutingRecord record, int index) {
+  void _showRecordOptions(BuildContext context, ScoutingRecord record) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.visibility),
-              title: const Text('View Details'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => RecordDetailPage(record: record),
-                  ),
-                );
-              },
-            ),
-            if (record.robotPath != null)
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
               ListTile(
-                leading: const Icon(Icons.map),
-                title: const Text('View Auto Path'),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Find the first path with an image
-                  final imagePath = record.robotPath?.firstWhere(
-                    (path) => path['imagePath'] != null && File(path['imagePath'] as String).existsSync(),
-                    orElse: () => {'imagePath': null},
-                  )['imagePath'] as String?;
-                  
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => drawing.DrawingPage(
-                        isRedAlliance: record.isRedAlliance,
-                        initialDrawing: record.robotPath,
-                        readOnly: true,
-                        imagePath: imagePath,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            if (_isScoutingLeader && (record.robotPath == null || record.robotPath!.isEmpty))
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Take Auto Path Photo'),
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit Data'),
                 onTap: () async {
                   Navigator.pop(context);
-                  final result = await Navigator.push(
+                  final updatedRecord = await Navigator.push<ScoutingRecord>(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AutoPathPhotoPage(
-                        isRedAlliance: record.isRedAlliance,
-                      ),
+                      builder: (context) => EditRecordPage(record: record),
                     ),
                   );
-                  
-                  if (result != null && mounted) {
-                    // Get existing path data if any
-                    List<Map<String, dynamic>> updatedPath = [];
-                    if (record.robotPath != null) {
-                      updatedPath.addAll(record.robotPath!);
-                    }
-                    // Add new path data
-                    updatedPath.addAll(result as List<Map<String, dynamic>>);
-                    
-                    // Create updated record with new path
-                    final updatedRecord = ScoutingRecord(
-                      timestamp: record.timestamp,
-                      matchNumber: record.matchNumber,
-                      matchType: record.matchType,
-                      teamNumber: record.teamNumber,
-                      isRedAlliance: record.isRedAlliance,
-                      cageType: record.cageType,
-                      coralPreloaded: record.coralPreloaded,
-                      taxis: record.taxis,
-                      algaeRemoved: record.algaeRemoved,
-                      coralPlaced: record.coralPlaced,
-                      rankingPoint: record.rankingPoint,
-                      canPickupCoral: record.canPickupCoral,
-                      canPickupAlgae: record.canPickupAlgae,
-                      algaeScoredInNet: record.algaeScoredInNet,
-                      coralRankingPoint: record.coralRankingPoint,
-                      algaeProcessed: record.algaeProcessed,
-                      processedAlgaeScored: record.processedAlgaeScored,
-                      processorCycles: record.processorCycles,
-                      coOpPoint: record.coOpPoint,
-                      returnedToBarge: record.returnedToBarge,
-                      cageHang: record.cageHang,
-                      bargeRankingPoint: record.bargeRankingPoint,
-                      breakdown: record.breakdown,
-                      comments: record.comments,
-                      autoAlgaeInNet: record.autoAlgaeInNet,
-                      autoAlgaeInProcessor: record.autoAlgaeInProcessor,
-                      coralPickupMethod: record.coralPickupMethod,
-                      coralOnReefHeight1: record.coralOnReefHeight1,
-                      coralOnReefHeight2: record.coralOnReefHeight2,
-                      coralOnReefHeight3: record.coralOnReefHeight3,
-                      coralOnReefHeight4: record.coralOnReefHeight4,
-                      feederStation: record.feederStation,
-                      robotPath: updatedPath,
-                      autoTaxis: record.autoTaxis,
-                      autoCoralPreloaded: record.autoCoralPreloaded,
-                      autoAlgaeRemoved: record.autoAlgaeRemoved,
-                      autoCoralHeight4Success: record.autoCoralHeight4Success,
-                      autoCoralHeight4Failure: record.autoCoralHeight4Failure,
-                      autoCoralHeight3Success: record.autoCoralHeight3Success,
-                      autoCoralHeight3Failure: record.autoCoralHeight3Failure,
-                      autoCoralHeight2Success: record.autoCoralHeight2Success,
-                      autoCoralHeight2Failure: record.autoCoralHeight2Failure,
-                      autoCoralHeight1Success: record.autoCoralHeight1Success,
-                      autoCoralHeight1Failure: record.autoCoralHeight1Failure,
-                      teleopCoralHeight4Success: record.teleopCoralHeight4Success,
-                      teleopCoralHeight4Failure: record.teleopCoralHeight4Failure,
-                      teleopCoralHeight3Success: record.teleopCoralHeight3Success,
-                      teleopCoralHeight3Failure: record.teleopCoralHeight3Failure,
-                      teleopCoralHeight2Success: record.teleopCoralHeight2Success,
-                      teleopCoralHeight2Failure: record.teleopCoralHeight2Failure,
-                      teleopCoralHeight1Success: record.teleopCoralHeight1Success,
-                      teleopCoralHeight1Failure: record.teleopCoralHeight1Failure,
-                      teleopCoralRankingPoint: record.teleopCoralRankingPoint,
-                      teleopAlgaeRemoved: record.teleopAlgaeRemoved,
-                      teleopAlgaeProcessorAttempts: record.teleopAlgaeProcessorAttempts,
-                      teleopAlgaeProcessed: record.teleopAlgaeProcessed,
-                      teleopAlgaeScoredInNet: record.teleopAlgaeScoredInNet,
-                      teleopCanPickupAlgae: record.teleopCanPickupAlgae,
-                      teleopCoralPickupMethod: record.teleopCoralPickupMethod,
-                      endgameReturnedToBarge: record.endgameReturnedToBarge,
-                      endgameCageHang: record.endgameCageHang,
-                      endgameBargeRankingPoint: record.endgameBargeRankingPoint,
-                      otherCoOpPoint: record.otherCoOpPoint,
-                      otherBreakdown: record.otherBreakdown,
-                      otherComments: record.otherComments,
-                    );
-
-                    // Update the record in the database
-                    final records = await DatabaseHelper.instance.getAllRecords();
-                    records[index] = updatedRecord;
-                    await DatabaseHelper.instance.saveRecords(records);
-                    
-                    // Refresh the UI
+                  if (updatedRecord != null) {
+                    await DataManager.instance.updateRecord(updatedRecord);
                     setState(() {
-                      _records = records;
+                      loadRecords();
                     });
-
-                    // Show success message if the context is still valid
-                    if (mounted && context.mounted) {
-                      // Use a post-frame callback to ensure we're in a safe state
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Auto path photo saved successfully'),
-                            duration: Duration(seconds: 2),
-                          ),
-                        );
-                      });
-                    }
                   }
                 },
               ),
-            ListTile(
-              leading: const Icon(Icons.qr_code),
-              title: const Text('Generate QR Code'),
-              onTap: () {
-                Navigator.pop(context);
-                _showQRCodeDialog(context, record);
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text('Delete'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showDeleteConfirmation(context, [record]);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _handleDeleteSelected() {
+    if (selectedRecords.isNotEmpty) {
+      final recordsToDelete = selectedRecords.map((index) => _records[index]).toList();
+      _showDeleteConfirmation(context, recordsToDelete);
+    }
+  }
+
+  void _showDeleteConfirmation(BuildContext context, List<ScoutingRecord> recordsToDelete) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(recordsToDelete.length == 1 ? 'Delete Record?' : 'Delete Records?'),
+          content: Text(
+            recordsToDelete.length == 1
+                ? 'Are you sure you want to delete this record?'
+                : 'Are you sure you want to delete ${recordsToDelete.length} records?',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.delete),
-              title: const Text('Delete'),
-              textColor: Colors.red,
-              iconColor: Colors.red,
-              onTap: () {
-                Navigator.pop(context);
-                _showDeleteConfirmation(context, index);
+            TextButton(
+              child: const Text('Delete'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                final records = await DatabaseHelper.instance.getAllRecords();
+                for (final record in recordsToDelete) {
+                  records.removeWhere((r) => r.timestamp == record.timestamp);
+                }
+                await DatabaseHelper.instance.saveRecords(records);
+                setState(() {
+                  selectedRecords.clear();
+                  _isSelectionMode = false;
+                  loadRecords();
+                });
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        recordsToDelete.length == 1
+                            ? 'Record deleted successfully'
+                            : '${recordsToDelete.length} records deleted successfully',
+                      ),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
               },
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1647,83 +1570,6 @@ class DataPageState extends State<DataPage> {
       return [];
     }
     return dir.listSync().where((e) => e.path.endsWith('.csv')).toList();
-  }
-
-  void _showDeleteConfirmation(BuildContext context, [int? index]) {
-    final bool isMultipleDelete = selectedRecords.isNotEmpty;
-    final int deleteCount = isMultipleDelete ? selectedRecords.length : 1;
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(isMultipleDelete 
-          ? 'Delete $deleteCount Records?' 
-          : 'Delete Record?'
-        ),
-        content: Text(isMultipleDelete
-          ? 'Are you sure you want to delete $deleteCount selected records? This cannot be undone.'
-          : 'Are you sure you want to delete this record? This cannot be undone.'
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                if (isMultipleDelete) {
-                  // Sort indices in descending order to avoid index shifting
-                  final sortedIndices = selectedRecords.toList()..sort((a, b) => b.compareTo(a));
-                  final records = await DatabaseHelper.instance.getAllRecords();
-                  
-                  for (final index in sortedIndices) {
-                    records.removeAt(index);
-                  }
-                  
-                  await DatabaseHelper.instance.saveRecords(records);
-                  
-                  if (!mounted) return;
-                  setState(() {
-                    selectedRecords.clear();
-                    _isSelectionMode = false;
-                    loadRecords();
-                  });
-                } else if (index != null) {
-                  final records = await DatabaseHelper.instance.getAllRecords();
-                  records.removeAt(index);
-                  await DatabaseHelper.instance.saveRecords(records);
-                  
-                  if (!mounted) return;
-                  setState(() {
-                    loadRecords();
-                  });
-                }
-                
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(isMultipleDelete
-                      ? '$deleteCount records deleted'
-                      : 'Record deleted'
-                    ),
-                  ),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error deleting record(s): $e')),
-                );
-              }
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _showDeleteAllConfirmation(BuildContext context) {
