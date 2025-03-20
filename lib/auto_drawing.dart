@@ -176,40 +176,61 @@ class _AutoDrawingPageState extends State<AutoDrawingPage> {
                     ),
                     const SizedBox(width: 16),
                     Expanded(
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: RadioListTile<bool>(
-                              title: Text(
-                                'Red',
-                                style: TextStyle(
-                                  color: AppColors.redAlliance,
-                                ),
+                          const Padding(
+                            padding: EdgeInsets.only(left: 4, bottom: 8),
+                            child: Text(
+                              'Alliance',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
                               ),
-                              value: true,
-                              groupValue: _isRedAlliance,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isRedAlliance = value!;
-                                });
-                              },
                             ),
                           ),
-                          Expanded(
-                            child: RadioListTile<bool>(
-                              title: Text(
-                                'Blue',
-                                style: TextStyle(
-                                  color: AppColors.blueAlliance,
+                          SegmentedButton<bool>(
+                            segments: [
+                              ButtonSegment<bool>(
+                                value: true,
+                                label: Text(
+                                  'Red',
+                                  style: TextStyle(
+                                    color: _isRedAlliance 
+                                        ? Colors.white 
+                                        : AppColors.redAlliance,
+                                  ),
                                 ),
                               ),
-                              value: false,
-                              groupValue: _isRedAlliance,
-                              onChanged: (value) {
-                                setState(() {
-                                  _isRedAlliance = value!;
-                                });
-                              },
+                              ButtonSegment<bool>(
+                                value: false,
+                                label: Text(
+                                  'Blue',
+                                  style: TextStyle(
+                                    color: !_isRedAlliance 
+                                        ? Colors.white 
+                                        : AppColors.blueAlliance,
+                                  ),
+                                ),
+                              ),
+                            ],
+                            selected: {_isRedAlliance},
+                            onSelectionChanged: (Set<bool> selected) {
+                              setState(() {
+                                _isRedAlliance = selected.first;
+                              });
+                            },
+                            style: ButtonStyle(
+                              backgroundColor: MaterialStateProperty.resolveWith<Color>(
+                                (Set<MaterialState> states) {
+                                  if (states.contains(MaterialState.selected)) {
+                                    return _isRedAlliance 
+                                        ? AppColors.redAlliance 
+                                        : AppColors.blueAlliance;
+                                  }
+                                  return Colors.transparent;
+                                },
+                              ),
                             ),
                           ),
                         ],
@@ -280,8 +301,8 @@ class _AutoDrawingPageState extends State<AutoDrawingPage> {
   }
 
   Widget _buildPathsSection() {
-    final filteredPaths = _filterTeam != null
-        ? _paths.where((p) => p.teamNumber.toString() == _filterTeam).toList()
+    final filteredPaths = _filterTeam != null && _filterTeam!.isNotEmpty
+        ? _paths.where((p) => p.teamNumber.toString().contains(_filterTeam!)).toList()
         : _paths;
 
     return Column(
