@@ -18,14 +18,10 @@ class _VisualizationPageState extends State<VisualizationPage> {
   int? selectedTeam;
   List<int> teamNumbers = [];
   int _selectedIndex = 0;
-  String _coralView = 'Total'; // 'Total', 'Teleop', or 'Auto'
+  String _coralView = 'Total'; // 'total', 'teleop', or 'auto'
+  String _algaeView = 'Total'; // 'total', 'teleop', or 'auto'
   
   final List<ChartType> _chartTypes = [
-    ChartType(
-      title: 'Auto vs Teleop',
-      icon: Icons.compare_arrows,
-      description: 'Scoring comparison by phase',
-    ),
     ChartType(
       title: 'Coral Placement',
       icon: Icons.height,
@@ -37,9 +33,9 @@ class _VisualizationPageState extends State<VisualizationPage> {
       description: 'Coral scoring over time',
     ),
     ChartType(
-      title: 'Algae',
+      title: 'Algae OT',
       icon: Icons.circle,
-      description: 'Algae data',
+      description: 'Algae scoring over time',
     ),
     ChartType(
       title: 'Endgame',
@@ -50,6 +46,11 @@ class _VisualizationPageState extends State<VisualizationPage> {
       title: 'Ranking Points',
       icon: Icons.star,
       description: 'Success rates by type',
+    ),
+    ChartType(
+      title: 'Auto vs Teleop',
+      icon: Icons.compare_arrows,
+      description: 'Scoring comparison by phase',
     ),
   ];
 
@@ -150,26 +151,70 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final records = selectedTeamRecords;
     if (records.isEmpty) return const SizedBox.shrink();
 
-    // calculate total scoring (auto + teleop)
-    final avgTotal = records.map((r) => 
-      (r.autoCoralHeight4Success + r.autoCoralHeight3Success + r.autoCoralHeight2Success + r.autoCoralHeight1Success) +
-      (r.teleopCoralHeight4Success + r.teleopCoralHeight3Success + r.teleopCoralHeight2Success + r.teleopCoralHeight1Success)
+    // calculate teleop coral metrics
+    final teleopCoralScored = records.map((r) => 
+      r.teleopCoralHeight4Success + r.teleopCoralHeight3Success + 
+      r.teleopCoralHeight2Success + r.teleopCoralHeight1Success
     ).average();
 
-    final hangRate = records.where((r) => r.endgameCageHang != 'None').length / records.length * 100;
-    final rpRate = records.where((r) => 
-      r.teleopCoralRankingPoint || r.endgameBargeRankingPoint || r.otherCoOpPoint
-    ).length / (records.length * 3) * 100;
+    final teleopCoralAttempts = records.map((r) => 
+      (r.teleopCoralHeight4Success + r.teleopCoralHeight4Failure) +
+      (r.teleopCoralHeight3Success + r.teleopCoralHeight3Failure) +
+      (r.teleopCoralHeight2Success + r.teleopCoralHeight2Failure) +
+      (r.teleopCoralHeight1Success + r.teleopCoralHeight1Failure)
+    ).average();
+    final teleopSuccessRate = teleopCoralAttempts > 0 ? 
+      records.map((r) => 
+        (r.teleopCoralHeight4Success + r.teleopCoralHeight3Success + 
+         r.teleopCoralHeight2Success + r.teleopCoralHeight1Success) /
+        ((r.teleopCoralHeight4Success + r.teleopCoralHeight4Failure) +
+         (r.teleopCoralHeight3Success + r.teleopCoralHeight3Failure) +
+         (r.teleopCoralHeight2Success + r.teleopCoralHeight2Failure) +
+         (r.teleopCoralHeight1Success + r.teleopCoralHeight1Failure))
+      ).where((rate) => !rate.isNaN).average() * 100 : 0;
+
+    // calculate auto coral metrics
+    final autoCoralScored = records.map((r) => 
+      r.autoCoralHeight4Success + r.autoCoralHeight3Success + 
+      r.autoCoralHeight2Success + r.autoCoralHeight1Success
+    ).average();
+
+    final autoCoralAttempts = records.map((r) => 
+      (r.autoCoralHeight4Success + r.autoCoralHeight4Failure) +
+      (r.autoCoralHeight3Success + r.autoCoralHeight3Failure) +
+      (r.autoCoralHeight2Success + r.autoCoralHeight2Failure) +
+      (r.autoCoralHeight1Success + r.autoCoralHeight1Failure)
+    ).average();
+    final autoSuccessRate = autoCoralAttempts > 0 ? 
+      records.map((r) => 
+        (r.autoCoralHeight4Success + r.autoCoralHeight3Success + 
+         r.autoCoralHeight2Success + r.autoCoralHeight1Success) /
+        ((r.autoCoralHeight4Success + r.autoCoralHeight4Failure) +
+         (r.autoCoralHeight3Success + r.autoCoralHeight3Failure) +
+         (r.autoCoralHeight2Success + r.autoCoralHeight2Failure) +
+         (r.autoCoralHeight1Success + r.autoCoralHeight1Failure))
+      ).where((rate) => !rate.isNaN).average() * 100 : 0;
+
+    // calculate algae metrics
+    final avgAlgaeProcessed = records.map((r) => 
+      r.autoAlgaeInProcessor + r.teleopAlgaeProcessed
+    ).average();
+    
+    final avgAlgaeInNet = records.map((r) => 
+      r.autoAlgaeInNet + r.teleopAlgaeScoredInNet
+    ).average();
 
     return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         color: const Color(0xFF2D2D2D),
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: Wrap(
+        spacing: 4,
+        runSpacing: 8,
+        alignment: WrapAlignment.spaceEvenly,
         children: [
           _buildMetric(
             'Matches',
@@ -177,18 +222,33 @@ class _VisualizationPageState extends State<VisualizationPage> {
             const Color(0xFF64B5F6),
           ),
           _buildMetric(
-            'Avg Coral',
-            avgTotal.toStringAsFixed(1),
+            'Teleop Coral',
+            teleopCoralScored.toStringAsFixed(1),
             const Color(0xFF81C784),
           ),
           _buildMetric(
-            'Hang Rate',
-            '${hangRate.round()}%',
+            'Teleop Success',
+            '${teleopSuccessRate.round()}%',
+            const Color(0xFF81C784),
+          ),
+          _buildMetric(
+            'Auto Coral',
+            autoCoralScored.toStringAsFixed(1),
             const Color(0xFFFFB74D),
           ),
           _buildMetric(
-            'RP Rate',
-            '${rpRate.round()}%',
+            'Auto Success',
+            '${autoSuccessRate.round()}%',
+            const Color(0xFFFFB74D),
+          ),
+          _buildMetric(
+            'Algae Processed',
+            avgAlgaeProcessed.toStringAsFixed(1),
+            const Color(0xFFBA68C8),
+          ),
+          _buildMetric(
+            'Algae in Net',
+            avgAlgaeInNet.toStringAsFixed(1),
             const Color(0xFFBA68C8),
           ),
         ],
@@ -203,17 +263,17 @@ class _VisualizationPageState extends State<VisualizationPage> {
         Text(
           value,
           style: TextStyle(
-            fontSize: 24,
+            fontSize: 18,
             fontWeight: FontWeight.bold,
             color: color,
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 2),
         Text(
           label,
           style: const TextStyle(
             color: Colors.white70,
-            fontSize: 12,
+            fontSize: 10,
           ),
         ),
       ],
@@ -223,17 +283,17 @@ class _VisualizationPageState extends State<VisualizationPage> {
   Widget _buildChart() {
     switch (_selectedIndex) {
       case 0:
-        return _buildAutoTeleopComparisonChart();
-      case 1:
         return _buildCoralPlacementChart();
-      case 2:
+      case 1:
         return _buildCoralOverTimeChart();
-      case 3:
+      case 2:
         return _buildMatchPerformanceChart();
-      case 4:
+      case 3:
         return _buildEndgameChart();
-      case 5:
+      case 4:
         return _buildRankingPointChart();
+      case 5:
+        return _buildAutoTeleopComparisonChart();
       default:
         return const SizedBox.shrink();
     }
@@ -250,30 +310,135 @@ class _VisualizationPageState extends State<VisualizationPage> {
     final minMatch = matchNumbers.first;
     final maxMatch = matchNumbers.last;
     
-    final maxY = records.map((r) => 
-      max(r.teleopAlgaeProcessed, r.teleopAlgaeScoredInNet)
-    ).reduce(max).toDouble();
+    // Create data points based on selected view
+    List<List<FlSpot>> algaeData = List.generate(3, (index) => []);
+    final labels = ['Total', 'Processed', 'In Net'];
+    final colors = [
+      const Color(0xFFBA68C8), // Total - Purple
+      const Color(0xFF81C784), // Processed - Green
+      const Color(0xFF64B5F6), // In Net - Blue
+    ];
+    
+    if (_algaeView == 'Total') {
+      // Show total data for both phases
+      for (var record in records) {
+        final matchNum = record.matchNumber.toDouble();
+        // Total algae (auto + teleop)
+        algaeData[0].add(FlSpot(matchNum, 
+          (record.autoAlgaeInNet + record.autoAlgaeInProcessor +
+           record.teleopAlgaeProcessed + record.teleopAlgaeScoredInNet).toDouble()
+        ));
+        // Processed (auto + teleop)
+        algaeData[1].add(FlSpot(matchNum, 
+          (record.autoAlgaeInProcessor + record.teleopAlgaeProcessed).toDouble()
+        ));
+        // In Net (auto + teleop)
+        algaeData[2].add(FlSpot(matchNum, 
+          (record.autoAlgaeInNet + record.teleopAlgaeScoredInNet).toDouble()
+        ));
+      }
+    } else {
+      // Show data for selected phase (Auto or Teleop)
+      for (var record in records) {
+        final matchNum = record.matchNumber.toDouble();
+        if (_algaeView == 'Auto') {
+          // Total auto
+          algaeData[0].add(FlSpot(matchNum, 
+            (record.autoAlgaeInNet + record.autoAlgaeInProcessor).toDouble()
+          ));
+          // Individual categories
+          algaeData[1].add(FlSpot(matchNum, record.autoAlgaeInProcessor.toDouble()));
+          algaeData[2].add(FlSpot(matchNum, record.autoAlgaeInNet.toDouble()));
+        } else { // Teleop
+          // Total teleop
+          algaeData[0].add(FlSpot(matchNum, 
+            (record.teleopAlgaeProcessed + record.teleopAlgaeScoredInNet).toDouble()
+          ));
+          // Individual categories
+          algaeData[1].add(FlSpot(matchNum, record.teleopAlgaeProcessed.toDouble()));
+          algaeData[2].add(FlSpot(matchNum, record.teleopAlgaeScoredInNet.toDouble()));
+        }
+      }
+    }
+
+    // Calculate maxY for the chart
+    final maxY = algaeData.expand((list) => list).map((spot) => spot.y).reduce(max);
     final roundedMaxY = ((maxY / 5).ceil() * 5).toDouble();
+
+    // calculate average and stdev for the total line
+    final totalSpots = algaeData[0];  // Use the total line for any view
+    final values = totalSpots.map((spot) => spot.y).toList();
+    final averageLine = values.average();
+    
+    // calculate stdev
+    final variance = values.map((v) => pow(v - averageLine, 2)).average();
+    final stdDev = sqrt(variance).toDouble();
+    final upperLine = (averageLine + stdDev).toDouble();
+    final lowerLine = max(0, averageLine - stdDev).toDouble();
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Algae',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Algae Over Time',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2D2D2D),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: DropdownButton<String>(
+                  value: _algaeView,
+                  underline: const SizedBox(),
+                  icon: const Icon(Icons.arrow_drop_down, color: Colors.white70),
+                  dropdownColor: const Color(0xFF2D2D2D),
+                  items: ['Total', 'Teleop', 'Auto'].map((view) => DropdownMenuItem(
+                    value: view,
+                    child: Text(
+                      view,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                      ),
+                    ),
+                  )).toList(),
+                  onChanged: (value) => setState(() => _algaeView = value!),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 8),
-          Row(
+          Text(
+            _algaeView == 'Total' 
+              ? 'Combined auto and teleop algae scoring'
+              : '${_algaeView} algae scoring',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
             children: [
-              _buildLegendItem('Processed', const Color(0xFF81C784)),
-              const SizedBox(width: 16),
-              _buildLegendItem('In Net', const Color(0xFFBA68C8)),
+              ...List.generate(3, (i) => _buildLegendItem(labels[i], colors[i])),
+              const SizedBox(width: 8),
+              _buildLegendItem(
+                'Avg (${averageLine.toStringAsFixed(1)} ± ${stdDev.toStringAsFixed(1)})',
+                Colors.white,
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -283,11 +448,28 @@ class _VisualizationPageState extends State<VisualizationPage> {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
-                  horizontalInterval: 5,
-                  getDrawingHorizontalLine: (value) => FlLine(
-                    color: Colors.white10,
-                    strokeWidth: 1,
-                  ),
+                  horizontalInterval: 1,
+                  getDrawingHorizontalLine: (value) {
+                    // special styling for the average and stdev lines
+                    if ((value - averageLine).abs() < 0.01) {
+                      return FlLine(
+                        color: Colors.white,
+                        strokeWidth: 1,
+                        dashArray: [5, 5], // Make it dashed
+                      );
+                    }
+                    if ((value - upperLine).abs() < 0.01 || (value - lowerLine).abs() < 0.01) {
+                      return FlLine(
+                        color: Colors.white.withOpacity(1.0),
+                        strokeWidth: 1,
+                        dashArray: [3, 3], // Make it dashed
+                      );
+                    }
+                    return FlLine(
+                      color: Colors.white10,
+                      strokeWidth: 1,
+                    );
+                  },
                   getDrawingVerticalLine: (value) => FlLine(
                     color: Colors.white10,
                     strokeWidth: 1,
@@ -298,7 +480,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 40,
-                      interval: 5,
+                      interval: 1,
                       getTitlesWidget: (value, meta) => Text(
                         value.toInt().toString(),
                         style: const TextStyle(
@@ -341,40 +523,93 @@ class _VisualizationPageState extends State<VisualizationPage> {
                 maxX: maxMatch.toDouble(),
                 minY: 0,
                 maxY: roundedMaxY,
-                lineBarsData: [
-                  LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
-                      r.teleopAlgaeProcessed.toDouble(),
-                    )).toList(),
-                    isCurved: false,
-                    color: const Color(0xFF81C784),
-                    barWidth: 3,
-                    dotData: FlDotData(
-                      show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: const Color(0xFF81C784),
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    HorizontalLine(
+                      y: averageLine,
+                      color: Colors.white,
+                      strokeWidth: 1,
+                      dashArray: [5, 5], // Make it dashed
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        padding: const EdgeInsets.only(right: 8, bottom: 4),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                        labelResolver: (line) => 'Avg: ${line.y.toStringAsFixed(1)}',
                       ),
                     ),
-                  ),
+                    HorizontalLine(
+                      y: upperLine,
+                      color: Colors.white.withOpacity(1.0),
+                      strokeWidth: 1,
+                      dashArray: [3, 3], // make it dashed
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        padding: const EdgeInsets.only(right: 8, bottom: 4),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(1.0),
+                          fontSize: 10,
+                        ),
+                        labelResolver: (line) => '+1σ: ${line.y.toStringAsFixed(1)}',
+                      ),
+                    ),
+                    HorizontalLine(
+                      y: lowerLine,
+                      color: Colors.white.withOpacity(1.0),
+                      strokeWidth: 1,
+                      dashArray: [3, 3],
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        padding: const EdgeInsets.only(right: 8, bottom: 4),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(1.0),
+                          fontSize: 10,
+                        ),
+                        labelResolver: (line) => '-1σ: ${line.y.toStringAsFixed(1)}',
+                      ),
+                    ),
+                  ],
+                  extraLinesOnTop: false,
+                ),
+                backgroundColor: Colors.white.withOpacity(0.05),
+                lineBarsData: [
+                  // stdev range area
                   LineChartBarData(
-                    spots: records.map((r) => FlSpot(
-                      r.matchNumber.toDouble(),
-                      r.teleopAlgaeScoredInNet.toDouble(),
-                    )).toList(),
+                    spots: List.generate(matchNumbers.length, (i) => FlSpot(
+                      matchNumbers[i].toDouble(),
+                      upperLine,
+                    )),
                     isCurved: false,
-                    color: const Color(0xFFBA68C8),
-                    barWidth: 3,
-                    dotData: FlDotData(
+                    color: Colors.white.withOpacity(0.1),
+                    barWidth: 0,
+                    dotData: FlDotData(show: false),
+                    belowBarData: BarAreaData(
                       show: true,
-                      getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
-                        radius: 5,
-                        color: const Color(0xFFBA68C8),
-                        strokeWidth: 2,
-                        strokeColor: const Color(0xFF1A1A1A),
+                      color: Colors.white.withOpacity(0.05),
+                      cutOffY: lowerLine,
+                      applyCutOffY: true,
+                    ),
+                  ),
+                  // Regular data lines
+                  ...List.generate(3, (i) => 
+                    LineChartBarData(
+                      spots: algaeData[i],
+                      isCurved: false,
+                      color: colors[i],
+                      barWidth: 3,
+                      dotData: FlDotData(
+                        show: true,
+                        getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(
+                          radius: 5,
+                          color: colors[i],
+                          strokeWidth: 2,
+                          strokeColor: const Color(0xFF1A1A1A),
+                        ),
                       ),
                     ),
                   ),
@@ -391,19 +626,11 @@ class _VisualizationPageState extends State<VisualizationPage> {
                     tooltipMargin: 16,
                     getTooltipItems: (touchedSpots) {
                       return touchedSpots.map((spot) {
-                        String label;
-                        Color color;
-                        if (spot.bar.color == const Color(0xFF81C784)) {
-                          label = "Processed";
-                          color = const Color(0xFF81C784);
-                        } else {
-                          label = "In Net";
-                          color = const Color(0xFFBA68C8);
-                        }
+                        final index = spot.barIndex;
                         return LineTooltipItem(
-                          'Match ${spot.x.toInt()}\n${spot.y.toStringAsFixed(1)} $label',
+                          'Match ${spot.x.toInt()}\n${labels[index]}: ${spot.y.toStringAsFixed(0)}',
                           TextStyle(
-                            color: color,
+                            color: colors[index],
                             fontWeight: FontWeight.w600,
                             fontSize: 12,
                           ),
@@ -470,10 +697,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
   Widget _buildBottomNav() {
     const items = [
       BottomNavigationBarItem(
-        icon: Icon(Icons.compare_arrows),
-        label: 'Auto/Teleop',
-      ),
-      BottomNavigationBarItem(
         icon: Icon(Icons.height),
         label: 'Coral',
       ),
@@ -483,7 +706,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.circle),
-        label: 'Algae',
+        label: 'Algae OT',
       ),
       BottomNavigationBarItem(
         icon: Icon(Icons.flag),
@@ -492,6 +715,10 @@ class _VisualizationPageState extends State<VisualizationPage> {
       BottomNavigationBarItem(
         icon: Icon(Icons.star),
         label: 'RP',
+      ),
+      BottomNavigationBarItem(
+        icon: Icon(Icons.compare_arrows),
+        label: 'Auto/Teleop',
       ),
     ];
 
