@@ -51913,8 +51913,8 @@ i=k.bR(A.N(153,i.l()>>>16&255,i.l()>>>8&255,i.l()&255))
 k=i}B.b.S(m,A.a([B.cI,A.R(l,2,B.b8,f,f,k,f,f)],h))}return A.fh(A.k8(!1,f,f,f,!0,f,f,!0,!1,n,f,new A.afq(g,e,b,a),new A.afr(g,e,b,a),!1,f,f,f,A.au(m,B.F,B.j,B.k,B.p),f,j,A.cI(f,f,B.OC,f,f,new A.afs(g,a),f,f,f),f),f,r,d,B.h1,new A.cD(q,new A.aB(p,o,B.r,-1)))},
 afZ(){var s=this,r=null,q=A.a([A.XS(r,B.OA,r,"Scan QR Code",new A.afi(s))],t.TS)
 if(s.x)q.push(A.XS(r,B.m4,r,"Auto Drawing",new A.afj(s)))
-q.push(A.XS(r,B.rx,r,"Import Data",s.gaoB()))
-q.push(A.XS(r,B.rk,r,"Export Data",s.gajl()))
+q.push(A.XS(r,B.rk,r,"Import Data",s.gaoB()))
+q.push(A.XS(r,B.rx,r,"Export Data",s.gajl()))
 q.push(A.XS(B.Q,B.rd,B.h,"Delete All Data",new A.afk(s)))
 return new A.IF(q,B.lW,B.lZ,r)},
 auo(a,b){var s,r,q,p,o,n,m,l,k,j,i=null,h=A.bt(a,!1)
