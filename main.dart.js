@@ -53721,15 +53721,15 @@ return A.es(B.bP,A.iO(A.lX(s,q,q,q,p),r.akl(r.d),new A.GA(r.d,r.gaqf(),r.ak,q),q
 akm(a){var s="Scouting",r="Analysis",q="Settings"
 if(this.ak)switch(a){case 0:return s
 case 1:return"Data"
-case 2:return r
-case 3:return"API"
+case 2:return"API"
+case 3:return r
 case 4:return"Bluetooth"
 case 5:return q
 case 6:return"About"
 default:return s}else switch(a){case 0:return s
 case 1:return"Data"
-case 2:return r
-case 3:return"API"
+case 2:return"API"
+case 3:return r
 case 5:return q
 case 6:return"About"
 default:return s}}}
@@ -56685,10 +56685,10 @@ if(o.d==null){s=o.a
 return A.b_M(n,s.c,B.S7,s.d,A.l(a).ax.b,n,B.kP,n)}s=A.cH(B.qT,n,n,n,n)
 r=t.ur
 q=A.a([new A.fH(s,s,"Scout"),B.oH,B.oJ],r)
+if(o.a.e)q.push(B.FH)
 s=o.d
 s.toString
 if(s)q.push(B.FP)
-if(o.a.e)q.push(B.FH)
 B.b.S(q,A.a([B.oI,B.oK],r))
 s=o.a
 p=s.c
