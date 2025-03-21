@@ -74,7 +74,7 @@ PODS:
   - permission_handler_apple (9.3.0):
     - Flutter
   - PromisesObjC (2.4.0)
-  - Protobuf (3.29.3)
+  - Protobuf (3.29.4)
   - reactive_ble_mobile (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -106,9 +106,14 @@ DEPENDENCIES:
 
 SPEC REPOS:
   https://github.com/CocoaPods/Specs.git:
+    - GoogleUtilities
+    - MLKitCommon
+    - Protobuf
+  trunk:
     - GoogleDataTransport
     - GoogleMLKit
     - GoogleToolboxForMac
+    - GoogleUtilities
     - GoogleUtilitiesComponents
     - GTMSessionFetcher
     - MLImage
@@ -116,11 +121,7 @@ SPEC REPOS:
     - MLKitVision
     - nanopb
     - PromisesObjC
-    - Protobuf
     - SwiftProtobuf
-  trunk:
-    - GoogleUtilities
-    - MLKitCommon
 
 EXTERNAL SOURCES:
   app_settings:
@@ -169,7 +170,7 @@ SPEC CHECKSUMS:
   path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   permission_handler_apple: 4ed2196e43d0651e8ff7ca3483a069d469701f2d
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
-  Protobuf: e2de96d939c642ce8da186343ff8929b35223212
+  Protobuf: 2e6de032ba12b9efb390ae550d1a243a5b19ddfc
   reactive_ble_mobile: ea97709e18fa6f0b0592909725d7ae7e1c595b64
   share_plus: de6030e33b4e106470e09322d87cf2a4258d2d1d
   shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7

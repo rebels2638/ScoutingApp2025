@@ -4,6 +4,7 @@ import 'widgets/telemetry_overlay.dart';
 import 'widgets/telemetry_container.dart';
 import '../services/telemetry_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'widgets/navbar.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +77,9 @@ class MyAppState extends State<MyApp> {
         _telemetryData.add(event.toString());
       });
     });
+
+    // check scouting leader mode when app starts
+    _checkScoutingLeaderMode();
   }
 
   Future<void> _initializeApp() async {
@@ -83,6 +87,12 @@ class MyAppState extends State<MyApp> {
     setState(() {
       _isInitialized = true;
     });
+  }
+
+  Future<void> _checkScoutingLeaderMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    final isScoutingLeader = prefs.getBool('scouting_leader_enabled') ?? false;
+    notifyScoutingLeaderChange(isScoutingLeader);
   }
 
   @override
