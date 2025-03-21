@@ -143,6 +143,7 @@ class AboutPage extends StatelessWidget {
                     children: [
                       Text('Chiming Wang - Developer'),
                       Text('Ethan Kang - Developer'), // bruh chomomg
+                      Text('Daniel Kosukhin - Developer'),
                       Text('Richard Xu - Developer'),
                     ],
                   ),

@@ -105,6 +105,14 @@
       <sub></sub>
     </td>
     <td align="center">
+      <a href="https://github.com/Richard28277">
+        <img src="https://github.com/Richard28277.png" width="100px;" style="border-radius: 50%;" alt="Daniel Kosukhin"/><br />
+        <sub><b>Daniel Kosukhin</b></sub>
+      </a>
+      <br/>
+      <sub></sub>
+    </td>
+    <td align="center">
       <a href="https://github.com/cresqnt-sys">
         <img src="https://github.com/cresqnt-sys.png" width="100px;" style="border-radius: 50%;" alt="Ethan Kang"/><br />
         <sub><b>Ethan Kang</b></sub>
