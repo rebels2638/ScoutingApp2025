@@ -1298,12 +1298,12 @@ class DataPageState extends State<DataPage> {
             },
           ),
         SpeedDialChild(
-          child: const Icon(Icons.file_upload),
+          child: const Icon(Icons.file_download),
           label: 'Import Data',
           onTap: _importData,
         ),
         SpeedDialChild(
-          child: const Icon(Icons.file_download),
+          child: const Icon(Icons.file_upload),
           label: 'Export Data',
           onTap: _exportData,
         ),
