@@ -4,6 +4,11 @@ import 'theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:io';
+import 'package:file_selector/file_selector.dart';
+import 'package:csv/csv.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AutoPath {
   final int matchNumber;
@@ -43,6 +48,61 @@ class AutoPath {
     imagePath: json['imagePath'] as String?,
     timestamp: DateTime.parse(json['timestamp'] as String),
   );
+
+  List<dynamic> toCsvRow() {
+    String pathStr = '';
+    try {
+      pathStr = jsonEncode(path);
+    } catch (e) {
+      print('Error encoding path: $e');
+    }
+
+    return [
+      matchNumber,
+      matchType,
+      teamNumber,
+      isRedAlliance ? 1 : 0,
+      pathStr,
+      imagePath ?? '',
+      timestamp.toIso8601String(),
+    ];
+  }
+
+  static List<String> getCsvHeaders() {
+    return [
+      'Match Number',
+      'Match Type',
+      'Team Number',
+      'Red Alliance',
+      'Path Data',
+      'Image Path',
+      'Timestamp',
+    ];
+  }
+
+  factory AutoPath.fromCsvRow(List<dynamic> row) {
+    List<Map<String, dynamic>> pathData = [];
+    if (row[4].toString().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(row[4].toString());
+        if (decoded is List) {
+          pathData = decoded.map((item) => Map<String, dynamic>.from(item)).toList();
+        }
+      } catch (e) {
+        print('Error decoding path: $e');
+      }
+    }
+
+    return AutoPath(
+      matchNumber: int.parse(row[0].toString()),
+      matchType: row[1].toString(),
+      teamNumber: int.parse(row[2].toString()),
+      isRedAlliance: row[3].toString() == '1',
+      path: pathData,
+      imagePath: row[5].toString().isEmpty ? null : row[5].toString(),
+      timestamp: DateTime.parse(row[6].toString()),
+    );
+  }
 }
 
 class AutoDrawingPage extends StatefulWidget {
@@ -84,6 +144,159 @@ class _AutoDrawingPageState extends State<AutoDrawingPage> {
     await prefs.setString('auto_paths', pathsJson);
   }
 
+  Future<void> _importData() async {
+    try {
+      final XTypeGroup csvTypeGroup = XTypeGroup(
+        label: 'CSV',
+        extensions: ['csv'],
+        uniformTypeIdentifiers: ['public.comma-separated-values-text'],
+      );
+      
+      final XFile? file = await openFile(
+        acceptedTypeGroups: [csvTypeGroup],
+      );
+
+      if (file != null) {
+        final contents = await file.readAsString();
+        
+        final List<List<dynamic>> rows = const CsvToListConverter(fieldDelimiter: '|').convert(contents);
+        if (rows.length <= 1) throw Exception('No data found in file');
+        
+        // convert new paths from CSV
+        final newPaths = rows.skip(1).map((row) => AutoPath.fromCsvRow(row)).toList();
+        
+        // combine existing and new paths
+        setState(() {
+          _paths.addAll(newPaths);
+        });
+        
+        // Save combined paths
+        await _savePaths();
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Successfully imported ${newPaths.length} auto paths'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error importing data: $e')),
+      );
+    }
+  }
+
+  Future<void> _exportData() async {
+    try {
+      if (Platform.isAndroid) {
+        if (await Permission.manageExternalStorage.isDenied) {
+          final status = await Permission.manageExternalStorage.request();
+          if (!status.isGranted) {
+            final storageStatus = await Permission.storage.request();
+            if (!storageStatus.isGranted) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Storage permission is required to export data. Please grant permission in Settings.'),
+                  duration: Duration(seconds: 4),
+                  action: SnackBarAction(
+                    label: 'Settings',
+                    onPressed: openAppSettings,
+                  ),
+                ),
+              );
+              return;
+            }
+          }
+        }
+      }
+
+      final csvData = [
+        AutoPath.getCsvHeaders(),
+        ..._paths.map((p) => p.toCsvRow()),
+      ];
+      
+      final csv = const ListToCsvConverter(fieldDelimiter: '|').convert(csvData);
+      final String dirPath = await _getExportDirectory();
+      
+      final now = DateTime.now();
+      final timestamp = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}_${now.hour.toString().padLeft(2, '0')}-${now.minute.toString().padLeft(2, '0')}';
+      
+      final file = File('$dirPath/auto_paths_$timestamp.csv');
+      await file.writeAsString(csv);
+      
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(Platform.isAndroid 
+            ? 'Auto paths exported to Documents → 2638 Scout → Exports'
+            : 'Auto paths exported to Files App → 2638 Scout → Exports'
+          ),
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Share',
+            onPressed: () {
+              Share.shareFiles(
+                [file.path],
+                text: 'Auto Paths Export',
+              );
+            },
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error exporting data: $e')),
+      );
+    }
+  }
+
+  Future<String> _getExportDirectory() async {
+    if (Platform.isIOS) {
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      final String dirPath = '${appDocDir.path}/2638 Scout/Exports';
+      
+      final dir = Directory(dirPath);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+      return dirPath;
+    } else if (Platform.isAndroid) {
+      Directory? directory;
+      
+      try {
+        if (await Permission.manageExternalStorage.isGranted) {
+          directory = Directory('/storage/emulated/0/Documents/2638 Scout/Exports');
+        } else {
+          final appDir = await getExternalStorageDirectory();
+          if (appDir == null) {
+            throw Exception('Could not access external storage');
+          }
+          directory = Directory('${appDir.path}/2638 Scout/Exports');
+        }
+        
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        return directory.path;
+      } catch (e) {
+        final appDir = await getApplicationDocumentsDirectory();
+        directory = Directory('${appDir.path}/2638 Scout/Exports');
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+        return directory.path;
+      }
+    } else {
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      return '${appDocDir.path}/2638 Scout/Exports';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,6 +306,18 @@ class _AutoDrawingPageState extends State<AutoDrawingPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text('Auto Drawing'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.file_download),
+            tooltip: 'Import Auto Paths',
+            onPressed: _importData,
+          ),
+          IconButton(
+            icon: const Icon(Icons.file_upload),
+            tooltip: 'Export Auto Paths',
+            onPressed: _exportData,
+          ),
+        ],
       ),
       body: _selectedIndex == 0 ? _buildDrawingSection() : _buildPathsSection(),
       bottomNavigationBar: NavigationBar(
