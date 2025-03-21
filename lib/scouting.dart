@@ -225,9 +225,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
         case 1:
           return DataPage(key: _dataPageKey);
         case 2:
-          return TeamAnalysisPage(records: _dataPageKey.currentState?.records ?? []);
-        case 3:
           return ApiPage(key: ApiPageState.globalKey);
+        case 3:
+          return TeamAnalysisPage(records: _dataPageKey.currentState?.records ?? []);
         case 4:
           return BluetoothPage();
         case 5:
@@ -245,9 +245,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
         case 1:
           return DataPage(key: _dataPageKey);
         case 2:
-          return TeamAnalysisPage(records: _dataPageKey.currentState?.records ?? []);
-        case 3:
           return ApiPage(key: ApiPageState.globalKey);
+        case 3:
+          return TeamAnalysisPage(records: _dataPageKey.currentState?.records ?? []);
         case 5:
           return SettingsPage();
         case 6:
