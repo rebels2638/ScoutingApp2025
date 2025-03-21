@@ -37,47 +37,38 @@ class _QRCodeDialogState extends State<QRCodeDialog> {
   Widget build(BuildContext context) {
     // Create a minimal array format to reduce data size
     final List<dynamic> qrData = [
-      widget.record.timestamp,                    // [0]
-      widget.record.matchNumber,                  // [1]
-      widget.record.matchType,                    // [2]
-      widget.record.teamNumber,                   // [3]
-      widget.record.isRedAlliance ? 1 : 0,        // [4]
-      widget.record.cageType,                     // [5]
-      widget.record.autoCoralPreloaded ? 1 : 0,   // [6]
-      widget.record.autoTaxis ? 1 : 0,            // [7]
-      widget.record.autoAlgaeRemoved,             // [8]
-      widget.record.autoAlgaeInNet,               // [9]
-      widget.record.autoAlgaeInProcessor,         // [10]
-      widget.record.teleopCoralHeight3Success,    // [11]
-      widget.record.teleopCoralHeight3Failure,    // [12]
-      widget.record.autoCoralHeight1Success,      // [13]
-      widget.record.autoCoralHeight1Failure,      // [14]
-      widget.record.autoCoralHeight2Success,      // [15]
-      widget.record.autoCoralHeight2Failure,      // [16]
-      widget.record.autoCoralHeight3Success,      // [17]
-      widget.record.autoCoralHeight3Failure,      // [18]
-      widget.record.autoCoralHeight4Success,      // [19]
-      widget.record.autoCoralHeight4Failure,      // [20]
-      widget.record.teleopCoralHeight4Success,    // [21]
-      widget.record.teleopCoralHeight4Failure,    // [22]
-      widget.record.teleopCoralHeight2Success,    // [23]
-      widget.record.teleopCoralHeight2Failure,    // [24]
-      widget.record.teleopCoralHeight1Success,    // [25]
-      widget.record.teleopCoralHeight1Failure,    // [26]
-      widget.record.teleopCoralRankingPoint ? 1 : 0, // [27]
-      widget.record.teleopAlgaeRemoved,           // [28]
-      widget.record.teleopAlgaeProcessorAttempts, // [29]
-      widget.record.teleopAlgaeProcessed,         // [30]
-      widget.record.teleopAlgaeScoredInNet,       // [31]
-      widget.record.teleopCanPickupAlgae ? 1 : 0, // [32]
-      widget.record.teleopCoralPickupMethod,      // [33]
-      widget.record.endgameReturnedToBarge ? 1 : 0, // [34]
-      widget.record.endgameCageHang,              // [35]
-      widget.record.endgameBargeRankingPoint ? 1 : 0, // [36]
-      widget.record.otherCoOpPoint ? 1 : 0,       // [37]
-      widget.record.otherBreakdown ? 1 : 0,       // [38]
-      widget.record.otherComments,                // [39]
-      widget.record.robotPath                     // [40]
+      widget.record.timestamp,
+      widget.record.matchNumber,
+      widget.record.matchType,
+      widget.record.teamNumber,
+      widget.record.isRedAlliance ? 1 : 0,
+      widget.record.cageType,
+      widget.record.coralPreloaded ? 1 : 0,
+      widget.record.taxis ? 1 : 0,
+      widget.record.algaeRemoved,
+      widget.record.coralPlaced,
+      widget.record.rankingPoint ? 1 : 0,
+      widget.record.canPickupCoral ? 1 : 0,
+      widget.record.canPickupAlgae ? 1 : 0,
+      widget.record.autoAlgaeInNet,
+      widget.record.autoAlgaeInProcessor,
+      widget.record.coralPickupMethod,
+      widget.record.coralOnReefHeight1,
+      widget.record.coralOnReefHeight2,
+      widget.record.coralOnReefHeight3,
+      widget.record.coralOnReefHeight4,
+      widget.record.feederStation,
+      widget.record.algaeScoredInNet,
+      widget.record.coralRankingPoint ? 1 : 0,
+      widget.record.algaeProcessed,
+      widget.record.processedAlgaeScored,
+      widget.record.processorCycles,
+      widget.record.coOpPoint ? 1 : 0,
+      widget.record.returnedToBarge ? 1 : 0,
+      widget.record.cageHang,
+      widget.record.bargeRankingPoint ? 1 : 0,
+      widget.record.breakdown ? 1 : 0,
+      widget.record.comments,
     ];
 
     final jsonStr = jsonEncode(qrData);
