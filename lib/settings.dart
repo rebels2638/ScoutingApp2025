@@ -67,33 +67,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
     // apply screen wake setting
     if (_keepScreenAwake) {
-      await _applyScreenWakeLock(true);
-    }
-  }
-
-  Future<void> _applyScreenWakeLock(bool enable) async {
-    try {
-      if (enable) {
-        // enable screen wake lock with all available flags
-        await SystemChannels.platform.invokeMethod('SystemChrome.setEnabledSystemUIMode', 
-          SystemUiMode.manual.toString());
-        await SystemChannels.platform.invokeMethod('HapticFeedback.vibrate');
-        await SystemChannels.platform.invokeMethod('Screen.keepOn', true);
-      } else {
-        // disable screen wake lock
-        await SystemChannels.platform.invokeMethod('SystemChrome.setEnabledSystemUIMode', 
-          SystemUiMode.edgeToEdge.toString());
-        await SystemChannels.platform.invokeMethod('Screen.keepOn', false);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to ${enable ? 'enable' : 'disable'} screen wake lock: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
     }
   }
 
@@ -442,19 +416,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> _toggleKeepScreenAwake(bool value) async {
-    try {
-      await _saveSetting(_keepScreenAwakeKey, value);
-      await _applyScreenWakeLock(value);
-      setState(() => _keepScreenAwake = value);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to ${value ? 'enable' : 'disable'} screen wake lock: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+    await _saveSetting(_keepScreenAwakeKey, value);
+    if (value) {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+    } else {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     }
+    setState(() => _keepScreenAwake = value);
   }
 }

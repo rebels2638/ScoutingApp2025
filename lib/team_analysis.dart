@@ -290,10 +290,26 @@ class TeamAnalysisPage extends StatefulWidget {
   TeamAnalysisPageState createState() => TeamAnalysisPageState();
 }
 
+enum TeamSortOption {
+  scoringPotential('Scoring Potential'),
+  avgTeleopCoral('Avg Teleop Coral'),
+  highestTeleopCoral('Highest Teleop Coral'),
+  avgAutoCoral('Avg Auto Coral'),
+  highestAutoCoral('Highest Auto Coral'),
+  avgTeleopAlgae('Avg Teleop Algae'),
+  highestTeleopAlgae('Highest Teleop Algae'),
+  avgAutoAlgae('Avg Auto Algae'),
+  highestAutoAlgae('Highest Auto Algae');
+
+  final String label;
+  const TeamSortOption(this.label);
+}
+
 class TeamAnalysisPageState extends State<TeamAnalysisPage> {
   String _searchQuery = '';
   Set<int> _expandedTeams = {};
   late List<TeamStats> _teamStats;
+  TeamSortOption _sortOption = TeamSortOption.scoringPotential;
 
   @override
   void initState() {
@@ -311,8 +327,56 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
     // convert to list of TeamStats and sort by scoring potential
     _teamStats = teamRecords.entries
         .map((e) => TeamStats(teamNumber: e.key, records: e.value))
-        .toList()
-      ..sort((a, b) => b.scoringPotential.compareTo(a.scoringPotential));
+        .toList();
+    
+    _sortTeams();
+  }
+
+  void _sortTeams() {
+    switch (_sortOption) {
+      case TeamSortOption.scoringPotential:
+        _teamStats.sort((a, b) => b.scoringPotential.compareTo(a.scoringPotential));
+      case TeamSortOption.avgTeleopCoral:
+        _teamStats.sort((a, b) => b.teleopTotalCoralAvg.compareTo(a.teleopTotalCoralAvg));
+      case TeamSortOption.highestTeleopCoral:
+        _teamStats.sort((a, b) {
+          int maxA = b.records.isEmpty ? 0 : b.records.map((r) => 
+            r.teleopCoralHeight4Success + r.teleopCoralHeight3Success + 
+            r.teleopCoralHeight2Success + r.teleopCoralHeight1Success).reduce((x, y) => x > y ? x : y);
+          int maxB = a.records.isEmpty ? 0 : a.records.map((r) => 
+            r.teleopCoralHeight4Success + r.teleopCoralHeight3Success + 
+            r.teleopCoralHeight2Success + r.teleopCoralHeight1Success).reduce((x, y) => x > y ? x : y);
+          return maxA.compareTo(maxB);
+        });
+      case TeamSortOption.avgAutoCoral:
+        _teamStats.sort((a, b) => b.autoTotalCoralAvg.compareTo(a.autoTotalCoralAvg));
+      case TeamSortOption.highestAutoCoral:
+        _teamStats.sort((a, b) {
+          int maxA = b.records.isEmpty ? 0 : b.records.map((r) => 
+            r.autoCoralHeight4Success + r.autoCoralHeight3Success + 
+            r.autoCoralHeight2Success + r.autoCoralHeight1Success).reduce((x, y) => x > y ? x : y);
+          int maxB = a.records.isEmpty ? 0 : a.records.map((r) => 
+            r.autoCoralHeight4Success + r.autoCoralHeight3Success + 
+            r.autoCoralHeight2Success + r.autoCoralHeight1Success).reduce((x, y) => x > y ? x : y);
+          return maxA.compareTo(maxB);
+        });
+      case TeamSortOption.avgTeleopAlgae:
+        _teamStats.sort((a, b) => b.teleopAlgaeNetAvg.compareTo(a.teleopAlgaeNetAvg));
+      case TeamSortOption.highestTeleopAlgae:
+        _teamStats.sort((a, b) {
+          int maxA = b.records.isEmpty ? 0 : b.records.map((r) => r.teleopAlgaeScoredInNet).reduce((x, y) => x > y ? x : y);
+          int maxB = a.records.isEmpty ? 0 : a.records.map((r) => r.teleopAlgaeScoredInNet).reduce((x, y) => x > y ? x : y);
+          return maxA.compareTo(maxB);
+        });
+      case TeamSortOption.avgAutoAlgae:
+        _teamStats.sort((a, b) => b.autoAlgaeAvg.compareTo(a.autoAlgaeAvg));
+      case TeamSortOption.highestAutoAlgae:
+        _teamStats.sort((a, b) {
+          int maxA = b.records.isEmpty ? 0 : b.records.map((r) => r.autoAlgaeRemoved).reduce((x, y) => x > y ? x : y);
+          int maxB = a.records.isEmpty ? 0 : a.records.map((r) => r.autoAlgaeRemoved).reduce((x, y) => x > y ? x : y);
+          return maxA.compareTo(maxB);
+        });
+    }
   }
 
   void _toggleExpanded(int teamNumber) {
@@ -340,23 +404,55 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
       */
       body: Column(
         children: [
-          // search bar
+          // search and sort controls
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search teams...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search teams...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                      });
+                    },
+                  ),
                 ),
-                // filled: true,
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Theme.of(context).colorScheme.outline),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<TeamSortOption>(
+                      value: _sortOption,
+                      items: TeamSortOption.values.map((option) => 
+                        DropdownMenuItem(
+                          value: option,
+                          child: Text(option.label),
+                        )
+                      ).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _sortOption = value;
+                            _sortTeams();
+                          });
+                        }
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           // team list
