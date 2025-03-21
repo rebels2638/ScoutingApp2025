@@ -23,7 +23,6 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _bluetoothEnabled = false;
   bool _scoutingLeaderEnabled = false;
   bool _refreshButtonEnabled = false;
-  bool _keepScreenAwake = false;
   TextEditingController _qrRateLimitController = TextEditingController();
   
   static const String _teamNumberKey = 'selected_team_number';
@@ -34,7 +33,6 @@ class _SettingsPageState extends State<SettingsPage> {
   static const String _scoutingLeaderKey = 'scouting_leader_enabled';
   static const String _qrRateLimitKey = 'qr_rate_limit';
   static const String _refreshButtonKey = 'refresh_button_enabled';
-  static const String _keepScreenAwakeKey = 'keep_screen_awake';
 
   @override
   void initState() {
@@ -61,14 +59,8 @@ class _SettingsPageState extends State<SettingsPage> {
       _bluetoothEnabled = prefs.getBool(_bluetoothEnabledKey) ?? false;
       _scoutingLeaderEnabled = prefs.getBool(_scoutingLeaderKey) ?? true;
       _refreshButtonEnabled = prefs.getBool(_refreshButtonKey) ?? false;
-      _keepScreenAwake = prefs.getBool(_keepScreenAwakeKey) ?? false;
       _qrRateLimitController.text = (prefs.getInt(_qrRateLimitKey) ?? 1500).toString();
     });
-
-    // apply screen wake setting
-    if (_keepScreenAwake) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
-    }
   }
 
   Future<void> _saveSetting(String key, dynamic value) async {
@@ -166,12 +158,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 await _saveSetting(_refreshButtonKey, value);
                 setState(() => _refreshButtonEnabled = value);
               },
-            ),
-            SwitchListTile(
-              title: const Text('Keep Screen Awake'),
-              subtitle: const Text('Prevent device from sleeping even on low battery'),
-              value: _keepScreenAwake,
-              onChanged: _toggleKeepScreenAwake,
             ),
             ListTile(
               title: const Text('QR Scan Rate Limit (ms)'),
@@ -413,15 +399,5 @@ class _SettingsPageState extends State<SettingsPage> {
           break;
       }
     }
-  }
-
-  Future<void> _toggleKeepScreenAwake(bool value) async {
-    await _saveSetting(_keepScreenAwakeKey, value);
-    if (value) {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
-    } else {
-      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    }
-    setState(() => _keepScreenAwake = value);
   }
 }
