@@ -107,21 +107,14 @@ class _NavBarState extends State<NavBar> {
         icon: Icon(Icons.data_usage),
         label: 'Data',
       ),
-      
       const BottomNavigationBarItem(
       icon: Icon(Icons.api),
       label: 'API',
-    )
+      ),
     ];
     
     
-    // add analysis tab only if scouting leader is enabled
-    if (_isScoutingLeader!) {
-      items.add(const BottomNavigationBarItem(
-        icon: Icon(Icons.analytics),
-        label: 'Analysis',
-      ));
-    }
+    
 
     
 
@@ -131,6 +124,14 @@ class _NavBarState extends State<NavBar> {
         icon: Icon(Icons.bluetooth),
         label: 'Bluetooth',
       ));
+    }
+
+    // add analysis tab only if scouting leader is enabled
+    if (_isScoutingLeader!) {
+      items.add(const BottomNavigationBarItem(
+        icon: Icon(Icons.analytics),
+        label: 'Analysis',
+      ),);
     }
 
     // Add remaining items

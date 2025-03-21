@@ -1397,9 +1397,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
         case 1:
           return 'Data';
         case 2:
-          return 'Analysis';
-        case 3:
           return 'API';
+        case 3:
+          return 'Analysis';
         case 4:
           return 'Bluetooth';
         case 5:
@@ -1417,9 +1417,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
         case 1:
           return 'Data';
         case 2:
-          return 'Analysis';
-        case 3:
           return 'API';
+        case 3:
+          return 'Analysis';
         case 5:
           return 'Settings';
         case 6:
