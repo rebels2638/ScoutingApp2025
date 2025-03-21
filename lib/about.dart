@@ -142,8 +142,8 @@ class AboutPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Chiming Wang - Developer'),
+                      Text('Ethan Kang - Developer'), // bruh chomomg
                       Text('Richard Xu - Developer'),
-                      Text('Ethan Kang - Developer'),
                     ],
                   ),
                 ),
