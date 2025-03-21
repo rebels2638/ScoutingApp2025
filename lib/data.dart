@@ -1284,20 +1284,19 @@ class DataPageState extends State<DataPage> {
             loadRecords();
           },
         ),
-        /*
-        SpeedDialChild(
-          child: const Icon(Icons.brush),
-          label: 'Auto Drawing',
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const AutoDrawingPage(),
-              ),
-            );
-          },
-        ),
-        */
+        if (_isScoutingLeader)
+          SpeedDialChild(
+            child: const Icon(Icons.brush),
+            label: 'Auto Drawing',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AutoDrawingPage(),
+                ),
+              );
+            },
+          ),
         SpeedDialChild(
           child: const Icon(Icons.file_upload),
           label: 'Import Data',
