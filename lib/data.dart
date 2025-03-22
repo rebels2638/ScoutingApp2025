@@ -835,7 +835,7 @@ class DataPage extends StatefulWidget {
 
 class DataPageState extends State<DataPage> {
   List<ScoutingRecord> _records = [];
-  Set<int> selectedRecords = {};
+  Set<String> selectedRecords = {};
   String _searchQuery = '';
   bool _isSelectionMode = false;
   bool _isLoading = true;
@@ -1025,7 +1025,7 @@ class DataPageState extends State<DataPage> {
                 final selectedList = _records
                     .asMap()
                     .entries
-                    .where((e) => selectedRecords.contains(e.key))
+                    .where((e) => selectedRecords.contains(e.value.timestamp))
                     .map((e) => e.value)
                     .toList();
                 Navigator.push(
@@ -1077,7 +1077,7 @@ class DataPageState extends State<DataPage> {
   }
 
   Widget _buildRecordCard(ScoutingRecord record, int index) {
-    final isSelected = selectedRecords.contains(index);
+    final isSelected = selectedRecords.contains(record.timestamp);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     
     return Card(
@@ -1108,13 +1108,13 @@ class DataPageState extends State<DataPage> {
           if (_isSelectionMode) {
             setState(() {
               if (isSelected) {
-                selectedRecords.remove(index);
+                selectedRecords.remove(record.timestamp);
                 if (selectedRecords.isEmpty) {
                   _isSelectionMode = false;
                   _selectedRecord = null;
                 }
               } else {
-                selectedRecords.add(index);
+                selectedRecords.add(record.timestamp);
               }
             });
           } else {
@@ -1133,12 +1133,12 @@ class DataPageState extends State<DataPage> {
           setState(() {
             _isSelectionMode = true;
             if (isSelected) {
-              selectedRecords.remove(index);
+              selectedRecords.remove(record.timestamp);
               if (selectedRecords.isEmpty) {
                 _selectedRecord = null;
               }
             } else {
-              selectedRecords.add(index);
+              selectedRecords.add(record.timestamp);
               _selectedRecord = record;
             }
           });
@@ -1384,7 +1384,7 @@ class DataPageState extends State<DataPage> {
 
   void _handleDeleteSelected() {
     if (selectedRecords.isNotEmpty) {
-      final recordsToDelete = selectedRecords.map((index) => _records[index]).toList();
+      final recordsToDelete = selectedRecords.map((timestamp) => _records.firstWhere((r) => r.timestamp == timestamp)).toList();
       _showDeleteConfirmation(context, recordsToDelete);
     }
   }
@@ -1412,9 +1412,8 @@ class DataPageState extends State<DataPage> {
               onPressed: () async {
                 Navigator.of(context).pop();
                 final records = await DatabaseHelper.instance.getAllRecords();
-                for (final record in recordsToDelete) {
-                  records.removeWhere((r) => r.timestamp == record.timestamp);
-                }
+                // remove records by matching timestamps
+                records.removeWhere((r) => recordsToDelete.any((rd) => rd.timestamp == r.timestamp));
                 await DatabaseHelper.instance.saveRecords(records);
                 setState(() {
                   selectedRecords.clear();
