@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'theme/app_theme.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AboutPage extends StatelessWidget {
   @override
@@ -182,6 +183,36 @@ class AboutPage extends StatelessWidget {
                     style: TextStyle(height: 1.4),
                   ),
                 ),
+                // Padding(
+                //   padding: const EdgeInsets.only(left: 16),
+                //   child: Column(
+                //     crossAxisAlignment: CrossAxisAlignment.start,
+                //     children: [
+                //       const SizedBox(height: 8),
+                //       Center(
+                //         child: CachedNetworkImage(
+                //           imageUrl: 'https://github.com/rebels2638/ScoutingApp2025/blob/master/assets/team_photo.png',
+                //           placeholder: (context, url) => const CircularProgressIndicator(),
+                //           errorWidget: (context, url, error) => const Icon(Icons.error),
+                //           imageBuilder: (context, imageProvider) {
+                //             return Container(
+                //               width: 100,
+                //               height: 100,
+                //               decoration: BoxDecoration(
+                //                 image: DecorationImage(
+                //                   image: imageProvider,
+                //                   fit: BoxFit.cover,
+                //                 ),
+                //                 border: Border.all(color: AppColors.primary),
+                //                 borderRadius: BorderRadius.circular(15),
+                //               ),
+                //             );
+                //           },
+                //         ),
+                //       ),
+                //     ],
+                //   ),
+                // ),
               ],
             ),
           ),
