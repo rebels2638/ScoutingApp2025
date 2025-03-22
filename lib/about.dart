@@ -177,42 +177,51 @@ class AboutPage extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Padding(
-                  padding: const EdgeInsets.only(left: 16),
+                  padding: const EdgeInsets.only(left: 16, bottom: 16),
                   child: Text(
                     'Thank you to all members of FRC Team 2638, Rebel Robotics, for their support, testing, and feedback throughout the development of this app.',
                     style: TextStyle(height: 1.4),
                   ),
                 ),
-                // Padding(
-                //   padding: const EdgeInsets.only(left: 16),
-                //   child: Column(
-                //     crossAxisAlignment: CrossAxisAlignment.start,
-                //     children: [
-                //       const SizedBox(height: 8),
-                //       Center(
-                //         child: CachedNetworkImage(
-                //           imageUrl: 'https://github.com/rebels2638/ScoutingApp2025/blob/master/assets/team_photo.png',
-                //           placeholder: (context, url) => const CircularProgressIndicator(),
-                //           errorWidget: (context, url, error) => const Icon(Icons.error),
-                //           imageBuilder: (context, imageProvider) {
-                //             return Container(
-                //               width: 100,
-                //               height: 100,
-                //               decoration: BoxDecoration(
-                //                 image: DecorationImage(
-                //                   image: imageProvider,
-                //                   fit: BoxFit.cover,
-                //                 ),
-                //                 border: Border.all(color: AppColors.primary),
-                //                 borderRadius: BorderRadius.circular(15),
-                //               ),
-                //             );
-                //           },
-                //         ),
-                //       ),
-                //     ],
-                //   ),
-                // ),
+
+                Text(
+                  'Our Team',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+                Padding( //make this code nicer like idk if ts good or not lmao
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 8),
+                      Center(
+                        child: CachedNetworkImage(
+                          imageUrl: 'https://raw.githubusercontent.com/rebels2638/ScoutingApp2025/master/assets/team_photo.png',
+                          placeholder: (context, url) => const CircularProgressIndicator(),
+                          errorWidget: (context, url, error) => const Icon(Icons.error),
+                          imageBuilder: (context, imageProvider) {
+                            return Container(
+                              width: 425,
+                              height: 300,
+                              decoration: BoxDecoration(
+                                image: DecorationImage(
+                                  image: imageProvider,
+                                  fit: BoxFit.cover,
+                                ),
+                                border: Border.all(color: AppColors.primary),
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
