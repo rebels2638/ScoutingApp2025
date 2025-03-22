@@ -79,6 +79,26 @@ class TeamStats {
   double get bargeReturnRate => _successRate((r) => r.endgameReturnedToBarge);
   double get bargeRankingPointRate => _successRate((r) => r.endgameBargeRankingPoint);
   
+  // calculate endgame performance score (0-100)
+  double get endgamePerformanceScore {
+    if (records.isEmpty) return 0;
+    
+    // calculate hang score (0-60 points)
+    double hangScore = 0;
+    int totalMatches = records.length;
+    int deepHangs = records.where((r) => r.endgameCageHang == 'Deep').length;
+    int shallowHangs = records.where((r) => r.endgameCageHang == 'Shallow').length;
+    
+    // deep hangs are worth more (60 points max)
+    hangScore = ((deepHangs * 1.0) / totalMatches) * 60 +  // deep hangs worth full points
+                ((shallowHangs * 0.7) / totalMatches) * 60; // shallow hangs worth 70% points
+    
+    // calculate barge return score (0-40 points)
+    double bargeScore = bargeReturnRate * 40;
+    
+    return hangScore + bargeScore;
+  }
+  
   // ranking point metrics
   double get coralRankingPointRate => _successRate((r) => r.teleopCoralRankingPoint);
   double get coOpPointRate => _successRate((r) => r.otherCoOpPoint);
@@ -127,9 +147,7 @@ class TeamStats {
     score += ((teleopL4SuccessRate + teleopL3SuccessRate + teleopL2SuccessRate + teleopL1SuccessRate) / 4) * 15; // Up to 15 points for teleop coral success rates
     
     // endgame (30 points max)
-    score += cageHangSuccessRate * 15; // Up to 15 points for hanging
-    score += bargeReturnRate * 10; // Up to 10 points for barge return
-    score += bargeRankingPointRate * 5; // Up to 5 points for barge ranking points
+    score += endgamePerformanceScore * 0.75; // Up to 75% of endgame score
     
     // reliability penalty
     score *= (1 - (breakdownRate * 0.5)); // Up to 50% penalty for breakdowns
@@ -300,7 +318,8 @@ enum TeamSortOption {
   avgTeleopAlgae('Avg Teleop Algae'),
   highestTeleopAlgae('Highest Teleop Algae'),
   avgAutoAlgae('Avg Auto Algae'),
-  highestAutoAlgae('Highest Auto Algae');
+  highestAutoAlgae('Highest Auto Algae'),
+  endgamePerformance('Endgame Performance');
 
   final String label;
   const TeamSortOption(this.label);
@@ -337,6 +356,8 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
     switch (_sortOption) {
       case TeamSortOption.scoringPotential:
         _teamStats.sort((a, b) => b.scoringPotential.compareTo(a.scoringPotential));
+      case TeamSortOption.endgamePerformance:
+        _teamStats.sort((a, b) => b.endgamePerformanceScore.compareTo(a.endgamePerformanceScore));
       case TeamSortOption.avgTeleopCoral:
         _teamStats.sort((a, b) => b.teleopTotalCoralAvg.compareTo(a.teleopTotalCoralAvg));
       case TeamSortOption.avgTeleopL4:
