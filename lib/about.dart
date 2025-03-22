@@ -205,15 +205,15 @@ class AboutPage extends StatelessWidget {
                           errorWidget: (context, url, error) => const Icon(Icons.error),
                           imageBuilder: (context, imageProvider) {
                             return Container(
-                              width: 425,
-                              height: 300,
+                              width: 425, //425
+                              height: 300, //300
                               decoration: BoxDecoration(
                                 image: DecorationImage(
                                   image: imageProvider,
-                                  fit: BoxFit.cover,
+                                  fit: BoxFit.contain
                                 ),
-                                border: Border.all(color: AppColors.primary),
-                                borderRadius: BorderRadius.circular(15),
+                                // border: Border.all(color: AppColors.primary),
+                                // borderRadius: BorderRadius.circular(12),
                               ),
                             );
                           },
