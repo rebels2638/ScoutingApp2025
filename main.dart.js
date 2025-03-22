@@ -51425,7 +51425,7 @@ p=A.mc(A.a([A.cM(q,q,B.rz,q,q,r.gah_(),q,q,"Import Auto Paths"),A.cM(q,q,B.rM,q,
 s=r.d===0?r.ahp():r.ahJ()
 return A.j1(p,s,new A.VD(r.d,B.UR,new A.aJ4(r),q),q)},
 ahp(){var s,r=this,q=null,p=A.bH(A.lR(!1,r.e,B.Pv,q,q,B.fy,q,1,q,q,q,q,q,B.ah,q),1),o=r.r,n=t.fo,m=t.p
-o=A.aY(A.a([p,B.bS,A.bH(A.bn8(B.Pw,A.L(new A.A(A.a(["Qualification","Quarterfinal","Semifinal","Final"],t.s),new A.aIz(),n),!0,n.h("a7.E")),new A.aIA(r),o,t.N),1)],m),B.n,B.j,B.k)
+o=A.aY(A.a([p,B.bS,A.bH(A.bn8(B.Pw,A.L(new A.A(A.a(["Practice","Qualification","Playoff"],t.s),new A.aIz(),n),!0,n.h("a7.E")),new A.aIA(r),o,t.N),1)],m),B.n,B.j,B.k)
 n=A.bH(A.lR(!1,r.f,B.Px,q,q,B.fy,q,1,q,q,q,q,q,B.ah,q),1)
 p=A.S("Red",q,q,q,q,A.aF(q,q,r.w?B.h:B.P,q,q,q,q,q,q,q,q,q,q,q,q,q,q,!0,q,q,q,q,q,q,q,q),q,q)
 s=t.Mt
