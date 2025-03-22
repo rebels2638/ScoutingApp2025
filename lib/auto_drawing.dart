@@ -371,7 +371,7 @@ class _AutoDrawingPageState extends State<AutoDrawingPage> {
                           labelText: 'Match Type',
                           border: OutlineInputBorder(),
                         ),
-                        items: ['Qualification', 'Quarterfinal', 'Semifinal', 'Final']
+                        items: ['Practice', 'Qualification', 'Playoff']
                             .map((type) => DropdownMenuItem(
                                   value: type,
                                   child: Text(type),
