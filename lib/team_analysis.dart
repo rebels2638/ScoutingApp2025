@@ -135,55 +135,69 @@ class TeamStats {
 
   // auto scoring potential
   double get autoScoringPotential {
+    return autoAlgaeScoringPotential + autoCoralScoringPotential;
+  }
+
+  // auto algae scoring potential (10 points max)
+  double get autoAlgaeScoringPotential {
     double score = 0;
-    
-    // auto algae scoring (10 points max)
-    double autoAlgaeScore = 0;
-    autoAlgaeScore += (autoAlgaeProcessorAvg * 6.0); // 6 points per processor
-    autoAlgaeScore += (autoAlgaeNetAvg * 4.0); // 4 points per net
-    score += min(autoAlgaeScore, 10); // cap at 10 points
-    
-    // auto coral scoring (20 points)
-    double autoCoralScore = 0;
+    score += (autoAlgaeProcessorAvg * 6.0); // 6 points per processor
+    score += (autoAlgaeNetAvg * 4.0); // 4 points per net
+    return min(score, 10); // cap at 10 points
+  }
+
+  // auto coral scoring potential (20 points max)
+  double get autoCoralScoringPotential {
+    double score = 0;
     // average successful placements (15 points)
-    autoCoralScore += (autoL4Avg * 7.0); // 7 points per L4
-    autoCoralScore += (autoL3Avg * 6.0); // 6 points per L3
-    autoCoralScore += (autoL2Avg * 4.0); // 4 points per L2
-    autoCoralScore += (autoL1Avg * 3.0); // 3 points per L1
+    score += (autoL4Avg * 7.0); // 7 points per L4
+    score += (autoL3Avg * 6.0); // 6 points per L3
+    score += (autoL2Avg * 4.0); // 4 points per L2
+    score += (autoL1Avg * 3.0); // 3 points per L1
     // success rates with lower weight (5 points)
-    autoCoralScore += (autoOverallSuccessRate * 5); // up to 5 points for success rate
-    score += min(autoCoralScore, 20); // cap at 20 points
-    
-    return score; // 30 points max
+    score += (autoOverallSuccessRate * 5); // up to 5 points for success rate
+    return min(score, 20); // cap at 20 points
   }
 
   // teleop scoring potential
   double get teleopScoringPotential {
+    return teleopAlgaeScoringPotential + teleopCoralScoringPotential;
+  }
+
+  // teleop algae scoring potential (20 points max)
+  double get teleopAlgaeScoringPotential {
     double score = 0;
-    
-    // teleop algae scoring (20 points max)
-    double teleopAlgaeScore = 0;
-    teleopAlgaeScore += (teleopAlgaeProcessedAvg * 6.0); // 6 points per processor
-    teleopAlgaeScore += (teleopAlgaeNetAvg * 4.0); // 4 points per net
-    score += min(teleopAlgaeScore, 20); // cap at 20 points
-    
-    // teleop coral scoring (20 points)
-    double teleopCoralScore = 0;
+    score += (teleopAlgaeProcessedAvg * 6.0); // 6 points per processor
+    score += (teleopAlgaeNetAvg * 4.0); // 4 points per net
+    return min(score, 20); // cap at 20 points
+  }
+
+  // teleop coral scoring potential (20 points max)
+  double get teleopCoralScoringPotential {
+    double score = 0;
     // average successful placements (15 points)
-    teleopCoralScore += (teleopL4Avg * 5.0); // 5 points per L4
-    teleopCoralScore += (teleopL3Avg * 4.0); // 4 points per L3
-    teleopCoralScore += (teleopL2Avg * 3.0); // 3 points per L2
-    teleopCoralScore += (teleopL1Avg * 2.0); // 2 points per L1
+    score += (teleopL4Avg * 5.0); // 5 points per L4
+    score += (teleopL3Avg * 4.0); // 4 points per L3
+    score += (teleopL2Avg * 3.0); // 3 points per L2
+    score += (teleopL1Avg * 2.0); // 2 points per L1
     // success rates with lower weight (5 points)
-    teleopCoralScore += (teleopOverallSuccessRate * 5); // up to 5 points for success rate
-    score += min(teleopCoralScore, 20); // cap at 20 points
-    
-    return score; // 40 points max
+    score += (teleopOverallSuccessRate * 5); // up to 5 points for success rate
+    return min(score, 20); // cap at 20 points
+  }
+
+  // total coral scoring potential (40 points max)
+  double get totalCoralScoringPotential {
+    return autoCoralScoringPotential + teleopCoralScoringPotential; // 20 + 20 points
+  }
+
+  // total algae scoring potential (30 points max)
+  double get totalAlgaeScoringPotential {
+    return autoAlgaeScoringPotential + teleopAlgaeScoringPotential; // 10 + 20 points
   }
 
   // endgame scoring potential
   double get endgameScoringPotential {
-    return endgamePerformanceScore * 0.75; // up to 75% of endgame score (30 points max)
+    return endgamePerformanceScore * 0.5; // up to 50% of endgame score (30 points max)
   }
 
   // overall scoring potential (uncapped, can be negative)
@@ -380,15 +394,15 @@ class TeamAnalysisPage extends StatefulWidget {
 
 enum TeamSortOption {
   scoringPotential('Scoring Potential'),
-  avgTeleopCoral('Avg Teleop Coral'),
-  avgTeleopL4('Avg Teleop L4'),
-  highestTeleopCoral('Highest Teleop Coral'),
-  avgAutoCoral('Avg Auto Coral'),
-  highestAutoCoral('Highest Auto Coral'),
-  avgTeleopAlgae('Avg Teleop Algae'),
-  highestTeleopAlgae('Highest Teleop Algae'),
-  avgAutoAlgae('Avg Auto Algae'),
-  highestAutoAlgae('Highest Auto Algae'),
+  avgTeleopCoral('Coral Teleop Avg'),
+  avgTeleopL4('L4 Teleop Avg'),
+  highestTeleopCoral('Coral Teleop Hiscore'),
+  avgAutoCoral('Coral Auto Avg'),
+  highestAutoCoral('Coral Auto Hiscore'),
+  avgTeleopAlgae('Algae Teleop Avg'),
+  highestTeleopAlgae('Algae Teleop Hiscore'),
+  avgAutoAlgae('Algae Auto Avg'),
+  highestAutoAlgae('Algae Auto Hiscore'),
   endgamePerformance('Endgame Performance');
 
   final String label;
