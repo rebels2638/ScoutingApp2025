@@ -5,6 +5,7 @@ import 'theme/app_theme.dart';
 import 'dart:math' show max, min, pow, sqrt;
 import 'package:flutter/services.dart';
 import 'database_helper.dart';
+import 'team_analysis.dart';
 
 class VisualizationPage extends StatefulWidget {
   final List<ScoutingRecord> records;
@@ -210,6 +211,13 @@ class _VisualizationPageState extends State<VisualizationPage> {
       r.autoAlgaeInNet + r.teleopAlgaeScoredInNet
     ).average();
 
+    // calculate scoring potentials
+    final TeamStats stats = TeamStats(teamNumber: records.first.teamNumber, records: records);
+    final totalPotential = stats.scoringPotential;
+    final teleopPotential = stats.teleopScoringPotential;
+    final autoPotential = stats.autoScoringPotential;
+    final endgamePotential = stats.endgameScoringPotential;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -220,7 +228,34 @@ class _VisualizationPageState extends State<VisualizationPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Top row
+          // Top row (Scoring Potentials)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildMetric(
+                'Total SP',
+                totalPotential.round().toString(),
+                const Color(0xFF64B5F6),
+              ),
+              _buildMetric(
+                'Auto SP',
+                autoPotential.round().toString(),
+                const Color(0xFFFFB74D),
+              ),
+              _buildMetric(
+                'Teleop SP',
+                teleopPotential.round().toString(),
+                const Color(0xFF81C784),
+              ),
+              _buildMetric(
+                'Endgame SP',
+                endgamePotential.round().toString(),
+                const Color(0xFFE57373),  // Red color for endgame
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Middle row (Coral metrics)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
@@ -275,17 +310,17 @@ class _VisualizationPageState extends State<VisualizationPage> {
         Text(
           value,
           style: TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
             color: color,
           ),
         ),
-        const SizedBox(height: 2),
+        const SizedBox(height: 1),
         Text(
           label,
           style: const TextStyle(
             color: Colors.white70,
-            fontSize: 10,
+            fontSize: 12,
           ),
         ),
       ],
