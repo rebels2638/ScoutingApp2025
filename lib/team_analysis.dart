@@ -133,27 +133,111 @@ class TeamStats {
     }
   }
 
+  // auto scoring potential
+  double get autoScoringPotential {
+    return autoAlgaeScoringPotential + autoCoralScoringPotential;
+  }
+
+  // auto algae scoring potential (10 points max)
+  double get autoAlgaeScoringPotential {
+    double score = 0;
+    score += (autoAlgaeProcessorAvg * 6.0); // 6 points per processor
+    score += (autoAlgaeNetAvg * 4.0); // 4 points per net
+    return min(score, 10); // cap at 10 points
+  }
+
+  // auto coral scoring potential (20 points max)
+  double get autoCoralScoringPotential {
+    double score = 0;
+    // average successful placements (15 points)
+    score += (autoL4Avg * 7.0); // 7 points per L4
+    score += (autoL3Avg * 6.0); // 6 points per L3
+    score += (autoL2Avg * 4.0); // 4 points per L2
+    score += (autoL1Avg * 3.0); // 3 points per L1
+    // success rates with lower weight (5 points)
+    score += (autoOverallSuccessRate * 5); // up to 5 points for success rate
+    return min(score, 20); // cap at 20 points
+  }
+
+  // teleop scoring potential
+  double get teleopScoringPotential {
+    return teleopAlgaeScoringPotential + teleopCoralScoringPotential;
+  }
+
+  // teleop algae scoring potential (20 points max)
+  double get teleopAlgaeScoringPotential {
+    double score = 0;
+    score += (teleopAlgaeProcessedAvg * 6.0); // 6 points per processor
+    score += (teleopAlgaeNetAvg * 4.0); // 4 points per net
+    return min(score, 20); // cap at 20 points
+  }
+
+  // teleop coral scoring potential (20 points max)
+  double get teleopCoralScoringPotential {
+    double score = 0;
+    // average successful placements (15 points)
+    score += (teleopL4Avg * 5.0); // 5 points per L4
+    score += (teleopL3Avg * 4.0); // 4 points per L3
+    score += (teleopL2Avg * 3.0); // 3 points per L2
+    score += (teleopL1Avg * 2.0); // 2 points per L1
+    // success rates with lower weight (5 points)
+    score += (teleopOverallSuccessRate * 5); // up to 5 points for success rate
+    return min(score, 20); // cap at 20 points
+  }
+
+  // total coral scoring potential (40 points max)
+  double get totalCoralScoringPotential {
+    return autoCoralScoringPotential + teleopCoralScoringPotential; // 20 + 20 points
+  }
+
+  // total algae scoring potential (30 points max)
+  double get totalAlgaeScoringPotential {
+    return autoAlgaeScoringPotential + teleopAlgaeScoringPotential; // 10 + 20 points
+  }
+
+  // endgame scoring potential
+  double get endgameScoringPotential {
+    return endgamePerformanceScore * 0.5; // up to 50% of endgame score (30 points max)
+  }
+
+  // overall scoring potential (uncapped, can be negative)
+  double get scoringPotential {
+    double score = 0;
+    
+    // combine all scoring potentials
+    score += autoScoringPotential;    // 30 points max
+    score += teleopScoringPotential;  // 40 points max
+    score += endgameScoringPotential; // 30 points max
+    
+    // reliability penalty
+    score *= (1 - (breakdownRate * 0.5)); // up to 50% penalty for breakdowns
+    
+    return score;
+  }
+
+  /* OLD SCORING POTENTIAL FORMULA
   // overall scoring potential (out of 100)
   double get scoringPotential {
     double score = 0;
     
     // auto scoring (30 points max)
-    score += (autoAlgaeAvg / 5) * 10; // Up to 10 points for auto algae
-    score += ((autoL4SuccessRate + autoL3SuccessRate + autoL2SuccessRate + autoL1SuccessRate) / 4) * 20; // Up to 20 points for auto coral success rates
+    score += (autoAlgaeAvg / 5) * 10; // up to 10 points for auto algae
+    score += ((autoL4SuccessRate + autoL3SuccessRate + autoL2SuccessRate + autoL1SuccessRate) / 4) * 20; // up to 20 points for auto coral success rates
     
     // teleop scoring (40 points max)
-    score += (teleopAlgaeNetAvg / 10) * 15; // Up to 15 points for teleop algae in net
-    score += (teleopAlgaeProcessedAvg / 5) * 10; // Up to 10 points for processed algae
-    score += ((teleopL4SuccessRate + teleopL3SuccessRate + teleopL2SuccessRate + teleopL1SuccessRate) / 4) * 15; // Up to 15 points for teleop coral success rates
+    score += (teleopAlgaeNetAvg / 10) * 15; // up to 15 points for teleop algae in net
+    score += (teleopAlgaeProcessedAvg / 5) * 10; // up to 10 points for processed algae
+    score += ((teleopL4SuccessRate + teleopL3SuccessRate + teleopL2SuccessRate + teleopL1SuccessRate) / 4) * 15; // up to 15 points for teleop coral success rates
     
     // endgame (30 points max)
-    score += endgamePerformanceScore * 0.75; // Up to 75% of endgame score
+    score += endgamePerformanceScore * 0.75; // up to 75% of endgame score
     
     // reliability penalty
-    score *= (1 - (breakdownRate * 0.5)); // Up to 50% penalty for breakdowns
+    score *= (1 - (breakdownRate * 0.5)); // up to 50% penalty for breakdowns
     
     return max(0, min(score, 100));
   }
+  */
 
   // Overall success rates
   double get autoOverallSuccessRate {
@@ -310,15 +394,17 @@ class TeamAnalysisPage extends StatefulWidget {
 
 enum TeamSortOption {
   scoringPotential('Scoring Potential'),
-  avgTeleopCoral('Avg Teleop Coral'),
-  avgTeleopL4('Avg Teleop L4'),
-  highestTeleopCoral('Highest Teleop Coral'),
-  avgAutoCoral('Avg Auto Coral'),
-  highestAutoCoral('Highest Auto Coral'),
-  avgTeleopAlgae('Avg Teleop Algae'),
-  highestTeleopAlgae('Highest Teleop Algae'),
-  avgAutoAlgae('Avg Auto Algae'),
-  highestAutoAlgae('Highest Auto Algae'),
+  coralScoringPotential('Coral SP'),
+  algaeScoringPotential('Algae SP'),
+  avgTeleopCoral('Coral Teleop Avg'),
+  avgTeleopL4('L4 Teleop Avg'),
+  highestTeleopCoral('Coral Teleop Hiscore'),
+  avgAutoCoral('Coral Auto Avg'),
+  highestAutoCoral('Coral Auto Hiscore'),
+  avgTeleopAlgae('Algae Teleop Avg'),
+  highestTeleopAlgae('Algae Teleop Hiscore'),
+  avgAutoAlgae('Algae Auto Avg'),
+  highestAutoAlgae('Algae Auto Hiscore'),
   endgamePerformance('Endgame Performance');
 
   final String label;
@@ -356,6 +442,10 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
     switch (_sortOption) {
       case TeamSortOption.scoringPotential:
         _teamStats.sort((a, b) => b.scoringPotential.compareTo(a.scoringPotential));
+      case TeamSortOption.coralScoringPotential:
+        _teamStats.sort((a, b) => b.totalCoralScoringPotential.compareTo(a.totalCoralScoringPotential));
+      case TeamSortOption.algaeScoringPotential:
+        _teamStats.sort((a, b) => b.totalAlgaeScoringPotential.compareTo(a.totalAlgaeScoringPotential));
       case TeamSortOption.endgamePerformance:
         _teamStats.sort((a, b) => b.endgamePerformanceScore.compareTo(a.endgamePerformanceScore));
       case TeamSortOption.avgTeleopCoral:
@@ -505,19 +595,23 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Team ${stats.teamNumber}',
+                                      '${stats.teamNumber}',
                                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
-                                      '${stats.records.length} matches scouted',
+                                      '${stats.records.length} matches',
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                    Text(
+                                      'Coral SP: ${stats.totalCoralScoringPotential.round()}  •  Algae SP: ${stats.totalAlgaeScoringPotential.round()}',
                                       style: Theme.of(context).textTheme.bodyMedium,
                                     ),
                                   ],
                                 ),
                               ),
-                              _buildScoreIndicator(context, stats.scoringPotential),
+                              _buildScoreIndicator(context, stats.scoringPotential, Icons.analytics, 'Total'),
                               const SizedBox(width: 8),
                               IconButton(
                                 icon: const Icon(Icons.bar_chart),
@@ -554,32 +648,35 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
     );
   }
 
-  Widget _buildScoreIndicator(BuildContext context, double score) {
+  Widget _buildScoreIndicator(BuildContext context, double score, IconData icon, String label) {
     final color = score >= 80 ? Colors.green :
                  score >= 60 ? Colors.blue :
                  score >= 40 ? Colors.orange :
                  Colors.red;
                  
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.5)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.analytics, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(
-            score.round().toString(),
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
+    return Tooltip(
+      message: '$label Scoring Potential',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.5)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Text(
+              score.round().toString(),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
