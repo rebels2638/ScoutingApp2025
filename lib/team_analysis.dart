@@ -133,12 +133,15 @@ class TeamStats {
     }
   }
 
-  // overall scoring potential (uncapped, can be negative)
-  double get scoringPotential {
+  // auto scoring potential
+  double get autoScoringPotential {
     double score = 0;
     
-    // auto scoring (30 points max)
-    score += (autoAlgaeAvg / 5) * 10; // up to 10 points for auto algae
+    // auto algae scoring (10 points max)
+    double autoAlgaeScore = 0;
+    autoAlgaeScore += (autoAlgaeProcessorAvg * 6.0); // 6 points per processor
+    autoAlgaeScore += (autoAlgaeNetAvg * 4.0); // 4 points per net
+    score += min(autoAlgaeScore, 10); // cap at 10 points
     
     // auto coral scoring (20 points)
     double autoCoralScore = 0;
@@ -151,9 +154,18 @@ class TeamStats {
     autoCoralScore += (autoOverallSuccessRate * 5); // up to 5 points for success rate
     score += min(autoCoralScore, 20); // cap at 20 points
     
-    // teleop scoring (40 points max)
-    score += (teleopAlgaeNetAvg / 10) * 15; // up to 15 points for teleop algae in net
-    score += (teleopAlgaeProcessedAvg / 5) * 5; // up to 5 points for processed algae
+    return score; // 30 points max
+  }
+
+  // teleop scoring potential
+  double get teleopScoringPotential {
+    double score = 0;
+    
+    // teleop algae scoring (20 points max)
+    double teleopAlgaeScore = 0;
+    teleopAlgaeScore += (teleopAlgaeProcessedAvg * 6.0); // 6 points per processor
+    teleopAlgaeScore += (teleopAlgaeNetAvg * 4.0); // 4 points per net
+    score += min(teleopAlgaeScore, 20); // cap at 20 points
     
     // teleop coral scoring (20 points)
     double teleopCoralScore = 0;
@@ -166,8 +178,22 @@ class TeamStats {
     teleopCoralScore += (teleopOverallSuccessRate * 5); // up to 5 points for success rate
     score += min(teleopCoralScore, 20); // cap at 20 points
     
-    // endgame (30 points max)
-    score += endgamePerformanceScore * 0.75; // up to 75% of endgame score
+    return score; // 40 points max
+  }
+
+  // endgame scoring potential
+  double get endgameScoringPotential {
+    return endgamePerformanceScore * 0.75; // up to 75% of endgame score (30 points max)
+  }
+
+  // overall scoring potential (uncapped, can be negative)
+  double get scoringPotential {
+    double score = 0;
+    
+    // combine all scoring potentials
+    score += autoScoringPotential;    // 30 points max
+    score += teleopScoringPotential;  // 40 points max
+    score += endgameScoringPotential; // 30 points max
     
     // reliability penalty
     score *= (1 - (breakdownRate * 0.5)); // up to 50% penalty for breakdowns
