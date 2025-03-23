@@ -143,10 +143,10 @@ class TeamStats {
     // auto coral scoring (20 points)
     double autoCoralScore = 0;
     // average successful placements (15 points)
-    autoCoralScore += (autoL4Avg * 2.0); // up to 6 points for L4
-    autoCoralScore += (autoL3Avg * 1.5); // up to 4.5 points for L3
-    autoCoralScore += (autoL2Avg * 1.0); // up to 3 points for L2
-    autoCoralScore += (autoL1Avg * 0.5); // up to 1.5 points for L1
+    autoCoralScore += (autoL4Avg * 7.0); // 7 points per L4
+    autoCoralScore += (autoL3Avg * 6.0); // 6 points per L3
+    autoCoralScore += (autoL2Avg * 4.0); // 4 points per L2
+    autoCoralScore += (autoL1Avg * 3.0); // 3 points per L1
     // success rates with lower weight (5 points)
     autoCoralScore += (autoOverallSuccessRate * 5); // up to 5 points for success rate
     score += min(autoCoralScore, 20); // cap at 20 points
@@ -158,10 +158,10 @@ class TeamStats {
     // teleop coral scoring (20 points)
     double teleopCoralScore = 0;
     // average successful placements (15 points)
-    teleopCoralScore += (teleopL4Avg * 2.0); // up to 6 points for L4
-    teleopCoralScore += (teleopL3Avg * 1.5); // up to 4.5 points for L3
-    teleopCoralScore += (teleopL2Avg * 1.0); // up to 3 points for L2
-    teleopCoralScore += (teleopL1Avg * 0.5); // up to 1.5 points for L1
+    teleopCoralScore += (teleopL4Avg * 5.0); // 5 points per L4
+    teleopCoralScore += (teleopL3Avg * 4.0); // 4 points per L3
+    teleopCoralScore += (teleopL2Avg * 3.0); // 3 points per L2
+    teleopCoralScore += (teleopL1Avg * 2.0); // 2 points per L1
     // success rates with lower weight (5 points)
     teleopCoralScore += (teleopOverallSuccessRate * 5); // up to 5 points for success rate
     score += min(teleopCoralScore, 20); // cap at 20 points
@@ -172,7 +172,7 @@ class TeamStats {
     // reliability penalty
     score *= (1 - (breakdownRate * 0.5)); // up to 50% penalty for breakdowns
     
-    return score; // no minimum or maximum cap
+    return score;
   }
 
   /* OLD SCORING POTENTIAL FORMULA
