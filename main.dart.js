@@ -56622,7 +56622,7 @@ else if(r)return"Ground"
 else if(q)return"Human"
 else return"None"},
 gJ3(){var s=this
-return(0+s.gvf()/5*10+Math.min(0+s.gzb()*2+s.gFB()*1.5+s.gFA()+s.gFz()*0.5+s.gO1()*5,20)+s.gwA()/10*15+s.gRH()/5*5+Math.min(0+s.gtD()*2+s.gIg()*1.5+s.gIf()+s.gIe()*0.5+s.gRI()*5,20)+s.gPD()*0.75)*(1-s.gOb()*0.5)},
+return(0+s.gvf()/5*10+Math.min(0+s.gzb()*7+s.gFB()*6+s.gFA()*4+s.gFz()*3+s.gO1()*5,20)+s.gwA()/10*15+s.gRH()/5*5+Math.min(0+s.gtD()*5+s.gIg()*4+s.gIf()*3+s.gIe()*2+s.gRI()*5,20)+s.gPD()*0.75)*(1-s.gOb()*0.5)},
 gO1(){var s=this.b,r=t.S,q=J.c8(s),p=q.aJ(s,new A.aEn(),r).cW(0,new A.aEo()),o=q.aJ(s,new A.aEp(),r).cW(0,new A.aEq())
 return o>0?p/o:0},
 gRI(){var s=this.b,r=t.S,q=J.c8(s),p=q.aJ(s,new A.aEU(),r).cW(0,new A.aEV()),o=q.aJ(s,new A.aEW(),r).cW(0,new A.aEX())
