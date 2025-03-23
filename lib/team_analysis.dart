@@ -394,6 +394,8 @@ class TeamAnalysisPage extends StatefulWidget {
 
 enum TeamSortOption {
   scoringPotential('Scoring Potential'),
+  coralScoringPotential('Coral SP'),
+  algaeScoringPotential('Algae SP'),
   avgTeleopCoral('Coral Teleop Avg'),
   avgTeleopL4('L4 Teleop Avg'),
   highestTeleopCoral('Coral Teleop Hiscore'),
@@ -440,6 +442,10 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
     switch (_sortOption) {
       case TeamSortOption.scoringPotential:
         _teamStats.sort((a, b) => b.scoringPotential.compareTo(a.scoringPotential));
+      case TeamSortOption.coralScoringPotential:
+        _teamStats.sort((a, b) => b.totalCoralScoringPotential.compareTo(a.totalCoralScoringPotential));
+      case TeamSortOption.algaeScoringPotential:
+        _teamStats.sort((a, b) => b.totalAlgaeScoringPotential.compareTo(a.totalAlgaeScoringPotential));
       case TeamSortOption.endgamePerformance:
         _teamStats.sort((a, b) => b.endgamePerformanceScore.compareTo(a.endgamePerformanceScore));
       case TeamSortOption.avgTeleopCoral:
