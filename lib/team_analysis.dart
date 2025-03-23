@@ -589,19 +589,23 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Team ${stats.teamNumber}',
+                                      '${stats.teamNumber}',
                                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                     Text(
-                                      '${stats.records.length} matches scouted',
+                                      '${stats.records.length} matches',
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                    Text(
+                                      'Coral SP: ${stats.totalCoralScoringPotential.round()}  •  Algae SP: ${stats.totalAlgaeScoringPotential.round()}',
                                       style: Theme.of(context).textTheme.bodyMedium,
                                     ),
                                   ],
                                 ),
                               ),
-                              _buildScoreIndicator(context, stats.scoringPotential),
+                              _buildScoreIndicator(context, stats.scoringPotential, Icons.analytics, 'Total'),
                               const SizedBox(width: 8),
                               IconButton(
                                 icon: const Icon(Icons.bar_chart),
@@ -638,32 +642,35 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
     );
   }
 
-  Widget _buildScoreIndicator(BuildContext context, double score) {
+  Widget _buildScoreIndicator(BuildContext context, double score, IconData icon, String label) {
     final color = score >= 80 ? Colors.green :
                  score >= 60 ? Colors.blue :
                  score >= 40 ? Colors.orange :
                  Colors.red;
                  
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.5)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.analytics, size: 16, color: color),
-          const SizedBox(width: 4),
-          Text(
-            score.round().toString(),
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
+    return Tooltip(
+      message: '$label Scoring Potential',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.5)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 4),
+            Text(
+              score.round().toString(),
+              style: TextStyle(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
