@@ -133,27 +133,71 @@ class TeamStats {
     }
   }
 
+  // overall scoring potential (uncapped, can be negative)
+  double get scoringPotential {
+    double score = 0;
+    
+    // auto scoring (30 points max)
+    score += (autoAlgaeAvg / 5) * 10; // up to 10 points for auto algae
+    
+    // auto coral scoring (20 points)
+    double autoCoralScore = 0;
+    // average successful placements (15 points)
+    autoCoralScore += (autoL4Avg * 2.0); // up to 6 points for L4
+    autoCoralScore += (autoL3Avg * 1.5); // up to 4.5 points for L3
+    autoCoralScore += (autoL2Avg * 1.0); // up to 3 points for L2
+    autoCoralScore += (autoL1Avg * 0.5); // up to 1.5 points for L1
+    // success rates with lower weight (5 points)
+    autoCoralScore += (autoOverallSuccessRate * 5); // up to 5 points for success rate
+    score += min(autoCoralScore, 20); // cap at 20 points
+    
+    // teleop scoring (40 points max)
+    score += (teleopAlgaeNetAvg / 10) * 15; // up to 15 points for teleop algae in net
+    score += (teleopAlgaeProcessedAvg / 5) * 5; // up to 5 points for processed algae
+    
+    // teleop coral scoring (20 points)
+    double teleopCoralScore = 0;
+    // average successful placements (15 points)
+    teleopCoralScore += (teleopL4Avg * 2.0); // up to 6 points for L4
+    teleopCoralScore += (teleopL3Avg * 1.5); // up to 4.5 points for L3
+    teleopCoralScore += (teleopL2Avg * 1.0); // up to 3 points for L2
+    teleopCoralScore += (teleopL1Avg * 0.5); // up to 1.5 points for L1
+    // success rates with lower weight (5 points)
+    teleopCoralScore += (teleopOverallSuccessRate * 5); // up to 5 points for success rate
+    score += min(teleopCoralScore, 20); // cap at 20 points
+    
+    // endgame (30 points max)
+    score += endgamePerformanceScore * 0.75; // up to 75% of endgame score
+    
+    // reliability penalty
+    score *= (1 - (breakdownRate * 0.5)); // up to 50% penalty for breakdowns
+    
+    return score; // no minimum or maximum cap
+  }
+
+  /* OLD SCORING POTENTIAL FORMULA
   // overall scoring potential (out of 100)
   double get scoringPotential {
     double score = 0;
     
     // auto scoring (30 points max)
-    score += (autoAlgaeAvg / 5) * 10; // Up to 10 points for auto algae
-    score += ((autoL4SuccessRate + autoL3SuccessRate + autoL2SuccessRate + autoL1SuccessRate) / 4) * 20; // Up to 20 points for auto coral success rates
+    score += (autoAlgaeAvg / 5) * 10; // up to 10 points for auto algae
+    score += ((autoL4SuccessRate + autoL3SuccessRate + autoL2SuccessRate + autoL1SuccessRate) / 4) * 20; // up to 20 points for auto coral success rates
     
     // teleop scoring (40 points max)
-    score += (teleopAlgaeNetAvg / 10) * 15; // Up to 15 points for teleop algae in net
-    score += (teleopAlgaeProcessedAvg / 5) * 10; // Up to 10 points for processed algae
-    score += ((teleopL4SuccessRate + teleopL3SuccessRate + teleopL2SuccessRate + teleopL1SuccessRate) / 4) * 15; // Up to 15 points for teleop coral success rates
+    score += (teleopAlgaeNetAvg / 10) * 15; // up to 15 points for teleop algae in net
+    score += (teleopAlgaeProcessedAvg / 5) * 10; // up to 10 points for processed algae
+    score += ((teleopL4SuccessRate + teleopL3SuccessRate + teleopL2SuccessRate + teleopL1SuccessRate) / 4) * 15; // up to 15 points for teleop coral success rates
     
     // endgame (30 points max)
-    score += endgamePerformanceScore * 0.75; // Up to 75% of endgame score
+    score += endgamePerformanceScore * 0.75; // up to 75% of endgame score
     
     // reliability penalty
-    score *= (1 - (breakdownRate * 0.5)); // Up to 50% penalty for breakdowns
+    score *= (1 - (breakdownRate * 0.5)); // up to 50% penalty for breakdowns
     
     return max(0, min(score, 100));
   }
+  */
 
   // Overall success rates
   double get autoOverallSuccessRate {
