@@ -110,6 +110,7 @@ DEPENDENCIES:
 
 SPEC REPOS:
   https://github.com/CocoaPods/Specs.git:
+    - GoogleUtilities
     - MLKitCommon
   trunk:
     - GoogleDataTransport

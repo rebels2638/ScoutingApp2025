@@ -105,8 +105,8 @@
       <sub></sub>
     </td>
     <td align="center">
-      <a href="https://github.com/Richard28277">
-        <img src="https://github.com/Richard28277.png" width="100px;" style="border-radius: 50%;" alt="Daniel Kosukhin"/><br />
+      <a href="https://github.com/fishnos">
+        <img src="https://github.com/fishnos.png" width="100px;" style="border-radius: 50%;" alt="Daniel Kosukhin"/><br />
         <sub><b>Daniel Kosukhin</b></sub>
       </a>
       <br/>
