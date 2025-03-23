@@ -225,11 +225,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildMetric(
-                'Matches',
-                records.length.toString(),
-                const Color(0xFF64B5F6),
-              ),
-              _buildMetric(
                 'Teleop Coral',
                 teleopCoralScored.toStringAsFixed(1),
                 const Color(0xFF81C784),
@@ -239,13 +234,6 @@ class _VisualizationPageState extends State<VisualizationPage> {
                 '${teleopSuccessRate.round()}%',
                 const Color(0xFF81C784),
               ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Bottom row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
               _buildMetric(
                 'Auto Coral',
                 autoCoralScored.toStringAsFixed(1),
@@ -256,6 +244,13 @@ class _VisualizationPageState extends State<VisualizationPage> {
                 '${autoSuccessRate.round()}%',
                 const Color(0xFFFFB74D),
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Bottom row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
               _buildMetric(
                 'Algae Processed',
                 avgAlgaeProcessed.toStringAsFixed(1),
