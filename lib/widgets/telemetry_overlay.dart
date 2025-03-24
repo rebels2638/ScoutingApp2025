@@ -39,6 +39,7 @@ class _TelemetryOverlayState extends State<TelemetryOverlay> {
   }
 
   void _onScroll() {
+    if (!mounted) return;
     if (_scrollController.hasClients) {
       final isAtBottom = _scrollController.offset >= _scrollController.position.maxScrollExtent;
       if (isAtBottom && _userScrolled) {
@@ -56,14 +57,17 @@ class _TelemetryOverlayState extends State<TelemetryOverlay> {
   @override
   void didUpdateWidget(TelemetryOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!mounted) return;
     if (widget.telemetryData.length > oldWidget.telemetryData.length && !_userScrolled) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
         _scrollToBottom();
       });
     }
   }
 
   void _scrollToBottom() {
+    if (!mounted) return;
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
@@ -330,13 +334,16 @@ class _TelemetryOverlayState extends State<TelemetryOverlay> {
                       )
                     : NotificationListener<ScrollNotification>(
                         onNotification: (notification) {
+                          if (!mounted) return true;
                           if (notification is ScrollUpdateNotification) {
                             _userScrolled = true;
                           } else if (notification is ScrollEndNotification) {
                             if (notification.metrics.pixels >= notification.metrics.maxScrollExtent) {
-                              setState(() {
-                                _userScrolled = false;
-                              });
+                              if (mounted) {
+                                setState(() {
+                                  _userScrolled = false;
+                                });
+                              }
                             }
                           }
                           return true;

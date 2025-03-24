@@ -71,7 +71,19 @@ class _QRCodeDialogState extends State<QRCodeDialog> {
       widget.record.comments,
     ];
 
-    final jsonStr = jsonEncode(qrData);
+    String jsonStr;
+    try {
+      jsonStr = jsonEncode(qrData);
+    } catch (e) {
+      // If JSON encoding fails, log error and handle gracefully
+      print('Error encoding QR data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error generating QR code: $e')),
+      );
+      Navigator.of(context).pop();
+      return Container(); // Return empty container while popping
+    }
+
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Dialog(
