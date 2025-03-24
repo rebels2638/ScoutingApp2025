@@ -193,8 +193,8 @@ class _ScoutingPageState extends State<ScoutingPage> {
   void _onItemTapped(int index) {
     TelemetryService().logAction('navigation_changed', 'to index $index');
     
-    // Only unfocus once
-    FocusManager.instance.primaryFocus?.unfocus();
+    // dismiss keyboard when switching tabs
+    FocusScope.of(context).unfocus();
     
     // calculate the actual maximum index
     final maxIndex = _bluetoothEnabled ? 6 : 6;  // max is always 6
@@ -211,6 +211,9 @@ class _ScoutingPageState extends State<ScoutingPage> {
     if (index == 1) {
       _dataPageKey.currentState?.loadRecords();
     }
+
+    // Ensure keyboard is dismissed when switching tabs
+    FocusScope.of(context).unfocus();
   }
 
   Widget _getPage(int index) {

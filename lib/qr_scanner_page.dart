@@ -98,14 +98,6 @@ class _QrScannerPageState extends State<QrScannerPage> {
     });
 
     try {
-      // Check if data is empty
-      if (rawData.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Error: QR code data is empty')),
-        );
-        return;
-      }
-      
       // Parse the JSON array
       final List<dynamic> data = jsonDecode(rawData);
       

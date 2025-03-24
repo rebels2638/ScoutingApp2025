@@ -271,7 +271,14 @@ class MyAppState extends State<MyApp> {
               ),
               themeMode: isDarkMode ? ThemeMode.dark : ThemeMode.light,
               builder: (context, child) {
-                return child!;
+                return GestureDetector(
+                  onTap: () {
+                    // Dismiss keyboard when tapping anywhere on the screen
+                    FocusManager.instance.primaryFocus?.unfocus();
+                  },
+                  behavior: HitTestBehavior.translucent,
+                  child: child!,
+                );
               },
               home: Stack(
                 children: [
