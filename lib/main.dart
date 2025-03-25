@@ -9,6 +9,12 @@ import 'widgets/navbar.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await TelemetryService().init();
+  
+  // check scouting leader mode on app start
+  final prefs = await SharedPreferences.getInstance();
+  final isScoutingLeader = prefs.getBool('scouting_leader_enabled') ?? false;
+  notifyScoutingLeaderChange(isScoutingLeader);
+  
   runApp(const MyApp());
 }
 

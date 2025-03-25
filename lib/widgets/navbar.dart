@@ -4,11 +4,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
 // create a stream controller for scouting leader changes
-final _scoutingLeaderController = StreamController<bool>.broadcast();
+final scoutingLeaderController = StreamController<bool>.broadcast();
 
 // function to notify listeners when the setting changes
 void notifyScoutingLeaderChange(bool value) {
-  _scoutingLeaderController.add(value);
+  scoutingLeaderController.add(value);
 }
 
 class NavBar extends StatefulWidget {
@@ -37,7 +37,7 @@ class _NavBarState extends State<NavBar> {
     _loadScoutingLeaderStatus();
     
     // subscribe to scouting leader changes
-    _scoutingLeaderSubscription = _scoutingLeaderController.stream.listen((enabled) {
+    _scoutingLeaderSubscription = scoutingLeaderController.stream.listen((enabled) {
       if (mounted) {
         setState(() {
           _isScoutingLeader = enabled;

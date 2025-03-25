@@ -23,6 +23,7 @@ import 'package:flutter/services.dart';  // Add this import
 import 'package:shared_preferences/shared_preferences.dart';
 import 'bluetooth_page.dart';
 import 'team_analysis.dart';
+import 'widgets/navbar.dart' show scoutingLeaderController;  // Add this import
 
 class ScoutingPage extends StatefulWidget {
   @override
@@ -31,6 +32,8 @@ class ScoutingPage extends StatefulWidget {
 
 class _ScoutingPageState extends State<ScoutingPage> {
   int _currentIndex = 0; // for managing navbar
+  bool _isScoutingLeader = false;
+  StreamSubscription? _scoutingLeaderSubscription;
 
   // state variables for match info
   int matchNumber = 1;
@@ -148,6 +151,15 @@ class _ScoutingPageState extends State<ScoutingPage> {
       }
     });
 
+    // subscribe to scouting leader changes
+    _scoutingLeaderSubscription = scoutingLeaderController.stream.listen((enabled) {
+      if (mounted) {
+        setState(() {
+          _isScoutingLeader = enabled;
+        });
+      }
+    });
+
     // Add this to handle focus when the page is loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -162,6 +174,7 @@ class _ScoutingPageState extends State<ScoutingPage> {
   @override
   void dispose() {
     _devModeSubscription?.cancel();
+    _scoutingLeaderSubscription?.cancel();
     _focusNode.dispose();
     _matchNumberFocusNode.dispose();
     _globalFocusNode.dispose(); // Dispose the global focus node
