@@ -37,17 +37,22 @@ class _QRCodeDialogState extends State<QRCodeDialog> {
   Widget build(BuildContext context) {
     // Create a minimal array format to reduce data size
     final List<dynamic> qrData = [
+      // match info
       widget.record.timestamp,
       widget.record.matchNumber,
       widget.record.matchType,
       widget.record.teamNumber,
       widget.record.isRedAlliance ? 1 : 0,
       widget.record.cageType,
+
+      // auto
       widget.record.autoCoralPreloaded ? 1 : 0,
       widget.record.autoTaxis ? 1 : 0,
       widget.record.autoAlgaeRemoved,
       widget.record.autoAlgaeInNet,
       widget.record.autoAlgaeInProcessor,
+      
+      // coral success/failure
       widget.record.teleopCoralHeight3Success,
       widget.record.teleopCoralHeight3Failure,
       widget.record.autoCoralHeight1Success,
@@ -64,6 +69,8 @@ class _QRCodeDialogState extends State<QRCodeDialog> {
       widget.record.teleopCoralHeight2Failure,
       widget.record.teleopCoralHeight1Success,
       widget.record.teleopCoralHeight1Failure,
+
+      // teleop
       widget.record.teleopCoralRankingPoint ? 1 : 0,
       widget.record.teleopAlgaeRemoved,
       widget.record.teleopAlgaeProcessorAttempts,
@@ -71,12 +78,18 @@ class _QRCodeDialogState extends State<QRCodeDialog> {
       widget.record.teleopAlgaeScoredInNet,
       widget.record.teleopCanPickupAlgae ? 1 : 0,
       widget.record.teleopCoralPickupMethod,
+
+      // endgame
       widget.record.endgameReturnedToBarge ? 1 : 0,
       widget.record.endgameCageHang,
       widget.record.endgameBargeRankingPoint ? 1 : 0,
+
+      // other
       widget.record.otherCoOpPoint ? 1 : 0,
       widget.record.otherBreakdown ? 1 : 0,
       widget.record.otherComments,
+      
+      // auto path
       widget.record.robotPath,
     ];
 

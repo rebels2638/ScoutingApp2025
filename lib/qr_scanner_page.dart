@@ -117,7 +117,7 @@ class _QrScannerPageState extends State<QrScannerPage> {
         autoAlgaeInNet: data[9] as int? ?? 0,
         autoAlgaeInProcessor: data[10] as int? ?? 0,
         
-        // teleop coral success/failure
+        // coral success/failure
         teleopCoralHeight3Success: data[11] as int? ?? 0,
         teleopCoralHeight3Failure: data[12] as int? ?? 0,
         autoCoralHeight1Success: data[13] as int? ?? 0,
