@@ -67,18 +67,18 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
 
 SPEC CHECKSUMS:
-  device_info_plus: 5401765fde0b8d062a2f8eb65510fb17e77cf07f
-  file_selector_macos: cc3858c981fe6889f364731200d6232dac1d812d
+  device_info_plus: b0fafc687fb901e2af612763340f1b0d4352f8e5
+  file_selector_macos: 6280b52b459ae6c590af5d78fc35c7267a3c4b31
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
-  mobile_scanner: 54ceceae0c8da2457e26a362a6be5c61154b1829
-  path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46
+  mobile_scanner: 2f0c13d5ef778c4e5121348d775dce17f18e79d0
+  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
   Protobuf: e2de96d939c642ce8da186343ff8929b35223212
-  reactive_ble_mobile: 856183aeda09f2a676bbaecbea8915c3cb1d33df
-  share_plus: 76dd39142738f7a68dd57b05093b5e8193f220f7
-  shared_preferences_foundation: fcdcbc04712aee1108ac7fda236f363274528f78
-  sqflite_darwin: 5a7236e3b501866c1c9befc6771dfd73ffb8702d
+  reactive_ble_mobile: ea97709e18fa6f0b0592909725d7ae7e1c595b64
+  share_plus: 3c787998077d6b31e839225a282e9e27edf99274
+  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
+  sqflite_darwin: 20b2a3a3b70e43edae938624ce550a3cbf66a3d0
   SwiftProtobuf: 4dbaffec76a39a8dc5da23b40af1a5dc01a4c02d
-  url_launcher_macos: c82c93949963e55b228a30115bd219499a6fe404
+  url_launcher_macos: 0fba8ddabfc33ce0a9afe7c5fef5aab3d8d2d673
 
 PODFILE CHECKSUM: 236401fc2c932af29a9fcf0e97baeeb2d750d367
 

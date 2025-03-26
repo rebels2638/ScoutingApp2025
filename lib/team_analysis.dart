@@ -197,7 +197,7 @@ class TeamStats {
 
   // endgame scoring potential
   double get endgameScoringPotential {
-    return endgamePerformanceScore * 0.5; // up to 50% of endgame score (30 points max)
+    return endgamePerformanceScore * 0.25; // up to 25% of endgame score (15 points max)
   }
 
   // overall scoring potential (uncapped, can be negative)
@@ -207,7 +207,7 @@ class TeamStats {
     // combine all scoring potentials
     score += autoScoringPotential;    // 30 points max
     score += teleopScoringPotential;  // 40 points max
-    score += endgameScoringPotential; // 30 points max
+    score += endgameScoringPotential; // 15 points max
     
     // reliability penalty
     score *= (1 - (breakdownRate * 0.5)); // up to 50% penalty for breakdowns
