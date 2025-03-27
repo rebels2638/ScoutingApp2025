@@ -627,12 +627,6 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
                     ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.file_upload),
-                  tooltip: 'Import Pit Scouting CSV',
-                  onPressed: _importPitScoutCsv,
-                ),
               ],
             ),
           ),

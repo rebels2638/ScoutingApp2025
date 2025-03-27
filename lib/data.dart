@@ -24,6 +24,7 @@ import 'visualization_page.dart';
 import 'widgets/qr_code_dialog.dart';
 import 'edit_record_page.dart';
 import 'auto_drawing.dart';
+import 'services/pit_scout_service.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -1349,6 +1350,39 @@ class DataPageState extends State<DataPage> {
           child: const Icon(Icons.file_upload),
           label: 'Export Data',
           onTap: _exportData,
+        ),
+        SpeedDialChild(
+          child: const Icon(Icons.engineering),
+          label: 'Import Pit Scouting',
+          onTap: () async {
+            try {
+              final XTypeGroup csvTypeGroup = XTypeGroup(
+                label: 'CSV',
+                extensions: ['csv'],
+                uniformTypeIdentifiers: ['public.comma-separated-values-text'],
+              );
+              
+              final XFile? file = await openFile(
+                acceptedTypeGroups: [csvTypeGroup],
+              );
+
+              if (file != null) {
+                final csvString = await file.readAsString();
+                await PitScoutService.instance.importCsv(csvString);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Pit scouting data imported successfully')),
+                  );
+                }
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error importing CSV: $e')),
+                );
+              }
+            }
+          },
         ),
         SpeedDialChild(
           backgroundColor: Colors.red,
