@@ -714,6 +714,49 @@ class ScoutingRecord {
   }
 }
 
+class PitScoutData {
+  final String timestamp;
+  final String scouterName;
+  final int teamNumber;
+  final Map<String, String> data;
+
+  PitScoutData({
+    required this.timestamp,
+    required this.scouterName,
+    required this.teamNumber,
+    required this.data,
+  });
+
+  factory PitScoutData.fromCsv(Map<String, dynamic> csvRow) {
+    return PitScoutData(
+      timestamp: csvRow['Timestamp']?.toString() ?? '',
+      scouterName: csvRow['Scouter Name (person filling out this form)']?.toString() ?? '',
+      teamNumber: int.tryParse(csvRow['Team Number']?.toString() ?? '') ?? 0,
+      data: Map<String, String>.from(
+        csvRow.map((key, value) => MapEntry(key, value?.toString() ?? '')),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'timestamp': timestamp,
+      'scouterName': scouterName,
+      'teamNumber': teamNumber,
+      'data': data,
+    };
+  }
+
+  factory PitScoutData.fromJson(Map<String, dynamic> json) {
+    return PitScoutData(
+      timestamp: json['timestamp'] as String,
+      scouterName: json['scouterName'] as String,
+      teamNumber: json['teamNumber'] as int,
+      data: Map<String, String>.from(json['data'] as Map),
+    );
+  }
+}
+
 class DataManager {
   static final DataManager instance = DataManager._();
   DataManager._();

@@ -4,6 +4,9 @@ import 'theme/app_theme.dart';
 import 'comparison.dart';
 import 'dart:math' show max, min;
 import 'visualization_page.dart';
+import 'package:file_selector/file_selector.dart';
+import 'dart:io';
+import 'services/pit_scout_service.dart';
 
 class TeamStats {
   final int teamNumber;
@@ -437,11 +440,13 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
   Set<int> _expandedTeams = {};
   late List<TeamStats> _teamStats;
   TeamSortOption _sortOption = TeamSortOption.scoringPotential;
+  final PitScoutService _pitScoutService = PitScoutService.instance;
 
   @override
   void initState() {
     super.initState();
     _initializeTeamStats();
+    _loadPitScoutData();
   }
 
   void _initializeTeamStats() {
@@ -457,6 +462,41 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
         .toList();
     
     _sortTeams();
+  }
+
+  Future<void> _loadPitScoutData() async {
+    await _pitScoutService.loadData();
+  }
+
+  Future<void> _importPitScoutCsv() async {
+    try {
+      final XTypeGroup csvTypeGroup = XTypeGroup(
+        label: 'CSV',
+        extensions: ['csv'],
+        // add UTIs for iOS
+        uniformTypeIdentifiers: ['public.comma-separated-values-text'],
+      );
+      
+      final XFile? file = await openFile(
+        acceptedTypeGroups: [csvTypeGroup],
+      );
+
+      if (file != null) {
+        final csvString = await file.readAsString();
+        await _pitScoutService.importCsv(csvString);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pit scouting data imported successfully')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error importing CSV: $e')),
+        );
+      }
+    }
   }
 
   void _sortTeams() {
@@ -586,6 +626,12 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
                       },
                     ),
                   ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.file_upload),
+                  tooltip: 'Import Pit Scouting CSV',
+                  onPressed: _importPitScoutCsv,
                 ),
               ],
             ),
@@ -1035,6 +1081,15 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
                 _buildWeaknessesSection(context, widget.stats.getWeaknesses()),
             ],
           ),
+
+          // pit scouting section
+          _buildCollapsibleSection(
+            context,
+            'pit scouting',
+            [
+              _buildPitScoutSection(context),
+            ],
+          ),
         ],
       ),
     );
@@ -1134,6 +1189,80 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
             side: BorderSide(color: Colors.red.withOpacity(0.2)),
           )).toList(),
         ),
+      ],
+    );
+  }
+
+  Widget _buildPitScoutSection(BuildContext context) {
+    final pitScoutData = PitScoutService.instance.getDataForTeam(widget.stats.teamNumber);
+    
+    if (pitScoutData == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          'No pit scouting data available',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      );
+    }
+
+    // Filter out the standard fields we already display
+    final customData = Map<String, String>.from(pitScoutData.data)
+      ..remove('Timestamp')
+      ..remove('Scouter Name (person filling out this form)')
+      ..remove('Team Number');
+
+    if (customData.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          'No additional pit scouting data available',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Scouted by: ${pitScoutData.scouterName}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+        ),
+        ...customData.entries.map((entry) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: Text(
+                  entry.key,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  entry.value,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        )).toList(),
       ],
     );
   }
