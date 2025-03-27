@@ -24,6 +24,7 @@ import 'visualization_page.dart';
 import 'widgets/qr_code_dialog.dart';
 import 'edit_record_page.dart';
 import 'auto_drawing.dart';
+import 'services/pit_scout_service.dart';
 
 class ScoutingRecord {
   final String timestamp;
@@ -714,6 +715,49 @@ class ScoutingRecord {
   }
 }
 
+class PitScoutData {
+  final String timestamp;
+  final String scouterName;
+  final int teamNumber;
+  final Map<String, String> data;
+
+  PitScoutData({
+    required this.timestamp,
+    required this.scouterName,
+    required this.teamNumber,
+    required this.data,
+  });
+
+  factory PitScoutData.fromCsv(Map<String, dynamic> csvRow) {
+    return PitScoutData(
+      timestamp: csvRow['Timestamp']?.toString() ?? '',
+      scouterName: csvRow['Scouter Name (person filling out this form)']?.toString() ?? '',
+      teamNumber: int.tryParse(csvRow['Team Number']?.toString() ?? '') ?? 0,
+      data: Map<String, String>.from(
+        csvRow.map((key, value) => MapEntry(key, value?.toString() ?? '')),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'timestamp': timestamp,
+      'scouterName': scouterName,
+      'teamNumber': teamNumber,
+      'data': data,
+    };
+  }
+
+  factory PitScoutData.fromJson(Map<String, dynamic> json) {
+    return PitScoutData(
+      timestamp: json['timestamp'] as String,
+      scouterName: json['scouterName'] as String,
+      teamNumber: json['teamNumber'] as int,
+      data: Map<String, String>.from(json['data'] as Map),
+    );
+  }
+}
+
 class DataManager {
   static final DataManager instance = DataManager._();
   DataManager._();
@@ -1308,11 +1352,51 @@ class DataPageState extends State<DataPage> {
           onTap: _exportData,
         ),
         SpeedDialChild(
+          child: const Icon(Icons.engineering),
+          label: 'Import Pit Scouting',
+          onTap: () async {
+            try {
+              final XTypeGroup csvTypeGroup = XTypeGroup(
+                label: 'CSV',
+                extensions: ['csv'],
+                uniformTypeIdentifiers: ['public.comma-separated-values-text'],
+              );
+              
+              final XFile? file = await openFile(
+                acceptedTypeGroups: [csvTypeGroup],
+              );
+
+              if (file != null) {
+                final csvString = await file.readAsString();
+                await PitScoutService.instance.importCsv(csvString);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Pit scouting data imported successfully')),
+                  );
+                }
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error importing CSV: $e')),
+                );
+              }
+            }
+          },
+        ),
+        SpeedDialChild(
           backgroundColor: Colors.red,
           foregroundColor: Colors.white,
           child: const Icon(Icons.delete_forever),
           label: 'Delete All Data',
           onTap: () => _showDeleteAllConfirmation(context),
+        ),
+        SpeedDialChild(
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          child: const Icon(Icons.engineering),
+          label: 'Delete Pit Scouting',
+          onTap: () => _showDeletePitScoutConfirmation(context),
         ),
       ],
     );
@@ -1678,6 +1762,46 @@ class DataPageState extends State<DataPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDeletePitScoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete All Pit Scouting Data?'),
+          content: const Text(
+            'Are you sure you want to delete all pit scouting data? This cannot be undone.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Delete All'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await PitScoutService.instance.deleteAllData();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('All pit scouting data deleted successfully'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

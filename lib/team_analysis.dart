@@ -4,6 +4,9 @@ import 'theme/app_theme.dart';
 import 'comparison.dart';
 import 'dart:math' show max, min;
 import 'visualization_page.dart';
+import 'package:file_selector/file_selector.dart';
+import 'dart:io';
+import 'services/pit_scout_service.dart';
 
 class TeamStats {
   final int teamNumber;
@@ -15,69 +18,69 @@ class TeamStats {
   });
 
   // auto metrics
-  double get autoTaxisRate => _successRate((r) => r.autoTaxis);
-  double get autoAlgaeAvg => _average((r) => r.autoAlgaeRemoved);
-  double get autoAlgaeNetAvg => _average((r) => r.autoAlgaeInNet);
-  double get autoAlgaeProcessorAvg => _average((r) => r.autoAlgaeInProcessor);
+  double get autoTaxisRate => records.isEmpty ? 0 : _successRate((r) => r.autoTaxis);
+  double get autoAlgaeAvg => records.isEmpty ? 0 : _average((r) => r.autoAlgaeRemoved);
+  double get autoAlgaeNetAvg => records.isEmpty ? 0 : _average((r) => r.autoAlgaeInNet);
+  double get autoAlgaeProcessorAvg => records.isEmpty ? 0 : _average((r) => r.autoAlgaeInProcessor);
   
   // auto coral success rates
-  double get autoL4SuccessRate => _successRateWithAttempts(
+  double get autoL4SuccessRate => records.isEmpty ? 0 : _successRateWithAttempts(
     (r) => r.autoCoralHeight4Success,
     (r) => r.autoCoralHeight4Success + r.autoCoralHeight4Failure
   );
-  double get autoL3SuccessRate => _successRateWithAttempts(
+  double get autoL3SuccessRate => records.isEmpty ? 0 : _successRateWithAttempts(
     (r) => r.autoCoralHeight3Success,
     (r) => r.autoCoralHeight3Success + r.autoCoralHeight3Failure
   );
-  double get autoL2SuccessRate => _successRateWithAttempts(
+  double get autoL2SuccessRate => records.isEmpty ? 0 : _successRateWithAttempts(
     (r) => r.autoCoralHeight2Success,
     (r) => r.autoCoralHeight2Success + r.autoCoralHeight2Failure
   );
-  double get autoL1SuccessRate => _successRateWithAttempts(
+  double get autoL1SuccessRate => records.isEmpty ? 0 : _successRateWithAttempts(
     (r) => r.autoCoralHeight1Success,
     (r) => r.autoCoralHeight1Success + r.autoCoralHeight1Failure
   );
   
   // auto coral averages
-  double get autoL4Avg => _average((r) => r.autoCoralHeight4Success);
-  double get autoL3Avg => _average((r) => r.autoCoralHeight3Success);
-  double get autoL2Avg => _average((r) => r.autoCoralHeight2Success);
-  double get autoL1Avg => _average((r) => r.autoCoralHeight1Success);
+  double get autoL4Avg => records.isEmpty ? 0 : _average((r) => r.autoCoralHeight4Success);
+  double get autoL3Avg => records.isEmpty ? 0 : _average((r) => r.autoCoralHeight3Success);
+  double get autoL2Avg => records.isEmpty ? 0 : _average((r) => r.autoCoralHeight2Success);
+  double get autoL1Avg => records.isEmpty ? 0 : _average((r) => r.autoCoralHeight1Success);
 
   // teleop metrics
-  double get teleopAlgaeNetAvg => _average((r) => r.teleopAlgaeScoredInNet);
-  double get teleopAlgaeProcessedAvg => _average((r) => r.teleopAlgaeProcessed);
-  double get teleopAlgaeProcessorAttemptsAvg => _average((r) => r.teleopAlgaeProcessorAttempts);
-  double get processorEfficiency => teleopAlgaeProcessedAvg / (teleopAlgaeProcessorAttemptsAvg > 0 ? teleopAlgaeProcessorAttemptsAvg : 1);
+  double get teleopAlgaeNetAvg => records.isEmpty ? 0 : _average((r) => r.teleopAlgaeScoredInNet);
+  double get teleopAlgaeProcessedAvg => records.isEmpty ? 0 : _average((r) => r.teleopAlgaeProcessed);
+  double get teleopAlgaeProcessorAttemptsAvg => records.isEmpty ? 0 : _average((r) => r.teleopAlgaeProcessorAttempts);
+  double get processorEfficiency => records.isEmpty ? 0 : teleopAlgaeProcessedAvg / (teleopAlgaeProcessorAttemptsAvg > 0 ? teleopAlgaeProcessorAttemptsAvg : 1);
   
   // teleop coral success rates
-  double get teleopL4SuccessRate => _successRateWithAttempts(
+  double get teleopL4SuccessRate => records.isEmpty ? 0 : _successRateWithAttempts(
     (r) => r.teleopCoralHeight4Success,
     (r) => r.teleopCoralHeight4Success + r.teleopCoralHeight4Failure
   );
-  double get teleopL3SuccessRate => _successRateWithAttempts(
+  double get teleopL3SuccessRate => records.isEmpty ? 0 : _successRateWithAttempts(
     (r) => r.teleopCoralHeight3Success,
     (r) => r.teleopCoralHeight3Success + r.teleopCoralHeight3Failure
   );
-  double get teleopL2SuccessRate => _successRateWithAttempts(
+  double get teleopL2SuccessRate => records.isEmpty ? 0 : _successRateWithAttempts(
     (r) => r.teleopCoralHeight2Success,
     (r) => r.teleopCoralHeight2Success + r.teleopCoralHeight2Failure
   );
-  double get teleopL1SuccessRate => _successRateWithAttempts(
+  double get teleopL1SuccessRate => records.isEmpty ? 0 : _successRateWithAttempts(
     (r) => r.teleopCoralHeight1Success,
     (r) => r.teleopCoralHeight1Success + r.teleopCoralHeight1Failure
   );
   
   // teleop coral averages
-  double get teleopL4Avg => _average((r) => r.teleopCoralHeight4Success);
-  double get teleopL3Avg => _average((r) => r.teleopCoralHeight3Success);
-  double get teleopL2Avg => _average((r) => r.teleopCoralHeight2Success);
-  double get teleopL1Avg => _average((r) => r.teleopCoralHeight1Success);
+  double get teleopL4Avg => records.isEmpty ? 0 : _average((r) => r.teleopCoralHeight4Success);
+  double get teleopL3Avg => records.isEmpty ? 0 : _average((r) => r.teleopCoralHeight3Success);
+  double get teleopL2Avg => records.isEmpty ? 0 : _average((r) => r.teleopCoralHeight2Success);
+  double get teleopL1Avg => records.isEmpty ? 0 : _average((r) => r.teleopCoralHeight1Success);
 
   // endgame metrics
-  double get cageHangSuccessRate => _successRate((r) => r.endgameCageHang != 'None');
-  double get bargeReturnRate => _successRate((r) => r.endgameReturnedToBarge);
-  double get bargeRankingPointRate => _successRate((r) => r.endgameBargeRankingPoint);
+  double get cageHangSuccessRate => records.isEmpty ? 0 : _successRate((r) => r.endgameCageHang != 'None');
+  double get bargeReturnRate => records.isEmpty ? 0 : _successRate((r) => r.endgameReturnedToBarge);
+  double get bargeRankingPointRate => records.isEmpty ? 0 : _successRate((r) => r.endgameBargeRankingPoint);
   
   // calculate endgame performance score (0-100)
   double get endgamePerformanceScore {
@@ -100,11 +103,11 @@ class TeamStats {
   }
   
   // ranking point metrics
-  double get coralRankingPointRate => _successRate((r) => r.teleopCoralRankingPoint);
-  double get coOpPointRate => _successRate((r) => r.otherCoOpPoint);
+  double get coralRankingPointRate => records.isEmpty ? 0 : _successRate((r) => r.teleopCoralRankingPoint);
+  double get coOpPointRate => records.isEmpty ? 0 : _successRate((r) => r.otherCoOpPoint);
   
   // reliability metrics
-  double get breakdownRate => _successRate((r) => r.otherBreakdown);
+  double get breakdownRate => records.isEmpty ? 0 : _successRate((r) => r.otherBreakdown);
   String get preferredCoralPickupMethod {
     if (records.isEmpty) return 'None';
     
@@ -115,7 +118,7 @@ class TeamStats {
     bool hasGround = records.any((r) => r.teleopCoralPickupMethod == 'Ground' || r.teleopCoralPickupMethod == 'Both');
     bool hasHuman = records.any((r) => r.teleopCoralPickupMethod == 'Human' || r.teleopCoralPickupMethod == 'Both');
     
-    // f they've used both methods in one match or across different matches
+    // if they've used both methods in one match or across different matches
     if (hasBoth || (hasGround && hasHuman)) {
       return 'Human & Ground';
     }
@@ -156,11 +159,13 @@ class TeamStats {
 
   // auto scoring potential
   double get autoScoringPotential {
+    if (records.isEmpty) return 0;
     return autoAlgaeScoringPotential + autoCoralScoringPotential;
   }
 
   // auto algae scoring potential (10 points max)
   double get autoAlgaeScoringPotential {
+    if (records.isEmpty) return 0;
     double score = 0;
     score += (autoAlgaeProcessorAvg * 6.0); // 6 points per processor
     score += (autoAlgaeNetAvg * 4.0); // 4 points per net
@@ -169,6 +174,7 @@ class TeamStats {
 
   // auto coral scoring potential (20 points max)
   double get autoCoralScoringPotential {
+    if (records.isEmpty) return 0;
     double score = 0;
     // average successful placements (15 points)
     score += (autoL4Avg * 7.0); // 7 points per L4
@@ -182,11 +188,13 @@ class TeamStats {
 
   // teleop scoring potential
   double get teleopScoringPotential {
+    if (records.isEmpty) return 0;
     return teleopAlgaeScoringPotential + teleopCoralScoringPotential;
   }
 
   // teleop algae scoring potential (20 points max)
   double get teleopAlgaeScoringPotential {
+    if (records.isEmpty) return 0;
     double score = 0;
     score += (teleopAlgaeProcessedAvg * 6.0); // 6 points per processor
     score += (teleopAlgaeNetAvg * 4.0); // 4 points per net
@@ -195,6 +203,7 @@ class TeamStats {
 
   // teleop coral scoring potential (20 points max)
   double get teleopCoralScoringPotential {
+    if (records.isEmpty) return 0;
     double score = 0;
     // average successful placements (15 points)
     score += (teleopL4Avg * 5.0); // 5 points per L4
@@ -208,21 +217,25 @@ class TeamStats {
 
   // total coral scoring potential (40 points max)
   double get totalCoralScoringPotential {
+    if (records.isEmpty) return 0;
     return autoCoralScoringPotential + teleopCoralScoringPotential; // 20 + 20 points
   }
 
   // total algae scoring potential (30 points max)
   double get totalAlgaeScoringPotential {
+    if (records.isEmpty) return 0;
     return autoAlgaeScoringPotential + teleopAlgaeScoringPotential; // 10 + 20 points
   }
 
   // endgame scoring potential
   double get endgameScoringPotential {
+    if (records.isEmpty) return 0;
     return endgamePerformanceScore * 0.25; // up to 25% of endgame score (15 points max)
   }
 
   // overall scoring potential (uncapped, can be negative)
   double get scoringPotential {
+    if (records.isEmpty) return 0;
     double score = 0;
     
     // combine all scoring potentials
@@ -262,6 +275,7 @@ class TeamStats {
 
   // Overall success rates
   double get autoOverallSuccessRate {
+    if (records.isEmpty) return 0;
     int totalSuccesses = records.map((r) => 
       r.autoCoralHeight4Success + 
       r.autoCoralHeight3Success + 
@@ -280,6 +294,7 @@ class TeamStats {
   }
 
   double get teleopOverallSuccessRate {
+    if (records.isEmpty) return 0;
     int totalSuccesses = records.map((r) => 
       r.teleopCoralHeight4Success + 
       r.teleopCoralHeight3Success + 
@@ -349,17 +364,15 @@ class TeamStats {
   }
 
   List<String> getStrengths() {
+    if (records.isEmpty) return [];
     List<String> strengths = [];
     
     // auto strengths
-    // if (autoTaxisRate >= 0.8) strengths.add('Reliable Auto Taxis');
     if (autoAlgaeAvg >= 2) strengths.add('Strong Auto Algae');
-    // if (autoL4SuccessRate >= 0.9) strengths.add('Accurate Auto Coral L4 (≥ 90%)');
     if ((autoL4Avg + autoL3Avg + autoL2Avg + autoL1Avg) >= 3) strengths.add('Auto Coral ≥ 3');
     
     // teleop strengths
     if (teleopAlgaeNetAvg >= 3) strengths.add('High Algae Output (≥ 3)');
-    // if (processorEfficiency >= 0.8) strengths.add('Efficient Processor');
     if (teleopL4SuccessRate >= 0.9) strengths.add('Accurate Teleop L4 Scoring (>=90%)');
     if ((teleopL4Avg + teleopL3Avg + teleopL2Avg + teleopL1Avg) >= 5) strengths.add('High Coral Output');
     
@@ -379,6 +392,7 @@ class TeamStats {
   }
 
   List<String> getWeaknesses() {
+    if (records.isEmpty) return [];
     List<String> weaknesses = [];
     
     // auto weaknesses
@@ -437,11 +451,13 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
   Set<int> _expandedTeams = {};
   late List<TeamStats> _teamStats;
   TeamSortOption _sortOption = TeamSortOption.scoringPotential;
+  final PitScoutService _pitScoutService = PitScoutService.instance;
 
   @override
   void initState() {
     super.initState();
     _initializeTeamStats();
+    _loadPitScoutData();
   }
 
   void _initializeTeamStats() {
@@ -451,12 +467,59 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
       teamRecords.putIfAbsent(record.teamNumber, () => []).add(record);
     }
 
+    // get all teams with pit scouting data
+    final pitScoutTeams = PitScoutService.instance.getAllData()
+        .map((data) => data.teamNumber)
+        .toSet();
+
+    // add teams with pit scouting data but no match data
+    for (var teamNumber in pitScoutTeams) {
+      if (!teamRecords.containsKey(teamNumber)) {
+        teamRecords[teamNumber] = [];
+      }
+    }
+
     // convert to list of TeamStats and sort by scoring potential
     _teamStats = teamRecords.entries
         .map((e) => TeamStats(teamNumber: e.key, records: e.value))
         .toList();
     
     _sortTeams();
+  }
+
+  Future<void> _loadPitScoutData() async {
+    await _pitScoutService.loadData();
+  }
+
+  Future<void> _importPitScoutCsv() async {
+    try {
+      final XTypeGroup csvTypeGroup = XTypeGroup(
+        label: 'CSV',
+        extensions: ['csv'],
+        // add UTIs for iOS
+        uniformTypeIdentifiers: ['public.comma-separated-values-text'],
+      );
+      
+      final XFile? file = await openFile(
+        acceptedTypeGroups: [csvTypeGroup],
+      );
+
+      if (file != null) {
+        final csvString = await file.readAsString();
+        await _pitScoutService.importCsv(csvString);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Pit scouting data imported successfully')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error importing CSV: $e')),
+        );
+      }
+    }
   }
 
   void _sortTeams() {
@@ -532,11 +595,6 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
     }).toList();
 
     return Scaffold(
-      /*
-      appBar: AppBar(
-        title: const Text('Team Analysis'),
-      ),
-      */
       body: Column(
         children: [
           // search and sort controls
@@ -590,79 +648,103 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
               ],
             ),
           ),
-          // team list
+          // team list or empty state
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: filteredTeams.length,
-              itemBuilder: (context, index) {
-                final stats = filteredTeams[index];
-                final isExpanded = _expandedTeams.contains(stats.teamNumber);
-                
-                return Card(
-                  elevation: isExpanded ? 2 : 1,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Column(
-                    children: [
-                      // header (always visible)
-                      InkWell(
-                        onTap: () => _toggleExpanded(stats.teamNumber),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+            child: filteredTeams.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchQuery.isEmpty
+                              ? 'No scouting records yet'
+                              : 'No teams found matching "$_searchQuery"',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    itemCount: filteredTeams.length,
+                    itemBuilder: (context, index) {
+                      final stats = filteredTeams[index];
+                      final isExpanded = _expandedTeams.contains(stats.teamNumber);
+                      
+                      return Card(
+                        elevation: isExpanded ? 2 : 1,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: Column(
+                          children: [
+                            // header (always visible)
+                            InkWell(
+                              onTap: () => _toggleExpanded(stats.teamNumber),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      '${stats.teamNumber}',
-                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${stats.teamNumber}',
+                                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            stats.records.isEmpty 
+                                                ? 'No match data'
+                                                : '${stats.records.length} matches',
+                                            style: Theme.of(context).textTheme.bodyMedium,
+                                          ),
+                                          if (stats.records.isNotEmpty) Text(
+                                            'Coral SP: ${stats.totalCoralScoringPotential.round()}  •  Algae SP: ${stats.totalAlgaeScoringPotential.round()}',
+                                            style: Theme.of(context).textTheme.bodyMedium,
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    Text(
-                                      '${stats.records.length} matches',
-                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    _buildScoreIndicator(context, stats.scoringPotential, Icons.analytics, 'Total'),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(Icons.bar_chart),
+                                      tooltip: 'View Visualizations',
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => VisualizationPage(records: stats.records),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                    Text(
-                                      'Coral SP: ${stats.totalCoralScoringPotential.round()}  •  Algae SP: ${stats.totalAlgaeScoringPotential.round()}',
-                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                                      color: Theme.of(context).colorScheme.primary,
                                     ),
                                   ],
                                 ),
                               ),
-                              _buildScoreIndicator(context, stats.scoringPotential, Icons.analytics, 'Total'),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(Icons.bar_chart),
-                                tooltip: 'View Visualizations',
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => VisualizationPage(records: stats.records),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                isExpanded ? Icons.expand_less : Icons.expand_more,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ],
-                          ),
+                            ),
+                            // expanded content
+                            if (isExpanded)
+                              TeamAnalysisCard(stats: stats),
+                          ],
                         ),
-                      ),
-                      // expanded content
-                      if (isExpanded)
-                        TeamAnalysisCard(stats: stats),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -1035,6 +1117,15 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
                 _buildWeaknessesSection(context, widget.stats.getWeaknesses()),
             ],
           ),
+
+          // pit scouting section
+          _buildCollapsibleSection(
+            context,
+            'pit scouting',
+            [
+              _buildPitScoutSection(context),
+            ],
+          ),
         ],
       ),
     );
@@ -1134,6 +1225,80 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
             side: BorderSide(color: Colors.red.withOpacity(0.2)),
           )).toList(),
         ),
+      ],
+    );
+  }
+
+  Widget _buildPitScoutSection(BuildContext context) {
+    final pitScoutData = PitScoutService.instance.getDataForTeam(widget.stats.teamNumber);
+    
+    if (pitScoutData == null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          'No pit scouting data available',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      );
+    }
+
+    // Filter out the standard fields we already display
+    final customData = Map<String, String>.from(pitScoutData.data)
+      ..remove('Timestamp')
+      ..remove('Scouter Name (person filling out this form)')
+      ..remove('Team Number');
+
+    if (customData.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text(
+          'No additional pit scouting data available',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Text(
+            'Scouted by: ${pitScoutData.scouterName}',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+            ),
+          ),
+        ),
+        ...customData.entries.map((entry) => Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                flex: 2,
+                child: Text(
+                  entry.key,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  entry.value,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ),
+            ],
+          ),
+        )).toList(),
       ],
     );
   }

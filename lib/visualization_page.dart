@@ -531,7 +531,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       reservedSize: 40,
                       interval: 1,
                       getTitlesWidget: (value, meta) => Text(
-                        value.toInt().toString(),
+                        value.toStringAsFixed(1),
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,
@@ -876,7 +876,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       showTitles: true,
                       reservedSize: 40,
                       getTitlesWidget: (value, meta) => Text(
-                        value.toInt().toString(),
+                        value.toStringAsFixed(1),
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,
@@ -1029,7 +1029,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       reservedSize: 40,
                       interval: 0.2,
                       getTitlesWidget: (value, meta) => Text(
-                        '${(value * 100).round()}%',
+                        value.toStringAsFixed(1),
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,
@@ -1187,12 +1187,10 @@ class _VisualizationPageState extends State<VisualizationPage> {
                   show: true,
                   drawVerticalLine: false,
                   horizontalInterval: 0.2,
-                  getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: Colors.grey.withOpacity(0.1),
-                      strokeWidth: 1,
-                    );
-                  },
+                  getDrawingHorizontalLine: (value) => FlLine(
+                    color: Colors.grey.withOpacity(0.1),
+                    strokeWidth: 1,
+                  ),
                 ),
                 titlesData: FlTitlesData(
                   leftTitles: AxisTitles(
@@ -1200,15 +1198,13 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       showTitles: true,
                       reservedSize: 40,
                       interval: 0.2,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          '${(value * 100).round()}%',
-                          style: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 12,
-                          ),
-                        );
-                      },
+                      getTitlesWidget: (value, meta) => Text(
+                        value.toStringAsFixed(1),
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                   bottomTitles: AxisTitles(
@@ -1231,8 +1227,8 @@ class _VisualizationPageState extends State<VisualizationPage> {
                         }
                         return Text(
                           text,
-                          style: TextStyle(
-                            color: Colors.grey[400],
+                          style: const TextStyle(
+                            color: Colors.white54,
                             fontSize: 12,
                           ),
                         );
@@ -1429,7 +1425,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       reservedSize: 40,
                       interval: 5,
                       getTitlesWidget: (value, meta) => Text(
-                        value.toInt().toString(),
+                        value.toStringAsFixed(1),
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,
@@ -1746,7 +1742,7 @@ class _VisualizationPageState extends State<VisualizationPage> {
                       reservedSize: 40,
                       interval: 1,
                       getTitlesWidget: (value, meta) => Text(
-                        value.toInt().toString(),
+                        value.toStringAsFixed(1),
                         style: const TextStyle(
                           color: Colors.white54,
                           fontSize: 12,
