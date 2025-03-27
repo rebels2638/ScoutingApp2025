@@ -133,6 +133,27 @@ class TeamStats {
     }
   }
 
+  // calculate climb percentages
+  Map<String, double> get climbPercentages {
+    if (records.isEmpty) {
+      return {
+        'Deep': 0,
+        'Shallow': 0,
+        'None': 100,
+      };
+    }
+
+    int deepCount = records.where((r) => r.endgameCageHang == 'Deep').length;
+    int shallowCount = records.where((r) => r.endgameCageHang == 'Shallow').length;
+    int noneCount = records.where((r) => r.endgameCageHang == 'None').length;
+
+    return {
+      'Deep': (deepCount / records.length) * 100,
+      'Shallow': (shallowCount / records.length) * 100,
+      'None': (noneCount / records.length) * 100,
+    };
+  }
+
   // auto scoring potential
   double get autoScoringPotential {
     return autoAlgaeScoringPotential + autoCoralScoringPotential;
@@ -996,6 +1017,13 @@ class _TeamAnalysisCardState extends State<TeamAnalysisCard> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
                   'Coral Pickup: ${widget.stats.preferredCoralPickupMethod}',
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'Climb: ${widget.stats.climbPercentages['Deep']?.round()}% deep, ${widget.stats.climbPercentages['Shallow']?.round()}% shallow, ${widget.stats.climbPercentages['None']?.round()}% no climb',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
               ),
