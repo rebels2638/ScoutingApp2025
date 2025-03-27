@@ -595,11 +595,6 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
     }).toList();
 
     return Scaffold(
-      /*
-      appBar: AppBar(
-        title: const Text('Team Analysis'),
-      ),
-      */
       body: Column(
         children: [
           // search and sort controls
@@ -653,81 +648,103 @@ class TeamAnalysisPageState extends State<TeamAnalysisPage> {
               ],
             ),
           ),
-          // team list
+          // team list or empty state
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              itemCount: filteredTeams.length,
-              itemBuilder: (context, index) {
-                final stats = filteredTeams[index];
-                final isExpanded = _expandedTeams.contains(stats.teamNumber);
-                
-                return Card(
-                  elevation: isExpanded ? 2 : 1,
-                  margin: const EdgeInsets.only(bottom: 8),
-                  child: Column(
-                    children: [
-                      // header (always visible)
-                      InkWell(
-                        onTap: () => _toggleExpanded(stats.teamNumber),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+            child: filteredTeams.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 64,
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          _searchQuery.isEmpty
+                              ? 'No scouting records yet'
+                              : 'No teams found matching "$_searchQuery"',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    itemCount: filteredTeams.length,
+                    itemBuilder: (context, index) {
+                      final stats = filteredTeams[index];
+                      final isExpanded = _expandedTeams.contains(stats.teamNumber);
+                      
+                      return Card(
+                        elevation: isExpanded ? 2 : 1,
+                        margin: const EdgeInsets.only(bottom: 8),
+                        child: Column(
+                          children: [
+                            // header (always visible)
+                            InkWell(
+                              onTap: () => _toggleExpanded(stats.teamNumber),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
                                   children: [
-                                    Text(
-                                      '${stats.teamNumber}',
-                                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            '${stats.teamNumber}',
+                                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          Text(
+                                            stats.records.isEmpty 
+                                                ? 'No match data'
+                                                : '${stats.records.length} matches',
+                                            style: Theme.of(context).textTheme.bodyMedium,
+                                          ),
+                                          if (stats.records.isNotEmpty) Text(
+                                            'Coral SP: ${stats.totalCoralScoringPotential.round()}  •  Algae SP: ${stats.totalAlgaeScoringPotential.round()}',
+                                            style: Theme.of(context).textTheme.bodyMedium,
+                                          ),
+                                        ],
                                       ),
                                     ),
-                                    Text(
-                                      stats.records.isEmpty 
-                                          ? 'No match data'
-                                          : '${stats.records.length} matches',
-                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    _buildScoreIndicator(context, stats.scoringPotential, Icons.analytics, 'Total'),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: const Icon(Icons.bar_chart),
+                                      tooltip: 'View Visualizations',
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => VisualizationPage(records: stats.records),
+                                          ),
+                                        );
+                                      },
                                     ),
-                                    if (stats.records.isNotEmpty) Text(
-                                      'Coral SP: ${stats.totalCoralScoringPotential.round()}  •  Algae SP: ${stats.totalAlgaeScoringPotential.round()}',
-                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    const SizedBox(width: 8),
+                                    Icon(
+                                      isExpanded ? Icons.expand_less : Icons.expand_more,
+                                      color: Theme.of(context).colorScheme.primary,
                                     ),
                                   ],
                                 ),
                               ),
-                              _buildScoreIndicator(context, stats.scoringPotential, Icons.analytics, 'Total'),
-                              const SizedBox(width: 8),
-                              IconButton(
-                                icon: const Icon(Icons.bar_chart),
-                                tooltip: 'View Visualizations',
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => VisualizationPage(records: stats.records),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              Icon(
-                                isExpanded ? Icons.expand_less : Icons.expand_more,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ],
-                          ),
+                            ),
+                            // expanded content
+                            if (isExpanded)
+                              TeamAnalysisCard(stats: stats),
+                          ],
                         ),
-                      ),
-                      // expanded content
-                      if (isExpanded)
-                        TeamAnalysisCard(stats: stats),
-                    ],
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
