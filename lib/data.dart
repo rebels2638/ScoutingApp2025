@@ -1391,6 +1391,13 @@ class DataPageState extends State<DataPage> {
           label: 'Delete All Data',
           onTap: () => _showDeleteAllConfirmation(context),
         ),
+        SpeedDialChild(
+          backgroundColor: Colors.red,
+          foregroundColor: Colors.white,
+          child: const Icon(Icons.engineering),
+          label: 'Delete Pit Scouting',
+          onTap: () => _showDeletePitScoutConfirmation(context),
+        ),
       ],
     );
   }
@@ -1755,6 +1762,46 @@ class DataPageState extends State<DataPage> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showDeletePitScoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete All Pit Scouting Data?'),
+          content: const Text(
+            'Are you sure you want to delete all pit scouting data? This cannot be undone.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Delete All'),
+              onPressed: () async {
+                Navigator.of(context).pop();
+                await PitScoutService.instance.deleteAllData();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('All pit scouting data deleted successfully'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }

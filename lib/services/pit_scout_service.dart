@@ -71,4 +71,10 @@ class PitScoutService {
   void clearData() {
     _pitScoutData.clear();
   }
+
+  Future<void> deleteAllData() async {
+    _pitScoutData.clear();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_storageKey);
+  }
 } 
